@@ -1,0 +1,17 @@
+/* Dialog.css */
+
+/* Style the entire title bar */
+.Polaris-Modal-Header {
+  background-color: #004f9f !important; /* Your desired background color */
+}
+
+/* Ensure the title text is visible */
+.Polaris-Modal-Header h2 {
+  color: white !important;
+  margin: 0;
+}
+
+/* Optional: Add padding or adjust spacing */
+.Polaris-Modal-Header {
+  padding: 15px !important;
+}

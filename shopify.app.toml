@@ -1,0 +1,29 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "3a4bbaa22deaf3262992d132f7d7f53d"
+application_url = "https://7db6-2401-4900-1f3e-6406-9831-4d4-a2d3-e2bd.ngrok-free.app"
+embedded = true
+name = "gst-virtue"
+handle = "gst-virtue"
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "gst-paras.myshopify.com"
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2024-10"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_orders,read_products"
+
+[auth]
+redirect_urls = [
+  "https://7db6-2401-4900-1f3e-6406-9831-4d4-a2d3-e2bd.ngrok-free.app/auth/callback",
+  "https://7db6-2401-4900-1f3e-6406-9831-4d4-a2d3-e2bd.ngrok-free.app/auth/shopify/callback",
+  "https://7db6-2401-4900-1f3e-6406-9831-4d4-a2d3-e2bd.ngrok-free.app/api/auth/callback"
+]
+
+[pos]
+embedded = false

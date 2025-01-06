@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .solid-border {
+            padding: 10px;
+        }
+
+        .heading-text {
+            font-size: 25px;
+            font-weight: 700;
+            color: #1F5599;
+        }
+
+        body {
+            font-family: 'Poppins';
+            /* Applies Arial font */
+        }
+
+        .half {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .text-bold {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1F5599;
+            padding: 0%;
+        }
+
+        .text-normal {
+            font-size: 14px;
+            font-weight: 400;
+            color: #1F5599;
+            padding: 0%;
+        }
+        .text-small {
+            font-size: 12px;
+            font-weight: 400;
+            color: #1F5599;
+            padding: 0%;
+        }
+
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        div {
+            margin: 0;
+            padding: 0;
+        }
+
+        .color-background {
+            background-color: #1F5599;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 5px;
+        }
+
+        .text-white {
+            font-size: 14px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="solid-border">
+        <div class="half">
+            <div>
+                <p class="heading-text">GST Invoice</p>
+
+                <div style="display: flex;">
+                    <div style="margin-top: 30px;">
+                        <p class="text-bold">Invoice No:</p>
+                        <p class="text-bold">Order Id:</p>
+                        <p class="text-bold">Invoice Date:</p>
+                        <p class="text-bold">Payment:</p>
+                    </div>
+
+                    <div style="margin-top: 30px; margin-left: 15px;">
+                        <p class="text-normal">{{invoiceNo}}</p>
+                        <p class="text-normal">{{orderID}}</p>
+                        <p class="text-normal">{{invoiceDate}}</p>
+                        <p class="text-normal">{{paymentGatewayNames}}</p>
+                    </div>
+                </div>
+
+
+            </div>
+            <div style="display: flex; flex-direction: column;justify-content: space-between;">
+                <div style="justify-items: end;">
+                    <p class="heading-text">LOGO</p>
+                </div>
+
+                <div style="justify-items: end;">
+                    <p class="text-bold">gst paras</p>
+                    <span class="text-bold">Email :</span>
+                    <span class="text-normal"> parasvirani9@gmail.com</span>
+                </div>
+            </div>
+
+        </div>
+        <div class="half" style="margin-top: 30px;">
+            <div style="width: 100%; margin-right: 10px;">
+                <div class="color-background">
+                    <p>Billed To</p>
+                </div>
+
+                <p class="text-bold">{{builedToName}}</p>
+                <p class="text-normal">{{builedToAddress}}</p>
+                <span class="text-bold">Phone : </span>
+                <span class="text-normal">{{builedToPhone}}</span>
+            </div>
+            <div style="width: 100%; margin-left: 10px;">
+                <div class="color-background">
+                    <p>Ship To</p>
+                </div>
+                <p class="text-bold">{{shipToName}}</p>
+                <p class="text-normal">{{shipToAddress}}</p>
+                <span class="text-bold">Phone : </span>
+                <span class="text-normal">{{shipToPhone}}</span>
+            </div>
+
+
+        </div>
+        <div style="margin-top: 30px;">
+            <div class="color-background" style="display: flex;">
+                <p style="width: 30%;">Item</p>
+                <p style="width: 5%;">Qty</p>
+                <p style="width: 10%;">Rate</p>
+                <p style="width: 20%;">Taxable val</p>
+                <p style="width: 5%;">Hsn</p>
+                <p style="width: 5%;">Gst</p>
+                <p style="width: 10%;">Igst</p>
+                <p style="width: 15%;">Total</p>
+            </div>
+            <div id="order-items">
+                {{orderItems}}
+            </div>
+            
+            <div style="height: 1px; background-color: #1F5599;"></div>
+        </div>
+
+        <div class="half" style="margin-top: 30px;">
+            <div style="width: 100%; margin-right: 10px;">
+                <div>
+                    <p class="text-bold">Mode of Transport:</p>
+                </div>
+
+                <div style="display: flex;">
+                    <div style="margin-top: 30px;">
+                        <p class="text-normal">Date Of Supply:</p>
+                        <p class="text-normal">Place Of Supply:</p>
+                        <p class="text-normal">State Code:</p>
+                    </div>
+
+                    <div style="margin-top: 30px; margin-left: 15px;">
+                        <p class="text-normal">Nov 26, 24</p>
+                        <p class="text-normal">Surat, Gujarat.</p>
+                        <p class="text-normal">GJ (24)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width: 100%; margin-left: 10px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="margin-top: 30px;">
+                        <p class="text-normal">Total Discount:</p>
+                        <p class="text-normal">Total Amount Before Tax:</p>
+                        <p class="text-normal">Total Tax Amount:</p>
+                        <p class="text-normal">Total Amount After Tax:</p>
+                        <p class="text-normal">Shipping Amount:</p>
+                        <p class="text-normal">Shipping IGST (0%):</p>
+                        <p class="text-normal">Total Shipping:</p>
+                        <p class="text-normal">Round Off</p>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <p class="text-normal">Total Discount:</p>
+                        <p class="text-normal">Total Amount Before Tax:</p>
+                        <p class="text-normal">Total Tax Amount:</p>
+                        <p class="text-normal">Total Amount After Tax:</p>
+                        <p class="text-normal">Shipping Amount:</p>
+                        <p class="text-normal">Shipping IGST (0%):</p>
+                        <p class="text-normal">Total Shipping:</p>
+                        <p class="text-normal">Round Off</p>
+                    </div>
+                </div>
+                <div class="color-background" style="display: flex; justify-content: space-between;">
+                    <p>Total</p>
+                    <p>RS. 942.82</p>
+                </div>
+                <span class="text-bold">Amount in words : </span>
+                <span class="text-normal">NINE HUNDRED AND FORTY TWO RUPEES AND EIGHTY TWO PAISE ONLY</span>
+            </div>
+
+
+
+        </div>
+        <div style="background-color: #D6DFEB; padding: 20px 30px;">
+            <p class="text-bold">Thank you for your purchase!</p>
+            <p class="text-normal">If you have any questions,please do contact at parasvirani9@gmail.com</p>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 20 20" fill="none">
+                        <ellipse opacity="0.1" cx="9.66492" cy="9.66492" rx="9.66492" ry="9.66492" fill="#1F5599" />
+                        <path
+                            d="M10.1415 5.02588C10.6633 5.02727 10.9282 5.03005 11.1569 5.03655L11.2469 5.0398C11.3508 5.04351 11.4533 5.04815 11.5772 5.05371C12.0708 5.07691 12.4076 5.15484 12.7031 5.26943C13.0092 5.38726 13.2672 5.54684 13.5251 5.80431C13.761 6.03622 13.9435 6.31674 14.06 6.62635C14.1745 6.92186 14.2525 7.25865 14.2757 7.75271C14.2812 7.87611 14.2859 7.97864 14.2896 8.08301L14.2924 8.17301C14.2993 8.40125 14.3021 8.66614 14.303 9.18804L14.3035 9.53411V10.1418C14.3046 10.4802 14.3011 10.8186 14.2928 11.1568L14.2901 11.2468C14.2863 11.3512 14.2817 11.4537 14.2761 11.5771C14.2529 12.0712 14.1741 12.4075 14.06 12.7035C13.9438 13.0133 13.7613 13.2939 13.5251 13.5256C13.2931 13.7614 13.0126 13.9439 12.7031 14.0604C12.4076 14.175 12.0708 14.253 11.5772 14.2761C11.4671 14.2813 11.357 14.286 11.2469 14.2901L11.1569 14.2928C10.9282 14.2993 10.6633 14.3026 10.1415 14.3035L9.7954 14.304H9.18816C8.84964 14.3052 8.51112 14.3016 8.1727 14.2933L8.08271 14.2905C7.97259 14.2864 7.86249 14.2816 7.75242 14.2761C7.25884 14.253 6.92205 14.175 6.62609 14.0604C6.31652 13.9442 6.03612 13.7616 5.80453 13.5256C5.56843 13.2937 5.38574 13.0132 5.2692 12.7035C5.15462 12.408 5.07669 12.0712 5.05349 11.5771C5.04832 11.4671 5.04368 11.357 5.03958 11.2468L5.03726 11.1568C5.02871 10.8186 5.02484 10.4802 5.02566 10.1418V9.18804C5.02436 8.84966 5.02777 8.51129 5.03586 8.17301L5.03911 8.08301C5.04282 7.97864 5.04746 7.87611 5.05303 7.75271C5.07622 7.25865 5.15416 6.92232 5.26874 6.62635C5.38523 6.31642 5.56828 6.03581 5.805 5.80431C6.03652 5.5684 6.31674 5.38586 6.62609 5.26943C6.92205 5.15484 7.25837 5.07691 7.75242 5.05371C7.87581 5.04815 7.9788 5.04351 8.08271 5.0398L8.1727 5.03701C8.51097 5.02877 8.84933 5.02521 9.1877 5.02634L10.1415 5.02588ZM9.66458 7.34541C9.04942 7.34541 8.45946 7.58978 8.02447 8.02478C7.58949 8.45977 7.34512 9.04975 7.34512 9.66493C7.34512 10.2801 7.58949 10.8701 8.02447 11.3051C8.45946 11.7401 9.04942 11.9845 9.66458 11.9845C10.2797 11.9845 10.8697 11.7401 11.3047 11.3051C11.7397 10.8701 11.984 10.2801 11.984 9.66493C11.984 9.04975 11.7397 8.45977 11.3047 8.02478C10.8697 7.58978 10.2797 7.34541 9.66458 7.34541ZM9.66458 8.27322C9.84734 8.27319 10.0283 8.30915 10.1972 8.37906C10.366 8.44898 10.5195 8.55146 10.6487 8.68068C10.778 8.80989 10.8805 8.96329 10.9505 9.13213C11.0204 9.30097 11.0565 9.48194 11.0565 9.6647C11.0565 9.84746 11.0206 10.0284 10.9506 10.1973C10.8807 10.3662 10.7782 10.5196 10.649 10.6489C10.5198 10.7781 10.3664 10.8807 10.1976 10.9506C10.0288 11.0206 9.8478 11.0566 9.66505 11.0566C9.29595 11.0566 8.94197 10.91 8.68098 10.649C8.41999 10.388 8.27337 10.034 8.27337 9.66493C8.27337 9.29583 8.41999 8.94184 8.68098 8.68084C8.94197 8.41984 9.29595 8.27322 9.66505 8.27322M12.1005 6.64955C11.9467 6.64955 11.7992 6.71064 11.6905 6.81939C11.5817 6.92814 11.5206 7.07563 11.5206 7.22943C11.5206 7.38322 11.5817 7.53072 11.6905 7.63947C11.7992 7.74822 11.9467 7.80931 12.1005 7.80931C12.2543 7.80931 12.4018 7.74822 12.5105 7.63947C12.6193 7.53072 12.6803 7.38322 12.6803 7.22943C12.6803 7.07563 12.6193 6.92814 12.5105 6.81939C12.4018 6.71064 12.2543 6.64955 12.1005 6.64955Z"
+                            fill="#1F5599" />
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 20 20" fill="none">
+                        <ellipse opacity="0.1" cx="10.3329" cy="9.66492" rx="9.66492" ry="9.66492" fill="#1F5599" />
+                        <path d="M12.1128 6.03125H14.2862L8.55625 13.1443H6.38281L12.1128 6.03125Z" fill="#1F5599" stroke="white"
+                            stroke-width="0.386597" stroke-linejoin="round" />
+                        <path d="M8.55625 6.03125H6.38281L12.1128 13.1443H14.2862L8.55625 6.03125Z" fill="#1F5599" stroke="white"
+                            stroke-width="0.386597" stroke-linejoin="round" />
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 20 20" fill="none">
+                        <ellipse opacity="0.1" cx="9.99988" cy="9.66492" rx="9.66492" ry="9.66492" fill="#1F5599" />
+                        <path
+                            d="M8.54135 14.3043H10.6238V10.5558H12.5001L12.7063 8.69318H10.6238V7.75253C10.6238 7.62841 10.6787 7.50937 10.7763 7.42161C10.8739 7.33385 11.0064 7.28454 11.1444 7.28454H12.7063V5.4126H11.1444C10.4541 5.4126 9.79195 5.65913 9.30378 6.09795C8.8156 6.53677 8.54135 7.13194 8.54135 7.75253V8.69318H7.50011L7.29395 10.5558H8.54135V14.3043Z"
+                            fill="#1F5599" />
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 20 20" fill="none">
+                        <ellipse opacity="0.1" cx="9.66785" cy="9.66492" rx="9.66492" ry="9.66492" fill="#1F5599" />
+                        <path
+                            d="M6.9755 6.40101C6.97537 6.66302 6.87267 6.91425 6.69 7.09942C6.50732 7.2846 6.25964 7.38856 6.00142 7.38843C5.74321 7.3883 5.49563 7.28409 5.31313 7.09872C5.13064 6.91336 5.02819 6.66203 5.02832 6.40002C5.02845 6.13801 5.13115 5.88678 5.31382 5.7016C5.4965 5.51642 5.74419 5.41247 6.0024 5.4126C6.26061 5.41273 6.5082 5.51694 6.69069 5.7023C6.87318 5.88766 6.97563 6.13899 6.9755 6.40101ZM7.00471 8.11998H5.05753V14.3043H7.00471V8.11998ZM10.0813 8.11998H8.14381V14.3043H10.0618V11.059C10.0618 9.25114 12.3838 9.08319 12.3838 11.059V14.3043H14.3066V10.3872C14.3066 7.33952 10.8699 7.45314 10.0618 8.94983L10.0813 8.11998Z"
+                            fill="#1F5599" />
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 20 20" fill="none">
+                        <ellipse opacity="0.1" cx="10.3348" cy="9.66492" rx="9.66492" ry="9.66492" fill="#1F5599" />
+                        <path
+                            d="M9.25273 11.1561L12.0617 9.66492L9.25273 8.17376V11.1561ZM15.5094 7.26415C15.5798 7.49777 15.6285 7.81091 15.661 8.20855C15.6988 8.60619 15.7151 8.94916 15.7151 9.24739L15.7476 9.66492C15.7476 10.7535 15.661 11.5537 15.5094 12.0657C15.3741 12.513 15.0602 12.8013 14.5731 12.9256C14.3187 12.9902 13.8532 13.0349 13.1388 13.0648C12.4352 13.0996 11.7911 13.1145 11.1958 13.1145L10.3352 13.1443C8.06743 13.1443 6.6548 13.0648 6.09733 12.9256C5.61022 12.8013 5.2963 12.513 5.161 12.0657C5.09063 11.8321 5.04192 11.5189 5.00945 11.1213C4.97156 10.7236 4.95533 10.3807 4.95533 10.0824L4.92285 9.66492C4.92285 8.57637 5.00945 7.77612 5.161 7.26415C5.2963 6.8168 5.61022 6.52851 6.09733 6.40425C6.35171 6.33963 6.81718 6.2949 7.53161 6.26508C8.23521 6.23028 8.87928 6.21537 9.47464 6.21537L10.3352 6.18555C12.603 6.18555 14.0156 6.26508 14.5731 6.40425C15.0602 6.52851 15.3741 6.8168 15.5094 7.26415Z"
+                            fill="#1F5599" />
+                    </svg>
+                </div>
+                <p style="color: #1F5599;">T&C Apply</p>
+            </div>
+        </div>
+       
+        
+    </div>
+</body>
+
+</html>
