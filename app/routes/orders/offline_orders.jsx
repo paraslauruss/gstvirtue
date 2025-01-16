@@ -490,9 +490,9 @@ export function OfflineOrders() {
     const [textEditor, setTextEditor] = useState("")
 
     const [createInvoice, setCreateInvoice] = useState(false)
-    
-    
-    
+
+
+
     const shopify = useAppBridge();
 
     const [active, setActive] = useState(false);
@@ -501,46 +501,46 @@ export function OfflineOrders() {
     const [emailActive, setEmailActive] = useState(false);
     const toggleEmailActiveModal = useCallback(() => setEmailActive((active) => !emailActive), []);
 
-   
+
     const [content, setContent] = useState('');
 
-  const handleEditorChange = (content) => {
-    setContent(content);
-    console.log('Editor Content:', content); // Use this to debug or save the content
-  };
+    const handleEditorChange = (content) => {
+        setContent(content);
+        console.log('Editor Content:', content); // Use this to debug or save the content
+    };
 
-  const handleChange = (value) => {
-    setContent(value);
-  };
+    const handleChange = (value) => {
+        setContent(value);
+    };
 
-  if (typeof window === "undefined") {
-    return <div>Loading editor...</div>; // Fallback for SSR
-  }
+    if (typeof window === "undefined") {
+        return <div>Loading editor...</div>; // Fallback for SSR
+    }
 
     return (
         <>
             <Dialog active={active} toggleModal={toggleModal} />
             <SendEmailInvoiceDialog active={emailActive} toggleModal={toggleEmailActiveModal} />
             <div>
-            <Editor
-  apiKey="your-api-key" // Replace with your valid API key
-  onInit={(_evt, editor) => editorRef.current = editor}
-  initialValue="<p>This is the initial content of the editor.</p>"
-  init={{
-    height: 500,
-    menubar: true, // Show the menu bar for debugging purposes
-    plugins: [
-      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-      'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-      'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-    ],
-    toolbar: 'undo redo | formatselect | ' +
-      'bold italic backcolor | alignleft aligncenter ' +
-      'alignright alignjustify | bullist numlist outdent indent | ' +
-      'removeformat | help',
-    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-  }}
-/>
+                <Editor
+                    apiKey="your-api-key" // Replace with your valid API key
+                    onInit={(_evt, editor) => editorRef.current = editor}
+                    initialValue="<p>This is the initial content of the editor.</p>"
+                    init={{
+                        height: 500,
+                        menubar: true, // Show the menu bar for debugging purposes
+                        plugins: [
+                            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | formatselect | ' +
+                            'bold italic backcolor | alignleft aligncenter ' +
+                            'alignright alignjustify | bullist numlist outdent indent | ' +
+                            'removeformat | help',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                    }}
+                />
             </div>
             <div>
                 {createInvoice ? (<CreateNewInvoice />) : (<div>
@@ -551,7 +551,9 @@ export function OfflineOrders() {
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13" fill="none">
                                 <path d="M12.0714 7.42857H7.42857V12.0714C7.42857 12.3177 7.33074 12.5539 7.1566 12.728C6.98246 12.9022 6.74627 13 6.5 13C6.25373 13 6.01754 12.9022 5.8434 12.728C5.66926 12.5539 5.57143 12.3177 5.57143 12.0714V7.42857H0.928571C0.682299 7.42857 0.446113 7.33074 0.271972 7.1566C0.0978315 6.98246 0 6.74627 0 6.5C0 6.25373 0.0978315 6.01754 0.271972 5.8434C0.446113 5.66926 0.682299 5.57143 0.928571 5.57143H5.57143V0.928571C5.57143 0.682299 5.66926 0.446113 5.8434 0.271972C6.01754 0.0978311 6.25373 0 6.5 0C6.74627 0 6.98246 0.0978311 7.1566 0.271972C7.33074 0.446113 7.42857 0.682299 7.42857 0.928571V5.57143H12.0714C12.3177 5.57143 12.5539 5.66926 12.728 5.8434C12.9022 6.01754 13 6.25373 13 6.5C13 6.74627 12.9022 6.98246 12.728 7.1566C12.5539 7.33074 12.3177 7.42857 12.0714 7.42857Z" fill="white" />
                             </svg>
-                            <div style={{ marginLeft: '10px' }}><Text>Create New</Text></div>
+                            <div style={{ marginLeft: '10px' }}>
+                                <Text>Create New</Text>
+                            </div>
                         </div>
                     </div>
                     <div style={{ marginTop: '20px' }}>

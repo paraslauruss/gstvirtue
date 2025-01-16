@@ -21,6 +21,7 @@ export default function HSNSACSummaryPurchase({ onClick }) {
             </div>
             <div style={{ marginTop: '20px' }} />
             <Card>
+                <div style={{display:'flex', gap:'20px'}}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                     <select style={{ border: '1px solid #000000', borderRadius: '5px', padding: '10px', width: '200px', appearance: 'none', }}>
                         <option value="0">January</option>
@@ -51,6 +52,12 @@ export default function HSNSACSummaryPurchase({ onClick }) {
                         </svg>
                     </span>
                 </div>
+                <div
+                    style={{ color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px' }}>
+                    <Text>Export Report</Text>
+                </div>
+                </div>
+                
             </Card>
 
         </div>

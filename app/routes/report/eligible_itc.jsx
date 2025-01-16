@@ -19,7 +19,46 @@ export default function EligibleITC({onClick}) {
 
                 <Text variant="headingLg">Eligible ITC</Text>
             </div>
-
+            <div style={{ marginTop: '20px' }} />
+            <Card>
+                <div style={{display:'flex', gap:'20px'}}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <select style={{ border: '1px solid #000000', borderRadius: '5px', padding: '10px', width: '200px', appearance: 'none', }}>
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                    <span
+                        style={{
+                            position: 'absolute',
+                            right: '15px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            fontSize: '12px',
+                        }}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="6" viewBox="0 0 11 6" fill="none">
+                            <path d="M10.0588 0.99954L5.52941 5.11719L1 0.99954" stroke="#858585" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                </div>
+                <div
+                    style={{ color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px' }}>
+                    <Text>Export Report</Text>
+                </div>
+                </div>
+                
+            </Card>
         </div>
     );
 }
