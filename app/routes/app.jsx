@@ -32,6 +32,7 @@ export default function App() {
       </NavMenu>
       <Outlet />
     </AppProvider>
+    
   );
 }
 

@@ -1,0 +1,210 @@
+.header{
+    margin-top: 15px;
+    margin-left: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.container{
+    padding: 12px;
+    background-color: #ffffff;
+    border-radius: 5px;
+  }
+.header-title{
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+.create-new-btn {
+     background-color: #74a535;
+     color: white;
+     padding: 10px 15px;
+     border: none;
+     border-radius: 5px;
+     cursor: pointer;
+}
+.create-new-btn:hover{
+    background-color: #64b100;
+}
+.search-input-container {
+  position: relative;
+  display: inline-block;
+  width: 300px; /* Adjust the width as needed */
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  font-size: 16px; /* Adjust icon size */
+  color: rgba(0, 0, 0, 0.48); /* Icon color */
+  pointer-events: none; /* Prevent interaction with the icon */
+}
+
+.filter-bar{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: space-between;
+}
+.search-btn {
+    background-color: #74a535;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .search-btn:hover {
+    background-color: #5c8e29;
+  }
+  
+  .clear-btn {
+    background-color: #ccc;
+    color: black;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .clear-btn:hover {
+    background-color: #b3b3b3;
+  }
+  .payees-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  }
+  
+  .payees-table th,
+  .payees-table td {
+    padding: 12px;
+    text-align: left;
+    border: none;
+  }
+  
+  .payees-table th {
+    background-color: #333;
+    color: white;
+    font-weight: bold;
+  }
+  .action-icons button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  
+  .action-icons button:hover {
+    color: #007bff;
+  }
+  .copy-rigths{
+    text-align: center;
+    font-size: 12px;
+    margin-top: 20px;
+    color: #707070;
+  }
+  
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-content {
+    margin:5px 5px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    /* max-width: 600px; */
+    width: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+   .modal-title h3 {
+    height: 30px;
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: white;
+    background-color: #45a049;
+    padding: 5px;
+  }
+  
+  .create-payee-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .create-payee-form div {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .create-payee-form label {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #555;
+  }
+  
+  .create-payee-form input,
+  .create-payee-form select {
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .create-payee-form input:focus,
+  .create-payee-form select:focus {
+    outline: none;
+    border-color: #4caf50;
+  }
+  
+  .modal-buttons {
+    grid-column: span 2;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .modal-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .modal-buttons button:first-child {
+    background-color: #f0f0f0;
+    color: #333;
+  }
+  
+  .modal-buttons button:first-child:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .modal-buttons button:last-child {
+    background-color: #4caf50;
+    color: white;
+  }
+  
+  .modal-buttons button:last-child:hover {
+    background-color: #45a049;
+  }
+  
