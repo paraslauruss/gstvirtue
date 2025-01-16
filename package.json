@@ -23,6 +23,11 @@
     "node": "^18.20 || ^20.10 || >=21.0.0"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.3.1",
+    "@mui/material": "^6.3.1",
+    "@mui/x-date-pickers": "^7.23.6",
     "@prisma/client": "^5.11.0",
     "@remix-run/dev": "^2.7.1",
     "@remix-run/fs-routes": "^2.15.0",
@@ -37,6 +42,8 @@
     "@tiptap/pm": "^2.11.0",
     "@tiptap/react": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
     "html2pdf.js": "^0.10.2",
     "isbot": "^5.1.0",
     "quill": "^2.0.3",

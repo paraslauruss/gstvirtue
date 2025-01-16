@@ -1,0 +1,179 @@
+
+.main {
+    margin-top: 20px;
+    justify-content: space-between;
+    display: flex;
+    width: 100%;
+}
+
+.images {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    
+}
+
+.marginDiv {
+    margin-top: 20px;
+}
+
+.displayFlex {
+    display: flex;
+    justify-content: space-between;
+}
+
+.product-box {
+    width: 100%;
+    border: 1px solid #F1F1F4;
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.09);
+}
+
+.product-search-div {
+    display: flex;
+    gap: 20px;
+}
+
+.text-field {
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.09);
+}
+
+.drop-down-text-field {
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.09);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8' fill='none'%3E%3Cpath d='M13 1L7 7L1 1' stroke='%23858585' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 10px center;
+  background-size: 14px 8px;
+}
+
+
+.button {
+    background-color: #74A535;
+    padding: 5px 20px;
+    display: flex;
+    align-items: center;
+    color: white;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+.border-button {
+    background-color: #FFFFFF;
+    padding: 5px 20px;
+    display: flex;
+    align-items: center;
+    color: black;
+    font-size: 14px;
+    border: 1px solid #000;
+    border-radius: 4px;
+}    
+
+.divider {
+    width: 100%;
+    height: 1px;
+    background-color: #E2E2E2;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.text-bold-heading-small {
+ font-size: 18px;
+ font-weight: 600;   
+}
+
+.checkbox {
+    appearance: none;
+    -webkit-appearance: none; /* For Safari */
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc; /* Border color */
+    border-radius: 4px; /* Rounded corners, optional */
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Smooth transition for hover/focus */
+    position: relative;
+    background-color: white; /* Default background color */
+}
+
+.checkbox:checked {
+    border-color: #4caf50; /* Change border color when checked */
+}
+
+.checkbox:checked::before {
+    content: "";
+    position: absolute;
+    top: 50%; /* Start at the vertical center */
+    left: 50%; /* Start at the horizontal center */
+    width: 6px; /* Checkmark width */
+    height: 12px; /* Checkmark height */
+    border: solid #4caf50; /* Change this color to the desired checkmark color */
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.checkbox-label {
+    font-size: 16px;
+    font-weight: 400;
+    color: #000;
+}
+
+.checkbox-div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-list-title-div {
+    background-color: #565656;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    margin-top: 20px;
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+.product-list-title-div-collection {
+    background-color: #E1E1E1;
+    color: black;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    margin-top: 20px;
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+.product-list-div-title {
+    width: 100%;
+}
+
+.product-list-div-title-extra-space {
+    width: 200%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: start;
+}
+
+.product-list-div {
+    color: black;
+    font-size: 16px;
+    font-weight: 400;
+    display: flex;
+    margin-top: 20px;
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+.product-bottom-view {
+    display: flex;
+    justify-content: end;
+    margin-top: 20px;
+}

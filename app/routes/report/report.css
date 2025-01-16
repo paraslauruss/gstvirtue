@@ -1,0 +1,19 @@
+.date-picker-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  
+  .date-picker-icon {
+    position: absolute;
+    left: 10px;
+    pointer-events: none; /* Makes the icon unclickable */
+  }
+  
+  .date-picker-input {
+    padding-left: 40px; /* Add padding to make space for the icon */
+    height: 40px; /* Adjust height as needed */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+  }
