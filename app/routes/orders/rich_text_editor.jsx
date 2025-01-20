@@ -1,43 +1,34 @@
-import React from 'react';
-import { Editor } from '@tinymce/tinymce-react';
+import React, { useEffect, useState } from 'react';
+import 'react-quill/dist/quill.snow.css';
 
-class RichText extends React.Component {
-    constructor(props) {
-      super(props);
-      this.handleEditorChange = this.handleEditorChange.bind(this);
-    }
-    
-    handleEditorChange = (e) => {
-      console.log(
-        'Content was updated:',
-        e.target.getContent()
-      );
-    }
-  
-    render() {
-      return (
-        <>
-        <Editor
-          initialValue="<p>Wow ! ... It Works !!!</p>"
-          init={{
-            height: 500,
-            menubar: false,
-            plugins: [
-              'advlist autolink lists link image',
-              'charmap print preview anchor help',
-              'searchreplace visualblocks code',
-              'insertdatetime media table paste wordcount'
-            ],
-            toolbar:
-              'undo redo | formatselect | bold italic | \
-              alignleft aligncenter alignright | \
-              bullist numlist outdent indent | help'
-          }}
-          onEditorChange={this.handleEditorChange}
-        />
-        </>
-      );
-    }
+export default function RichTextEditor({text}) {
+  const [ReactQuill, setReactQuill] = useState(null);
+  const [value, setValue] = useState(text);
+
+  useEffect(() => {
+    // Dynamically import ReactQuill for client-side usage
+    (async () => {
+      const { default: Quill } = await import('react-quill');
+      setReactQuill(() => Quill); // Ensure the imported component is correctly set
+    })();
+  }, []);
+
+  if (!ReactQuill) {
+    return <div>Loading Editor...</div>;
   }
-  
-  export default RichText;
+
+  return (
+    <div>
+      <style>
+        {`
+          @import url('https://cdn.quilljs.com/1.3.6/quill.snow.css');
+        `}
+      </style>
+      <ReactQuill
+        value={value}
+        onChange={setValue}
+        theme="snow" // Optional: Set a default theme for the editor
+      />  
+    </div>
+  );
+}

@@ -297,7 +297,7 @@ export function CreateNewInvoice() {
         setDropdownVisible(false);
     };
 
-    const [active, setActive] = useState(true);
+    const [active, setActive] = useState(false);
     const toggleModal = useCallback(() => setActive((active) => !active), []);
 
     return (

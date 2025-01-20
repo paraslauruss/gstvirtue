@@ -228,7 +228,7 @@ export default function Index() {
         },
     ];
 
-    const [selected, setSelected] = useState(1);
+    const [selected, setSelected] = useState(0);
 
 
     // console.log('Variant updated successfully:', data);

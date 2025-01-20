@@ -21,6 +21,7 @@ import { useCallback, useState } from "react";
 import { CreateNewInvoice } from "./create_new_invoice";
 import { Modal, TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { Editor } from '@tinymce/tinymce-react';
+import RichTextEditor from "./rich_text_editor";
 
 export function Dialog({ active, toggleModal }) {
 
@@ -392,7 +393,6 @@ export function Dialog({ active, toggleModal }) {
 
 export function SendEmailInvoiceDialog({ active, toggleModal }) {
 
-
     const [invoiceOption, setInvoiceOption] = useState('original');
 
     const handleInvoiceChange = (event) => {
@@ -453,31 +453,48 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
                         </div>
                     </div>
 
-                    <div style={{ marginTop: '10px', marginRight: '10px', marginLeft: '10px' }}>
+                    <div style={{ marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
                         <TextField
                             label="Subject"
                             placeholder="Invoice_Number"
                         />
                     </div>
 
-                    <div style={{ marginTop: '10px', marginRight: '10px', marginLeft: '10px' }}>
+                    <div style={{ marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
                         <TextField
                             label="To"
                             placeholder="Customer_Name"
                         />
                     </div>
 
-                    <div style={{ marginTop: '10px', marginRight: '10px', marginLeft: '10px' }}>
+                    <div style={{ marginTop: '10px', marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
                         <Text as="p" fontWeight="regular">
                             Content
                         </Text>
                     </div>
 
-                    <div>
-                        {/* <RichText /> */}
-
+                    <div style={{ marginLeft: '20px', marginRight: '20px' }}>
+                        <RichTextEditor text="<p>Hi <strong>Customer_Name</strong>,</p><p><br></p><h2><strong>Thank you for your purchase!</strong></h2><p><br></p><p>we're getting your order ready to be shipped.We will notify you when it has been sent.</p><p><br></p><p>Kindly Download your invoice of your invoice Invoice_Number</p>" />
                     </div>
 
+                    <div
+                        style={{
+                            marginTop: "20px",
+                            marginBottom: '20px',
+                            marginLeft: '20px', marginRight: '20px'
+                        }}
+                    >
+                        <span style={{color:'red'}}>Note: </span>
+                        <span>
+                            Do Not Remove the "Customer_Name" and "Invoice_Number" These will be replaced with dynamic value of Invoice.
+                        </span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'end', marginRight:'20px', marginLeft:'20px', marginBottom:'20px', color:'white'}}>
+                    <div style={{backgroundColor:'#74A535', padding:'10px 20px', borderRadius:'5px'}}>
+                        Send
+                    </div>
+                    </div>
+                    
                 </div>
             )}
         </div>
@@ -519,29 +536,8 @@ export function OfflineOrders() {
 
     return (
         <>
-            <Dialog active={active} toggleModal={toggleModal} />
+            <Dialog active={active} toggleModals={toggleModal} />
             <SendEmailInvoiceDialog active={emailActive} toggleModal={toggleEmailActiveModal} />
-            <div>
-                <Editor
-                    apiKey="your-api-key" // Replace with your valid API key
-                    onInit={(_evt, editor) => editorRef.current = editor}
-                    initialValue="<p>This is the initial content of the editor.</p>"
-                    init={{
-                        height: 500,
-                        menubar: true, // Show the menu bar for debugging purposes
-                        plugins: [
-                            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                        ],
-                        toolbar: 'undo redo | formatselect | ' +
-                            'bold italic backcolor | alignleft aligncenter ' +
-                            'alignright alignjustify | bullist numlist outdent indent | ' +
-                            'removeformat | help',
-                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-                    }}
-                />
-            </div>
             <div>
                 {createInvoice ? (<CreateNewInvoice />) : (<div>
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>

@@ -60,7 +60,7 @@ export default function GSTHSN() {
         },
     ];
 
-    const [selected, setSelected] = useState(5);
+    const [selected, setSelected] = useState(0);
 
 
     // console.log('Variant updated successfully:', data);
