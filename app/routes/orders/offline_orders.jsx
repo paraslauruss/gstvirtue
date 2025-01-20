@@ -17,11 +17,12 @@ import ic_calculator from '../../assets/images/ic_calculator.png';
 import ic_pick_up from '../../assets/images/ic_pick_up.png';
 import ic_fulfillment from '../../assets/images/ic_fulfillment.png';
 import ic_refresh from '../../assets/images/ic_refresh.png';
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { CreateNewInvoice } from "./create_new_invoice";
 import { Modal, TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { Editor } from '@tinymce/tinymce-react';
 import RichTextEditor from "./rich_text_editor";
+
+
 
 export function Dialog({ active, toggleModal }) {
 
@@ -393,6 +394,17 @@ export function Dialog({ active, toggleModal }) {
 
 export function SendEmailInvoiceDialog({ active, toggleModal }) {
 
+    const [editorContent, setEditorContent] = useState('');
+
+    const handleEditorChange = (content) => {
+      setEditorContent(content);
+    };
+  
+    const handleSubmit = () => {
+      console.log('Editor Content:', editorContent);
+      // Add logic to handle form submission
+    }; 
+
     const [invoiceOption, setInvoiceOption] = useState('original');
 
     const handleInvoiceChange = (event) => {
@@ -473,28 +485,11 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
                         </Text>
                     </div>
 
-                    <div style={{ marginLeft: '20px', marginRight: '20px' }}>
-                        <RichTextEditor text="<p>Hi <strong>Customer_Name</strong>,</p><p><br></p><h2><strong>Thank you for your purchase!</strong></h2><p><br></p><p>we're getting your order ready to be shipped.We will notify you when it has been sent.</p><p><br></p><p>Kindly Download your invoice of your invoice Invoice_Number</p>" />
+                    <div>
+                        {/* <RichText /> */}
+                        
                     </div>
 
-                    <div
-                        style={{
-                            marginTop: "20px",
-                            marginBottom: '20px',
-                            marginLeft: '20px', marginRight: '20px'
-                        }}
-                    >
-                        <span style={{color:'red'}}>Note: </span>
-                        <span>
-                            Do Not Remove the "Customer_Name" and "Invoice_Number" These will be replaced with dynamic value of Invoice.
-                        </span>
-                    </div>
-                    <div style={{display:'flex',justifyContent:'end', marginRight:'20px', marginLeft:'20px', marginBottom:'20px', color:'white'}}>
-                    <div style={{backgroundColor:'#74A535', padding:'10px 20px', borderRadius:'5px'}}>
-                        Send
-                    </div>
-                    </div>
-                    
                 </div>
             )}
         </div>
@@ -504,40 +499,34 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
 
 export function OfflineOrders() {
 
-    const [textEditor, setTextEditor] = useState("")
-
-    const [createInvoice, setCreateInvoice] = useState(false)
-
-
-
-    const shopify = useAppBridge();
-
+    const [textEditor, setTextEditor] = useState('');
+    const [createInvoice, setCreateInvoice] = useState(false);
     const [active, setActive] = useState(false);
-    const toggleModal = useCallback(() => setActive((active) => !active), []);
-
+    const toggleModal = useCallback(() => setActive((prev) => !prev), []);
     const [emailActive, setEmailActive] = useState(false);
-    const toggleEmailActiveModal = useCallback(() => setEmailActive((active) => !emailActive), []);
-
-
+    const toggleEmailActiveModal = useCallback(() => setEmailActive((prev) => !prev), []);
     const [content, setContent] = useState('');
-
-    const handleEditorChange = (content) => {
-        setContent(content);
-        console.log('Editor Content:', content); // Use this to debug or save the content
+  
+    const editorRef = useRef(null);
+  
+    const handleEditorChange = (content, editor) => {
+      setContent(content);
+      console.log('Editor Content:', content); // Use this to debug or save the content
     };
-
+  
     const handleChange = (value) => {
-        setContent(value);
+      setContent(value);
     };
-
-    if (typeof window === "undefined") {
-        return <div>Loading editor...</div>; // Fallback for SSR
+  
+    if (typeof window === 'undefined') {
+      return <div>Loading editor...</div>; // Fallback for SSR
     }
-
+  
     return (
-        <>
-            <Dialog active={active} toggleModals={toggleModal} />
-            <SendEmailInvoiceDialog active={emailActive} toggleModal={toggleEmailActiveModal} />
+      <>
+        <Dialog active={active} toggleModal={toggleModal} />
+        <SendEmailInvoiceDialog active={emailActive} toggleModal={toggleEmailActiveModal} />
+        
             <div>
                 {createInvoice ? (<CreateNewInvoice />) : (<div>
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>

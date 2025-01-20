@@ -13,6 +13,18 @@ export default function RichTextEditor({text}) {
     })();
   }, []);
 
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }], // Header dropdown
+      ['bold', 'italic', 'underline', 'strike'], // Formatting buttons
+      [{ align: '' }, { align: 'center' }, { align: 'right' }, { align: 'justify' }], // Alignment
+      [{ list: 'ordered' }, { list: 'bullet' }], // Lists
+      ['link', 'image'], // Links and images
+      ['clean'], // Clear formatting
+    ],
+  };
+
+
   if (!ReactQuill) {
     return <div>Loading Editor...</div>;
   }
@@ -27,8 +39,9 @@ export default function RichTextEditor({text}) {
       <ReactQuill
         value={value}
         onChange={setValue}
-        theme="snow" // Optional: Set a default theme for the editor
-      />  
+        theme="snow" 
+        modules={modules} 
+/>
     </div>
   );
 }
