@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import "./payees.css";
 
@@ -57,28 +58,17 @@ export const Payees = () => {
   ];
 
   // Load data from localStorage on mount
-    useEffect(() => {
-        const savedTableData = localStorage.getItem("payees");
-        if (savedTableData) {
-            setTableData(JSON.parse(savedTableData));
-        }
+  useEffect(() => {
+    const savedTableData = localStorage.getItem("payees");
+    if (savedTableData) {
+      setTableData(JSON.parse(savedTableData));
+    }
+  }, []);
 
-        // Load form data from localStorage
-        const savedFormData = localStorage.getItem("payeesFormData");
-        if (savedFormData) {
-            setFormData(JSON.parse(savedFormData));
-        }
-    }, []);
-
-    // Save data to localStorage whenever tableData changes
-    useEffect(() => {
-        localStorage.setItem("payees", JSON.stringify(tableData));
-    }, [tableData]);
-
-    // Save form data to localStorage whenever formData changes
-    useEffect(() => {
-        localStorage.setItem("payeesFormData", JSON.stringify(formData));
-    }, [formData]);
+  // Save data to localStorage whenever tableData changes
+  useEffect(() => {
+    localStorage.setItem("payees", JSON.stringify(tableData));
+  }, [tableData]);
 
   const handleCreateNewClick = () => {
     setIsModalOpen(true);
@@ -86,21 +76,19 @@ export const Payees = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    // Reset the form data in local storage to clear form data when the modal is closed
-     localStorage.removeItem("payeesFormData");
-     setFormData({
-       firstName: "",
-       lastName: "",
-       email: "",
-       company: "",
-       mobile: "",
-       displayName: "",
-       street: "",
-       city: "",
-       state: "",
-       pincode: "",
-       gstIn: "",
-     });
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      company: "",
+      mobile: "",
+      displayName: "",
+      street: "",
+      city: "",
+      state: "",
+      pincode: "",
+      gstIn: "",
+    });
   };
 
   const handleInputChange = (e) => {
@@ -111,10 +99,12 @@ export const Payees = () => {
     }));
   };
 
-    const handleSave = (e) => {
-      e.preventDefault();
-        setTableData((prevData) => [...prevData, formData]);
-      handleCloseModal();
+  const handleSave = (e) => {
+    e.preventDefault();
+    const newTableData = [...tableData, formData];
+    setTableData(newTableData);
+    localStorage.setItem("payees", JSON.stringify(newTableData));
+    handleCloseModal();
   };
 
   const handleSearchClick = () => {
@@ -257,6 +247,19 @@ export const Payees = () => {
                   onChange={handleInputChange}
                 />
               </div>
+            
+              <div>
+                <label>Phone*</label>
+                <input
+                  type="number"
+                  name="phone"
+                  placeholder="Enter mobile number"
+                  value={formData.mobile}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
               <div>
                 <label>Mobile*</label>
                 <input
@@ -286,6 +289,18 @@ export const Payees = () => {
                   name="street"
                   placeholder="Enter street"
                   value={formData.street}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <label>GST IN</label>
+                <input
+                  type="text"
+                  name="gstIn"
+                  placeholder="Enter GST number"
+                  value={formData.gstIn}
                   onChange={handleInputChange}
                 />
               </div>
@@ -327,16 +342,7 @@ export const Payees = () => {
                   required
                 />
               </div>
-              <div>
-                <label>GST IN</label>
-                <input
-                  type="text"
-                  name="gstIn"
-                  placeholder="Enter GST number"
-                  value={formData.gstIn}
-                  onChange={handleInputChange}
-                />
-              </div>
+             
               <div className="modal-buttons">
                 <button type="button" onClick={handleCloseModal}>
                   Cancel

@@ -65,7 +65,7 @@ export const Bills = () => {
 
   return (
     <Page>
-      <div style={{ width: "100%", alignItems: "center" }}>
+      <div style={{ width: "100%", alignItems: "center", maxWidth:'1300px' }}>
         {isFormVisible ? (
           <div>
             <div className="bill-header">
