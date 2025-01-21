@@ -87,36 +87,6 @@
  font-weight: 600;   
 }
 
-.checkbox {
-    appearance: none;
-    -webkit-appearance: none; /* For Safari */
-    width: 20px;
-    height: 20px;
-    border: 2px solid #ccc; /* Border color */
-    border-radius: 4px; /* Rounded corners, optional */
-    outline: none;
-    cursor: pointer;
-    transition: all 0.3s ease; /* Smooth transition for hover/focus */
-    position: relative;
-    background-color: white; /* Default background color */
-}
-
-.checkbox:checked {
-    border-color: #4caf50; /* Change border color when checked */
-}
-
-.checkbox:checked::before {
-    content: "";
-    position: absolute;
-    top: 50%; /* Start at the vertical center */
-    left: 50%; /* Start at the horizontal center */
-    width: 6px; /* Checkmark width */
-    height: 12px; /* Checkmark height */
-    border: solid #4caf50; /* Change this color to the desired checkmark color */
-    border-width: 0 2px 2px 0;
-    transform: translate(-50%, -50%) rotate(45deg);
-}
-
 .checkbox-label {
     font-size: 16px;
     font-weight: 400;

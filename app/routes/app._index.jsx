@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher,useLoaderData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -27,7 +27,7 @@ import ic_get_started from '../assets/images/ic_get_started.png';
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
 
-  return null;
+  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };
 
 export const action = async ({ request }) => {
@@ -97,6 +97,7 @@ export const action = async ({ request }) => {
 
 export default function Index() {
   const fetcher = useFetcher();
+  const { apiKey } = useLoaderData();
   const shopify = useAppBridge();
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
@@ -120,9 +121,9 @@ export default function Index() {
           <BlockStack gap="200">
             <InlineStack wrap={false} gap="500">
               <img src={myImage} width='24px' height='24px' />
-              <Text variant="headingLg" as="h5">Hello Paras!</Text>
+              <Text variant="headingLg" as="h5">Hello Paras! {apiKey}</Text>
             </InlineStack>
-            <Text variant="headingLg" as="h5">Welcome to Virtue,</Text>
+            <Text variant="headingLg" as="h5">Welcome to Virtue, </Text>
           </BlockStack>
 
           <Layout>

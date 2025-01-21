@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "remix vite:build",
-    "dev": "shopify app dev",
+    "dev": "shopify app dev --tunnel-url https://68c7-2401-4900-1c80-f6d7-a058-39bc-3093-7c95.ngrok-free.app:8080",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",
@@ -36,6 +36,7 @@
     "@remix-run/serve": "^2.7.1",
     "@shopify/app-bridge-react": "^4.1.6",
     "@shopify/polaris": "^13.9.2",
+    "@shopify/shopify-api": "^11.7.0",
     "@shopify/shopify-app-remix": "^3.4.0",
     "@shopify/shopify-app-session-storage-prisma": "^5.1.5",
     "@tinymce/tinymce-react": "^5.1.1",
@@ -44,11 +45,14 @@
     "@tiptap/starter-kit": "^2.11.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "express": "^4.21.2",
     "html2pdf.js": "^0.10.2",
     "isbot": "^5.1.0",
     "quill": "^2.0.3",
     "react": "^18.2.0",
+    "react-datepicker": "^7.6.0",
     "react-dom": "^18.2.0",
+    "react-modal": "^3.16.3",
     "react-quill": "^2.0.0",
     "react-switch": "^7.1.0",
     "vite-tsconfig-paths": "^5.0.1"
@@ -63,6 +67,7 @@
     "@types/react-dom": "^18.2.14",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.1.0",
+    "nodemon": "^3.1.9",
     "prettier": "^3.2.4",
     "prisma": "^6.1.0",
     "typescript": "^5.2.2",
@@ -76,5 +81,18 @@
   ],
   "resolutions": {},
   "overrides": {},
-  "author": "lauruss"
+  "author": "lauruss",
+  "version": "1.0.0",
+  "description": "This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using the [Remix](https://remix.run) framework.",
+  "main": ".graphqlrc.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paraslauruss/virtue-gst.git"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/paraslauruss/virtue-gst/issues"
+  },
+  "homepage": "https://github.com/paraslauruss/virtue-gst#readme"
 }

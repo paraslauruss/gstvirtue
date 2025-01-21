@@ -15,9 +15,26 @@ import { CollectionImportExport } from "./gsthsn/collection_import_export";
 import { MissingGstHsn } from "./gsthsn/missing_gst_hsn";
 
 export const loader = async ({ request }) => {
-    await authenticate.admin(request);
-
-    return null;
+    const { admin } = await authenticate.admin(request);
+    const variantResponse = await admin.graphql(
+        `#graphql
+    query Product {
+  products(first:50){
+    edges{
+      node{
+        id
+        handle
+        productType
+        title
+      }
+    }
+  }
+}`
+    );
+    const variantResponseJson = await variantResponse.json();
+    return {
+        products: variantResponseJson,
+    };
 };
 
 export const action = async ({ request }) => {

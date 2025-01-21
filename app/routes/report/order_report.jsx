@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Divider, IconButton, InputAdornment, TextField } from "@mui/material";
 import dayjs from "dayjs";
-import { Card, DatePicker, Text } from "@shopify/polaris";
+import { Card, Text } from "@shopify/polaris";
 import icEmpty from '../../assets/images/ic_empty.png'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import "./DatePickerDialog.css";
 
 
 export default function OrderReport({ onClick }) {
@@ -17,13 +20,49 @@ export default function OrderReport({ onClick }) {
         (month, year) => setDate({ month, year }),
         [],
     );
-
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const handleCreateNewClick = () => {
-        setIsModalOpen(true); // Open the modal
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(null);
+  
+    const toggleDialog = () => setIsDialogOpen((prev) => !prev);
+  
+    const handleDateChange = (date) => {
+      setSelectedDate(date);
     };
+
+
+
     return (
         <div style={{ padding: "50px 100px", backgroundColor: "#ffffff" }}>
+            {isDialogOpen && (
+        <div className="dialog-backdrop">
+          <div className="dialog-container">
+            <h3 style={{ margin: "10px 0", textAlign: "center" }}>
+              {selectedDate
+                ? selectedDate.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "Select a Date"}
+            </h3>
+            <DatePicker
+              selected={selectedDate}
+              onChange={handleDateChange}
+              inline
+              calendarClassName="custom-calendar"
+            />
+            <div className="dialog-actions">
+              <button className="dialog-button cancel" onClick={toggleDialog}>
+                Cancel
+              </button>
+              <button className="dialog-button confirm" onClick={toggleDialog}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
             <div style={{ display: "flex", gap: "20px" }}>
                 <div style={{ cursor: "pointer" }} onClick={onClick}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="21" viewBox="0 0 24 21" fill="none">
@@ -36,8 +75,9 @@ export default function OrderReport({ onClick }) {
             <div style={{ marginTop: '20px' }} />
             <Card>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '20px', cursor: 'pointer' }} onClick={handleCreateNewClick}>
+                    <div style={{ display: 'flex', gap: '20px', cursor: 'pointer' }} >
                         <div
+                        onClick={toggleDialog}
                             style={{ padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
                                 <path d="M16.5 6.5H1.5V5C1.5 4.60218 1.65804 4.22064 1.93934 3.93934C2.22064 3.65804 2.60218 3.5 3 3.5H15C15.3978 3.5 15.7794 3.65804 16.0607 3.93934C16.342 4.22064 16.5 4.60218 16.5 5V6.5Z" fill="#74A535" stroke="#74A535" />
