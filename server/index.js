@@ -1,25 +1,31 @@
-const { MongoClient } = require("mongodb");
 
-const uri = "mongodb+srv://paras:2XXDQx0UgbALEadK@cluster0.6kv1x.mongodb.net/?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const productRoute = require('./routes/products');
 
-async function run() {
-    try {
-        await client.connect();
-        console.log("Connected to MongoDB");
+const app = express();
+const port = 3001;
 
-        // Access a database
-        const database = client.db("test"); // Replace "test" with your database name
-        const collection = database.collection("example"); // Replace with your collection name
+app.use(cors());
+app.use(express.json());
 
-        // Example operation
-        const documents = await collection.find({}).toArray();
-        console.log("Documents:", documents);
-    } catch (error) {
-        console.error("Error connecting to MongoDB:", error);
-    } finally {
-        await client.close();
-    }
-}
+// Use the product routes
+app.use('/api/products', productRoute);
 
-run().catch(console.dir);
+// Connect to MongoDB
+
+require('dotenv').config(); // This will load the variables from the .env file
+const MONGO_URI = process.env.MONGO_URI;
+
+mongoose.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => console.log('MongoDB connected'))
+.catch(err => console.log('Error connecting to MongoDB:', err));
+
+
+
+// Start the server
+app.listen(port, () => console.log(`Server running on http://localhost:${port}`));

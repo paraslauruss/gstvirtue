@@ -2,8 +2,6 @@ import { Backdrop, Card, Checkbox, Divider, Scrollable, Select, Text, TextField}
 import searchIcon from '../../assets/images/searchIcon.png';
 import { useCallback, useEffect, useState, useRef } from "react";
 import Switch from "react-switch";
-import { Popover, Box } from "@mui/material";
-
 
 export function Dialog({ active, toggleModal }) {
     return (
@@ -309,43 +307,8 @@ export function CreateNewInvoice() {
         const [active, setActive] = useState(false);
         const toggleModal = useCallback(() => setActive((active) => !active), []);
     
-        //  DATE 
-        const [visible, setVisible] = useState(false);
-        const [selectedDate, setSelectedDate] = useState(new Date());
-        const [month, setMonth] = useState(selectedDate.getMonth());
-        const [year, setYear] = useState(selectedDate.getFullYear());
-        const [formattedValue, setFormattedValue] = useState('');
 
-        const datePickerRef = useRef(null);
-        const textFieldRef = useRef(null);
-
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-        const handleMonthChange = (direction) => {
-            if (direction === "prev") {
-                if (month === 0) {
-                  setMonth(11);
-                  setYear(year - 1);
-                } else {
-                  setMonth(month - 1);
-                }
-              } else if (direction === "next") {
-                  if (month === 11) {
-                      setMonth(0);
-                      setYear(year + 1);
-                    } else {
-                      setMonth(month + 1);
-                    }
-                }
-          };
-
-          const handleDateSelection = (day) => {  
-            const newDate = new Date(year, month, day);
-            setSelectedDate(newDate);
-            const formatted = newDate.toLocaleDateString();
-            setFormattedValue(formatted);
-            setVisible(false);
-          };
+        // FETCH TITLE FOR SEARCH BAR 
     
         return (
             <>
@@ -466,115 +429,111 @@ export function CreateNewInvoice() {
                                 </div>
     
                                 <div style={{ width: '100%' }}>
-                                    <div >
-                                        <span style={{ fontWeight: 'bold' }}>Purchase Order</span>
-                                    </div>
-                                    <div style={{ marginTop: '5px' }}>
-                                        <TextField
-                                            placeholder=""
-                                        />
-                                    </div>
+                                <div>
+                                    <span style={{ fontWeight: 'bold' }}>Purchase Order</span>
                                 </div>
+                                <div style={{ marginTop: '5px' }}>
+                                    <input
+                                        type="text"
+                                        // placeholder="Purchase Order"
+                                        style={{
+                                            width: '300px',
+                                            height: '33px',
+                                            border: '1px solid #ccc',
+                                            backgroundColor: '#F0F0F0',
+                                            borderRadius: '5px',
+                                            padding: '5px', // Optional: Adds some padding inside the input
+                                        }}
+                                    />
+                                </div>
+                            </div>
     
-                                <div style={{ width: '100%' }}>
-                                    <div >
-                                        <span style={{ fontWeight: 'bold' }}>Invoice Date</span>
-                                        <span style={{ color: 'red' }}>*</span>
-                                    </div>
-                                    <div style={{ marginTop: '5px' }}>
-                                        <TextField
-                                            placeholder=""
-                                        />
-                                    </div>
+                            <div style={{ width: '100%' }}>
+                                <div>
+                                    <span style={{ fontWeight: 'bold' }}>Invoice Date</span>
+                                    <span style={{ color: 'red' }}>*</span>
                                 </div>
+                                <div style={{ marginTop: '5px' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="MM/DD/YYYY" // Custom format placeholder
+                                        style={{
+                                            width: '300px',
+                                            height: '33px',
+                                            border: '1px solid #ccc',
+                                            backgroundColor: '#F0F0F0',
+                                            borderRadius: '5px',
+                                            padding: '5px',
+                                        }}
+                                    />
+                                </div>
+                            </div>
     
                             </div>
     
-                            <div style={{ display: 'flex', marginTop: '20px', gap: '20px' }}>
-                                <div style={{ width: '100%', }}>
-                                    <div >
+                            <div style={{ display: 'flex', marginTop: '20px', gap: '10px' }}>
+
+                                <div style={{ width: '100%' }}>
+                                    <div>
                                         <span style={{ fontWeight: 'bold' }}>Transport Model</span>
                                     </div>
                                     <div style={{ marginTop: '5px' }}>
-                                        <TextField
-                                            placeholder=""
+                                        <input
+                                            type="text"
+                                            placeholder="Transport Model"
+                                            style={{
+                                                width: '350px',
+                                                height: '33px',
+                                                border: '1px solid #ccc',
+                                                backgroundColor: '#F0F0F0',
+                                                borderRadius: '5px',
+                                                padding: '5px', // Optional: Adds some padding inside the input
+                                            }}
                                         />
                                     </div>
-                                </div>
-    
-                        <div style={{ width: "100%" }}>
+                              </div>
+
+                              <div style={{ width: "100%" }}>
                                 <div>
                                     <span style={{ fontWeight: "bold" }}>Date of Supply</span>
                                     <span style={{ color: "red" }}>*</span>
                                 </div>
-                              <div style={{ marginTop: "5px", position:'relative' }}>
-                                <TextField
-                                placeholder="Select a date"
-                                onFocus={() => setVisible(true)}
-                                value={formattedValue}
-                                readOnly
-                                fullWidth
-                                ref={textFieldRef}
-                                />
-                                <Popover
-                                open={visible}
-                                onClose={() => setVisible(false)}
-                                anchorEl={textFieldRef.current}
-                                anchorOrigin={{
-                                    vertical: "bottom",
-                                    horizontal: "left",
-                                }}
-                                transformOrigin={{
-                                    vertical: "top",
-                                    horizontal: "left",
-                                }}
-                                >
-                                <Card ref={datePickerRef} style={{ padding: "16px" }}>
-                                    {/* Month Navigation */}
-                                    <Box display="flex" justifyContent="space-between" mb={2}>
-                                    <button onClick={() => handleMonthChange("prev")}>Previous</button>
-                                    <span>{`${month + 1}/${year}`}</span>
-                                    <button onClick={() => handleMonthChange("next")}>Next</button>
-                                    </Box>
-                                    {/* Days Grid */}
-                                    <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap="4px">
-                                    {[...Array(daysInMonth).keys()].map((day) => (
-                                        <button
-                                        key={day}
-                                        onClick={() => handleDateSelection(day + 1)}
+                                <div style={{ marginTop: "5px", position: 'relative' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Select a date"
                                         style={{
-                                            padding: "8px",
-                                            backgroundColor:
-                                            selectedDate.getDate() === day + 1 &&
-                                            selectedDate.getMonth() === month &&
-                                            selectedDate.getFullYear() === year
-                                                ? "lightblue"
-                                                : "white",
-                                            border: "1px solid #ccc",
-                                            borderRadius: "4px",
+                                            width: '350px',  // Width adjusted as per your desired style
+                                            height: '33px',  // Height adjusted as per your desired style
+                                            border: '1px solid #ccc',
+                                            backgroundColor: '#F0F0F0',
+                                            borderRadius: '5px',
+                                            padding: '5px', // Optional: Adds some padding inside the input
                                         }}
-                                        >
-                                        {day + 1}
-                                        </button>
-                                    ))}
-                                    </Box>
-                                </Card>
-                                </Popover>
-                            </div>
-                                 </div>
-    
-                                <div style={{ width: '100%' }}>
-                                    <div >
-                                        <span style={{ fontWeight: 'bold' }}>Status</span>
-                                        <span style={{ color: 'red' }}>*</span>
-                                    </div>
-                                    <div style={{ marginTop: '5px' }}>
-                                        <TextField
-                                            placeholder=""
-                                        />
-                                    </div>
+                                    />
                                 </div>
                             </div>
+                            <div style={{ width: "100%" }}>
+                                <div>
+                                    <span style={{ fontWeight: "bold" }}>Status</span>
+                                    <span style={{ color: "red" }}>*</span>
+                                </div>
+                                <div style={{ marginTop: "5px", position: 'relative' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Status"
+                                        style={{
+                                            width: '350px',  // Width adjusted as per your desired style
+                                            height: '33px',  // Height adjusted as per your desired style
+                                            border: '1px solid #ccc',
+                                            backgroundColor: '#F0F0F0',
+                                            borderRadius: '5px',
+                                            padding: '5px', // Optional: Adds some padding inside the input
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                    </div>
                         </Card>
     
                         <div style={{ marginTop: '20px' }}>
@@ -619,7 +578,7 @@ export function CreateNewInvoice() {
                                         <span style={{ fontSize: '14px', color: 'black' }}>Product</span>
                                         <span style={{ fontSize: '14px', color: 'red' }}>*</span>
                                     </div>
-                                    <div style={{ width: '20%' }}><span style={{ fontSize: '14px', color: 'black' }}>HSN Code</span></div>
+                                    <div style={{ width: '15%' }}><span style={{ fontSize: '14px', color: 'black' }}>HSN Code</span></div>
                                     <div style={{ width: '10%' }}><span style={{ fontSize: '14px', color: 'black' }}>GST %</span></div>
                                     <div style={{ width: '10%' }}><span style={{ fontSize: '14px', color: 'black' }}>Cess %</span></div>
                                     <div style={{ width: '10%' }}><span style={{ fontSize: '14px', color: 'black' }}>QTY</span><span style={{ fontSize: '14px', color: 'red' }}>*</span></div>
@@ -628,46 +587,133 @@ export function CreateNewInvoice() {
                                 </div>
     
                                 <div style={{ display: 'flex', gap: '20px' }}>
-                                    <div style={{ width: '30%' }}>
-                                        <TextField
-                                            placeholder="Search a Product..."
-                                        />
-                                        <div style={{ marginTop: '10px' }}>
-                                            <TextField
-                                                placeholder="Variant name"
+                                <div style={{ width: "30%" }}>
+                                {/* Input Field */}
+                                <div style={{ position: "relative" }}>
+                                    <input
+                                    type="text"
+                                    placeholder="Search a Product..."
+                                    style={{
+                                        width: "100%",
+                                        height: "33px",
+                                        border: "1px solid #ccc",
+                                        backgroundColor: "#F0F0F0",
+                                        borderRadius: "6px",
+                                        padding: "5px",
+                                        boxSizing: "border-box",
+                                    }}
+                                    />
+                                </div>
+
+                                {/* Variant Input */}
+                                <div style={{ marginTop: "10px" }}>
+                                    <input
+                                    type="text"
+                                    placeholder="Variant name"
+                                    style={{
+                                        width: "100%",
+                                        height: "33px",
+                                        border: "1px solid #ccc",
+                                        backgroundColor: "#F0F0F0",
+                                        borderRadius: "6px",
+                                        padding: "5px",
+                                        boxSizing: "border-box",
+                                    }}
+                                    />
+                                </div>
+                                </div>
+
+                                    <div style={{ width: '15%' }}>
+                                           <input
+                                                type="text"
+                                                style={{
+                                                    width: '100%',  // Make input take the full width of the container
+                                                    height: '33px',  // Set height
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '6px',
+                                                    padding: '5px', // Optional: Adds some padding inside the input
+                                                }}
                                             />
-                                        </div>
-    
                                     </div>
-                                    <div style={{ width: '20%' }}>
-                                        <TextField
-                                            placeholder=""
-                                        /></div>
+
                                     <div style={{ width: '10%' }}>
-                                        <TextField
-                                            placeholder="0 %"
-                                        />
+                                            <input
+                                                type="text"
+                                                placeholder="0%"
+                                                style={{
+                                                    width: '100%',  // Make input take the full width of the container
+                                                    height: '33px',  // Set height
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '6px',
+                                                    padding: '5px', // Optional: Adds some padding inside the input
+                                                }}
+                                            />
                                     </div>
+
                                     <div style={{ width: '10%' }}>
-                                        <TextField
-                                            placeholder="0 %"
-                                        />
+                                           <input
+                                                type="text"
+                                                placeholder="0 %"
+                                                style={{
+                                                    width: '100%',  // Make input take the full width of the container
+                                                    height: '33px',  // Set height
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '6px',
+                                                    padding: '5px', // Optional: Adds some padding inside the input
+                                                }}
+                                            />
                                     </div>
+
                                     <div style={{ width: '10%' }}>
-                                        <TextField
-                                            placeholder="1"
-                                        />
+                                            <input
+                                                type="number"
+                                                // placeholder="OTY"
+                                                min={1}
+                                                style={{
+                                                    width: '100%',  // Make input take the full width of the container
+                                                    height: '33px',  // Set height
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '6px',
+                                                    padding: '5px', 
+                                                    appearance: 'none',  // Hide number scroller in modern browsers
+                                                    MozAppearance: 'textfield',  // Hide number scroller in Firefox
+                                                    WebkitAppearance: 'none',
+                                                                                        }}
+                                            />
                                     </div>
+
                                     <div style={{ width: '10%' }}>
-                                        <TextField
-                                            placeholder=""
-                                        />
+                                             <input
+                                                type="number"
+                                                // placeholder="rate"
+                                                style={{
+                                                    width: '100%',  // Make input take the full width of the container
+                                                    height: '33px',  // Set height
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '6px',
+                                                    padding: '5px', 
+                                                    appearance: 'none',  // Hide number scroller in modern browsers
+                                                    MozAppearance: 'textfield',  // Hide number scroller in Firefox
+                                                    WebkitAppearance: 'none', 
+                                                }}
+                                            />
                                     </div>
+
                                     <div style={{ width: '10%' }}>
-                                        <TextField
-                                            placeholder="RS. 0.00"
-                                        />
+                                             <input
+                                                type="text"
+                                                placeholder="RS 0.0"
+                                                style={{
+                                                    width: '100%',  // Make input take the full width of the container
+                                                    height: '33px',  // Set height
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '6px',
+                                                    backgroundColor:'#F0F0F0',
+                                                    padding: '5px', // Optional: Adds some padding inside the input
+                                                }}
+                                            />
                                     </div>
+
                                 </div>
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#74A535', color: '#ffffff', padding: '5px', width: '130px', borderRadius: '4px', cursor: 'pointer', marginTop: '10px' }}
                                 >

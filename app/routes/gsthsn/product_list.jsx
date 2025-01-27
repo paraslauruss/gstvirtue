@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import CustomCheckbox from "../utils/custom_check_box";
 
-const ProductList = ({ productList }) => {
+const productList = ({ productList }) => {
     // State for main checkbox and individual items
     const [isMainChecked, setIsMainChecked] = useState(false);
     const [checkedItems, setCheckedItems] = useState({});
@@ -90,4 +90,4 @@ const ProductList = ({ productList }) => {
     );
 };
 
-export default ProductList;
+export default productList;
