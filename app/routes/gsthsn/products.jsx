@@ -7,6 +7,7 @@ import CustomCheckbox from "../utils/custom_check_box";
 import ProductList from "./product_list";
 import axios from "axios";
 
+
 export function Product() {
     const [showPopup, setShowPopup] = useState(false);
     const data = useLoaderData();
@@ -91,7 +92,7 @@ export function Product() {
     
                 updatedData.push({
                     id: productId,
-                    title, // Use the fetched or existing title
+                    title: title, // Use the fetched or existing title
                     gst: parseFloat(currentValues.gst || 0),
                     hsnCode: currentValues.hsnCode || '',
                     miniAmount: isMyProductGstChecked ? parseFloat(currentValues.miniAmount || 0) : null,
@@ -118,7 +119,7 @@ export function Product() {
                     console.error(`Product not found before update with id: ${data.id}`, error);
     
                     // If the product is not found, perform a POST request to insert it
-                    console.log(`Inserting product with id: ${data.id}`);
+                    // console.log(`Inserting product with id: ${data.id}`);
                     try {
                         const response = await axios.post('http://localhost:3001/api/products', {
                             products: [data], // Sending the product as an array

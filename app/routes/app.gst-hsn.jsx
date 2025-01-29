@@ -18,7 +18,7 @@ export const loader = async ({ request }) => {
     const { admin } = await authenticate.admin(request);
     const variantResponse = await admin.graphql(
         `#graphql
-    query Product {
+    query Product { 
   products(first:50){
     edges{
       node{

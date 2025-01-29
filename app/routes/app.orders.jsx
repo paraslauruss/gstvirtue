@@ -93,12 +93,25 @@ export const loader = async ({ request }) => {
     );
     const variantResponseJson = await variantResponse.json();
 
-    const { session } = await authenticate.admin(request);
-
-    // return json({ sessionData: session.accessToken });
+    const productResponse = await admin.graphql(
+                `#graphql
+            query Product { 
+              products(first:50){
+                edges{
+                  node{
+                    id
+                    handle
+                    productType
+                    title
+                  }
+                }
+              }
+          }`
+        );
+  const productResponseJson = await productResponse.json();
     return {
         orders: variantResponseJson,
-        sessionData: session.accessToken
+        products:productResponseJson
     };
 };
 
