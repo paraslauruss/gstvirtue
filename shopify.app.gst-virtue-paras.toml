@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "0b46e223749df9a2c17fc183b9175f99"
-application_url = "https://68c7-2401-4900-1c80-f6d7-a058-39bc-3093-7c95.ngrok-free.app"
+application_url = "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app"
 embedded = true
 name = "Gst Virtue"
 handle = "gst-virtue-2"
@@ -20,9 +20,9 @@ scopes = "read_customers,read_orders,read_products,read_users"
 
 [auth]
 redirect_urls = [
-  "https://68c7-2401-4900-1c80-f6d7-a058-39bc-3093-7c95.ngrok-free.app/auth/callback",
-  "https://68c7-2401-4900-1c80-f6d7-a058-39bc-3093-7c95.ngrok-free.app/auth/shopify/callback",
-  "https://68c7-2401-4900-1c80-f6d7-a058-39bc-3093-7c95.ngrok-free.app/api/auth/callback"
+  "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app/auth/callback",
+  "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app/auth/shopify/callback",
+  "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app/api/auth/callback"
 ]
 
 [pos]

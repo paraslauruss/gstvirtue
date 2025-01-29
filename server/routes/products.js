@@ -52,7 +52,7 @@
     });
 
     // READ: Get a single product by ID
-    app.get('/:id', async (req, res) => {
+    router.get('/:id', async (req, res) => {
         try {
             const productId = req.params.id;
             const product = await ProductModel.findOne({ _id: productId });

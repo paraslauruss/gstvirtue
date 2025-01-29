@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  shopify:
+    build:
+    environment:
+      - SHOPIFY_FLAG_STORE=gst-virtue-paras.myshopify.com
+      - SHOPIFY_API_KEY=0b46e223749df9a2c17fc183b9175f99
+      - SHOPIFY_API_SECRET=3319c18ac84439dd16dc73fe4d0affa0
+      - API_SECRET_KEY=3319c18ac84439dd16dc73fe4d0affa0
+      - SHOPIFY_APP_URL=https://cb39-2401-4900-8898-59d2-28e2-bd76-1b10-8200.ngrok-free.app
+      - SHOPIFY_SCOPES=read_customers,read_orders,read_products
+      - SCOPES=read_customers,read_orders,read_products
+    ports:
+      - '3000:3000'

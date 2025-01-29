@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { json } from "@remix-run/node";
 import { useFetcher,useLoaderData } from "@remix-run/react";
 import {
   Page,
@@ -23,11 +24,14 @@ import myImage from '../assets/images/hello.png';
 import ic_support_document from '../assets/images/ic_support_document.png';
 import ic_faqs from '../assets/images/ic_faqs.png';
 import ic_get_started from '../assets/images/ic_get_started.png';
+import { sessionStorage } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+ 
+    const { session } = await authenticate.admin(request);
 
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+    return json({ sessionData: session.accessToken });
+  
 };
 
 export const action = async ({ request }) => {
@@ -97,7 +101,7 @@ export const action = async ({ request }) => {
 
 export default function Index() {
   const fetcher = useFetcher();
-  const { apiKey } = useLoaderData();
+  const { sessionData } = useLoaderData();
   const shopify = useAppBridge();
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
@@ -117,11 +121,13 @@ export default function Index() {
   return (
     <div style={{ backgroundColor: '#ffffff', height: '100%' }}>
       <Page>
+      <h2>Session Data</h2>
+      <pre>{sessionData}</pre>
         <BlockStack gap="500">
           <BlockStack gap="200">
             <InlineStack wrap={false} gap="500">
               <img src={myImage} width='24px' height='24px' />
-              <Text variant="headingLg" as="h5">Hello Paras! {apiKey}</Text>
+              <Text variant="headingLg" as="h5">Hello Paras!</Text>
             </InlineStack>
             <Text variant="headingLg" as="h5">Welcome to Virtue, </Text>
           </BlockStack>

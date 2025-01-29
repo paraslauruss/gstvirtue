@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const productRoute = require('./routes/products');
+const customerRoute = require('./routes/customer');
 
 const app = express();
 const port = 3001;
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Use the product routes
 app.use('/api/products', productRoute);
+app.use('/api/customers', customerRoute);
 
 // Connect to MongoDB
 

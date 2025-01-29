@@ -92,14 +92,20 @@ export const loader = async ({ request }) => {
 }`
     );
     const variantResponseJson = await variantResponse.json();
+
+    const { session } = await authenticate.admin(request);
+
+    // return json({ sessionData: session.accessToken });
     return {
         orders: variantResponseJson,
+        sessionData: session.accessToken
     };
 };
 
 export const action = async ({ request }) => {
     const { admin } = await authenticate.admin(request);
-
+    const formData = await request.formData();
+    console.log("Form data submitted:", Object.fromEntries(formData));
     return {
         successMessage: "Success",
     };

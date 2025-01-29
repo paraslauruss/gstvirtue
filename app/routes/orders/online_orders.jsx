@@ -25,6 +25,7 @@ export function OnlineOrders() {
     const shopify = useAppBridge();
     const data = useLoaderData();
     const orderList = data.orders.data.orders.edges;
+    const productList = data.orders.data.orders.edges;
     
 
     const [shopUrl, setShopUrl] = useState(null);
@@ -138,6 +139,7 @@ export function OnlineOrders() {
 
     return(
         <div style={{ backgroundColor: '#ffffff', padding: '30px' }}>
+            
                 <div style={{ marginTop: 30 }}>
                     <Card padding={400}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -357,7 +359,7 @@ export function OnlineOrders() {
                                     <Text>Action</Text>
                                 </div>
                             </div>
-                            {
+                            {  
                                 orderList.map((order, index) => {
                                     return (
                                         <div style={{
