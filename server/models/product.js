@@ -1,14 +1,89 @@
 const mongoose = require('mongoose');
 
-const productSchema = new mongoose.Schema({
-    id: { type: Number, required: true, unique: true },
+const ProductSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true }, // Shopify product ID (String)
     title: { type: String, required: true },
-    gst: { type: Number, default: 5 },
-    hsnCode: { type: String, default: '000000' },
-    miniAmount: { type: Number, default: 100 },
-    miniGst: { type: Number, default: 5 },
-    cess: { type: Number, default: 0 },
-}, { timestamps: false });
+    body_html: { type: String },
+    vendor: { type: String },
+    product_type: { type: String },
+    created_at: { type: Date },
+    handle: { type: String, required: true, unique: true },
+    updated_at: { type: Date },
+    published_at: { type: Date },
+    template_suffix: { type: String },
+    published_scope: { type: String },
+    tags: { type: String },
+    status: { type: String },
+    admin_graphql_api_id: { type: String },
+    variants: [{
+        id: { type: String },
+        product_id: { type: String },
+        title: { type: String },
+        price: { type: String },
+        position: { type: Number },
+        inventory_policy: { type: String },
+        compare_at_price: { type: String },
+        option1: { type: String },
+        option2: { type: String },
+        option3: { type: String },
+        created_at: { type: Date },
+        updated_at: { type: Date },
+        taxable: { type: Boolean },
+        barcode: { type: String },
+        fulfillment_service: { type: String },
+        grams: { type: Number },
+        inventory_management: { type: String },
+        requires_shipping: { type: Boolean },
+        sku: { type: String },
+        weight: { type: Number },
+        weight_unit: { type: String },
+        inventory_item_id: { type: Number },
+        inventory_quantity: { type: Number },
+        old_inventory_quantity: { type: Number },
+        admin_graphql_api_id: { type: String },
+        image_id: { type: Number },
+    }],
+    options: [{
+        id: { type: String },
+        product_id: { type: String },  // Changed to String, for consistency with `id`
+        name: { type: String },
+        position: { type: Number },
+        values: [String],
+    }],
+    images: [{
+        id: { type: String },
+        alt: { type: String },
+        position: { type: Number },
+        product_id: { type: String }, // Changed to String
+        created_at: { type: Date },
+        updated_at: { type: Date },
+        admin_graphql_api_id: { type: String },
+        width: { type: Number },
+        height: { type: Number },
+        src: { type: String },
+        variant_ids: [String]  // Ensure that variant IDs are strings
+    }],
+    image: {
+        id: { type: String, required: true },
+        alt: { type: String },
+        position: { type: Number },
+        product_id: { type: String },  // Changed to String
+        created_at: { type: Date },
+        updated_at: { type: Date },
+        admin_graphql_api_id: { type: String },
+        width: { type: Number },
+        height: { type: Number },
+        src: { type: String },
+        variant_ids: [String]  // Ensure that variant IDs are strings
+    },
+    gst: { type: String },  // GST field (as String, since it may include decimals)
+    hsn: { type: String },  // HSN field
+    cess: { type: Number }, // Cess field
+    miniAmount: { type: Number }, // MiniAmount field
+    minGst: { type: Number },  // MinGst field
+    Amount: { type: Number }, // Total Amount (including GST, etc.)
+}, { timestamps: true });  // Automatically include createdAt/updatedAt
 
-const Product = mongoose.model('Product', productSchema);
+const Product = mongoose.model('Product', ProductSchema);
+
 module.exports = Product;

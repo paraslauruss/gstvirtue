@@ -2,7 +2,7 @@ import { Card, Divider, Text, TextField } from "@shopify/polaris";
 import ic_refresh from '../../assets/images/ic_refresh.png';
 import "./product.css";
 import { useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomCheckbox from "../utils/custom_check_box";
 import ProductList from "./product_list";
 import axios from "axios";
@@ -63,111 +63,89 @@ export function Product() {
           }));
       };
 
+      const session = useLoaderData();
     // Count checked items
     const checkedCount = Object.values(checkedItems).filter(Boolean).length;
-    const fetchProductTitleById = async (productId) => {
+    const fetchProductDetails = async () => {
         try {
-            const response = await axios.get(`http://localhost:3001/api/product/${productId}`);
-            if (response.status === 200 && response.data.success) {
-                return response.data.title; // Assuming the API returns { success: true, title: "Product Title" }
-            }
-            return null;
+            const response = await fetch("http://localhost:3001/api/products", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "store-name": session.storeName,
+                    "api-version": "2025-01",
+                    "access-token": session.accessToken,
+                },
+            });
+    
+            if (!response.ok) throw new Error(`API returned status ${response.status}`);
+    
+            const data = await response.json();
+            setProductValues(prevValues => ({
+                ...prevValues,
+                ...data.reduce((acc, product) => ({
+                    ...acc,
+                    [product.id]: {
+                        miniAmount: product.miniAmount || "",
+                        miniGst: product.miniGst || "",
+                        gst: product.gst || "",
+                        hsnCode: product.hsnCode || "",
+                        cess: product.cess || "",
+                    },
+                }), {})
+            }));
         } catch (error) {
-            console.error(`Error fetching title for product ID: ${productId}`, error);
-            return null;
+            console.error("🚨 Error fetching products:", error.message);
         }
-    };
+    };  // Call `fetchProductDetails` when the component mounts
+    useEffect(() => {
+        fetchProductDetails();
+    }, []);
+
+    const handleUpdate = async () => { 
+        const updatedData = Object.keys(checkedItems)
+            .filter((id) => checkedItems[id]) // Only update checked items
+            .map((id) => ({
+                id,
+                title: productValues[id]?.title || "",
+                gst: parseFloat(productValues[id]?.gst || 0),
+                hsn: productValues[id]?.hsnCode || "",
+                miniAmount: isMyProductGstChecked ? parseFloat(productValues[id]?.miniAmount || 0) : null,
+                minGst: isMyProductGstChecked ? parseFloat(productValues[id]?.miniGst || 0) : null,
+                cess: isCessChecked ? parseFloat(productValues[id]?.cess || 0) : null,
+            }));
     
-    const handleUpdate = async () => {
-        const updatedData = []; // an array to hold the data
-    
-        // Iterate through product values to generate the update data
-        for (const key in productValues) {
-            if (productValues.hasOwnProperty(key)) {
-                const productId = key.split('/').pop();
-                const currentValues = productValues[key] || {};
-    
-                // Dynamically fetch the title if it's not available in currentValues
-                const title = currentValues.title || (await fetchProductTitleById(productId)) || '';
-    
-                updatedData.push({
-                    id: productId,
-                    title: title, // Use the fetched or existing title
-                    gst: parseFloat(currentValues.gst || 0),
-                    hsnCode: currentValues.hsnCode || '',
-                    miniAmount: isMyProductGstChecked ? parseFloat(currentValues.miniAmount || 0) : null,
-                    miniGst: isMyProductGstChecked ? parseFloat(currentValues.miniGst || 0) : null,
-                    cess: isCessChecked ? parseFloat(currentValues.cess || 0) : null,
-                });
-            }
+        if (updatedData.length === 0) {
+            alert("Please select at least one product to update.");
+            return;
         }
     
-        console.log('Updated data being sent:', updatedData);
+        console.log("📤 Sending updated data:", updatedData);
     
         try {
+            // Sending each product individually, as backend expects the data directly
             for (const data of updatedData) {
-                console.log('ID before update:', data.id, typeof data.id);
+                const response = await axios.post("http://localhost:3001/api/products", data, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "store-name": session.storeName,
+                        "api-version": "2025-01",
+                        "access-token": session.accessToken,
+                    },
+                });
     
-                try {
-                    // Check if the product exists
-                    const getResponse = await axios.get(`http://localhost:3001/api/products/${data.id}`);
-                    if (getResponse.status !== 200) {
-                        console.error(`Product not found before update with id: ${data.id}`);
-                        continue; // Skip to the next product if not found
-                    }
-                } catch (error) {
-                    console.error(`Product not found before update with id: ${data.id}`, error);
-    
-                    // If the product is not found, perform a POST request to insert it
-                    // console.log(`Inserting product with id: ${data.id}`);
-                    try {
-                        const response = await axios.post('http://localhost:3001/api/products', {
-                            products: [data], // Sending the product as an array
-                        });
-                        if (response.status === 201) {
-                            console.log(`Product ${data.id} inserted successfully:`, response.data);
-                        } else {
-                            console.log(`Failed to insert product ${data.id}:`, response.data);
-                        }
-                    } catch (insertError) {
-                        console.error(
-                            'Failed to insert product:',
-                            insertError.response ? insertError.response.data : insertError.message
-                        );
-                    }
-    
-                    continue; // Skip the update operation for products that are inserted
-                }
-    
-                // If the product is found, update it
-                console.log('Update data:', data);
-    
-                try {
-                    const response = await axios.put(
-                        `http://localhost:3001/api/products/${data.id}`,
-                        data
-                    );
-    
-                    if (response.status === 200) {
-                        console.log(`Product ${data.id} updated successfully:`, response.data);
-                    } else {
-                        console.log(`Failed to update product ${data.id}:`, response.data);
-                    }
-                } catch (error) {
-                    console.error(
-                        'Error updating product:',
-                        error.response ? error.response.data : error.message
-                    );
-                }
+                console.log("✅ Product updated/inserted successfully:", responseData);
             }
     
-            alert('Products updated and inserted successfully!');
+            // Fetch updated product details to reflect in UI
+            fetchProductDetails();
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 3000);
         } catch (error) {
-            console.error('Error processing products:', error.response ? error.response.data : error.message);
-            alert('Failed to update products. Please try again.');
+            console.error("🚨 Error updating products:", error.message);
+            alert("Failed to update products. Please check console logs.");
         }
     };
-    
 
     return (
         <div style={{ minHeight: "100vh" }}>
@@ -365,7 +343,9 @@ export function Product() {
                                 color: 'white',
                                 fontSize: '14px',
                                 borderRadius: '4px'
-                            }} onClick={handleUpdate} >
+                            }}
+                            onClick={handleUpdate}
+                            >
                             Update
                         </div>
                     </div>

@@ -5,6 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const productRoute = require('./routes/products');
 const customerRoute = require('./routes/customer');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 const port = 3001;
@@ -15,7 +16,7 @@ app.use(express.json());
 // Use the product routes
 app.use('/api/products', productRoute);
 app.use('/api/customers', customerRoute);
-
+app.use('/api/all-products', productRoutes);
 // Connect to MongoDB
 
 require('dotenv').config(); // This will load the variables from the .env file

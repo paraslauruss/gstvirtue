@@ -108,10 +108,14 @@ export const loader = async ({ request }) => {
               }
           }`
         );
+        const { session } = await authenticate.admin(request);
+
   const productResponseJson = await productResponse.json();
     return {
         orders: variantResponseJson,
-        products:productResponseJson
+        products:productResponseJson,
+        accessToken : session.accessToken,
+        storeName : session.shop
     };
 };
 

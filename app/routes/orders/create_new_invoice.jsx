@@ -11,7 +11,7 @@ import {
 import searchIcon from "../../assets/images/searchIcon.png";
 import { useCallback, useEffect, useState, useRef } from "react";
 import Switch from "react-switch";
-import { useLoaderData } from "@remix-run/react";
+import axios from "axios";
 
 export function Dialog({ active, toggleModal }) {
   return (
@@ -326,57 +326,121 @@ export function CreateNewInvoice() {
   const [active, setActive] = useState(false);
   const toggleModal = useCallback(() => setActive((active) => !active), []);
 
-  // FETCH TITLE FOR SEARCH BAR
-  const data = useLoaderData();
-  const productList = data.products.data.products.edges || [];
-  const [Query, setQuery] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
+    //  FETCH TITLE FIELD
+    const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleChange = (e) => {
-    const query = e.target.value;
-    setQuery(query);
+  // Fetch suggestions for main search bar
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (query.length >= 2) {
+        setLoading(true);
+        setError("");
+        try {
+          const response = await axios.get(
+            `http://localhost:3001/api/all-products?query=${query}`
+          );
 
-    if (query.length >= 2) {
-      // Filter the products based on the query (title contains the query)
-      const results = productList.filter((product) =>
-        product.node.title.toLowerCase().includes(query.toLowerCase()),
-      );
-      setFilteredProducts(results);
-    } else {
-      setFilteredProducts([]);
-    }
+          const filteredSuggestions = response.data.filter((product) =>
+            product.title.toLowerCase().includes(query.toLowerCase())
+          );
+
+          setSuggestions(filteredSuggestions);
+          setShowDropdown(filteredSuggestions.length > 0);
+        } catch (err) {
+          console.error("Error fetching products:", err);
+          setError("Error fetching products");
+          setShowDropdown(false);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setSuggestions([]);
+        setShowDropdown(false);
+      }
+    };
+
+    fetchProducts();
+  }, [query]);
+
+  // Handle selection for main search input
+  const handleSelectMain = (title) => {
+    setQuery(title);
+    setTimeout(() => {
+      setShowDropdown(false);
+    }, 100);
   };
 
-  const handleSelect = (title) => {
-    setQuery(title); // Set the selected product title in the input field
-    setFilteredProducts([]); // Clear the dropdown
-  };
-
-  //  ADD ITEM FIELD
+  // Dynamic Inputs State
   const [inputs, setInputs] = useState([]);
 
+  // Add new input field
   const addInputField = () => {
-    setInputs([...inputs, { id: Date.now(), query: "" }]);
+    setInputs([
+      ...inputs,
+      { id: Date.now(), query: "", suggestions: [], showDropdown: false },
+    ]);
   };
 
+  // Remove input field
   const removeInputField = (id) => {
     setInputs(inputs.filter((input) => input.id !== id));
   };
-  const handleInputChange = (id, value) => {
+
+  // Handle input change for dynamic fields
+  const handleInputChange = async (id, value) => {
     setInputs((prevInputs) =>
       prevInputs.map((input) =>
-        input.id === id ? { ...input, query: value } : input,
-      ),
+        input.id === id ? { ...input, query: value } : input
+      )
+    );
+
+    if (value.length >= 2) {
+      try {
+        const response = await axios.get(
+          `http://localhost:3001/api/all-products?query=${value}`
+        );
+        const filteredSuggestions = response.data.filter((product) =>
+          product.title.toLowerCase().includes(value.toLowerCase())
+        );
+
+        setInputs((prevInputs) =>
+          prevInputs.map((input) =>
+            input.id === id
+              ? {
+                  ...input,
+                  suggestions: filteredSuggestions,
+                  showDropdown: filteredSuggestions.length > 0,
+                }
+              : input
+          )
+        );
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      }
+    } else {
+      setInputs((prevInputs) =>
+        prevInputs.map((input) =>
+          input.id === id
+            ? { ...input, suggestions: [], showDropdown: false }
+            : input
+        )
+      );
+    }
+  };
+
+  // Handle selection for dynamic input fields
+  const handleSelect = (id, title) => {
+    setInputs((prevInputs) =>
+      prevInputs.map((input) =>
+        input.id === id ? { ...input, query: title, showDropdown: false } : input
+      )
     );
   };
 
-  const handleInputSelect = (id, selectedTitle) => {
-    setInputs((prevInputs) =>
-      prevInputs.map((input) =>
-        input.id === id ? { ...input, query: selectedTitle } : input,
-      ),
-    );
-  };
 
   return (
     <>
@@ -768,9 +832,9 @@ export function CreateNewInvoice() {
                   <div style={{ position: "relative" }}>
                     <input
                       type="text"
-                      value={Query}
-                      onChange={handleChange}
-                      placeholder="Search a Product..."
+                      value={query} // Make input field controlled
+                      onChange={(e) => setQuery(e.target.value)} // Update input state
+                       placeholder="Search a Product..."
                       style={{
                         width: "100%",
                         height: "33px",
@@ -781,58 +845,68 @@ export function CreateNewInvoice() {
                         boxSizing: "border-box",
                       }}
                     />
-
-                    {/* Dropdown with filtered results */}
-                    {Query.length >= 2 && filteredProducts.length > 0 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: "0",
-                          right: "0",
-                          backgroundColor: "#fff",
-                          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                          borderRadius: "6px",
-                          maxHeight: "200px",
-                          overflowY: "auto",
-                        }}
-                      >
-                        {filteredProducts.map((product, index) => (
-                          <div
-                            key={index}
+                      {query.length > 0 && query.length < 2 && (
+                            <ul
                             style={{
-                              padding: "10px",
-                              cursor: "pointer",
-                              borderBottom: "1px solid #eee",
+                                position: "absolute",
+                                top: "38px",
+                                left: "0",
+                                width: "100%",
+                                backgroundColor: "#fff",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px",
+                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                                listStyle: "none",
+                                padding: "5px",
+                                margin: "0",
+                                zIndex: 1000,
                             }}
-                            onClick={() => handleSelect(product.node.title)} // Update input on selection
-                          >
-                            {product.node.title}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                            >
+                            <li style={{ padding: "8px", color: "#666" }}>Write two or more letters</li>
+                            </ul>
+                        )}
+                        {showDropdown && (
+                            <ul
+                            style={{
+                                position: "absolute",
+                                top: "38px",
+                                left: "0",
+                                width: "100%",
+                                backgroundColor: "#fff",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px",
+                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                                listStyle: "none",
+                                padding: "5px",
+                                margin: "0",
+                                zIndex: 1000,
+                                maxHeight: "300px", // Max height for the dropdown
+                                overflowY: "auto",
+                            }}
+                            >
+                            {loading ? (
+                                <li style={{ padding: "8px", color: "#666" }}>Loading...</li>
+                            ) : suggestions.length > 0 ? (
+                                suggestions.map((product) => (
+                                <li
+                                    key={product.id}
+                                    onClick={() => handleSelectMain(product.title)}
+                                    style={{
+                                    padding: "8px",
+                                    cursor: "pointer",
+                                    borderBottom: "1px solid #eee",
+                                    }}
+                                >
+                                    {product.title}
+                                </li>
+                                ))
+                            ) : (
+                                <li style={{ padding: "8px", color: "#666" }}>No products found</li>
+                            )}
+                            </ul>
+                        )}
 
-                    {/* Message when less than 2 characters are typed */}
-                    {Query.length > 0 && Query.length < 2 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: "0",
-                          right: "0",
-                          padding: "10px",
-                          backgroundColor: "#fff",
-                          borderRadius: "6px",
-                          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                          fontSize: "14px",
-                          color: "#888",
-                        }}
-                      >
-                        Please type 2 or more letters.
-                      </div>
-                    )}
-                  </div>
+                 </div>
                   {/* Variant Input */}
                   <div style={{ marginTop: "10px" }}>
                     <input
@@ -952,12 +1026,10 @@ export function CreateNewInvoice() {
                       <div style={{ width: "30%" }}>
                         {/* Input Field */}
                         <div style={{ position: "relative" }}>
-                          <input
+                        <input
                             type="text"
                             value={input.query}
-                            onChange={(e) =>
-                              handleInputChange(input.id, e.target.value)
-                            }
+                            onChange={(e) => handleInputChange(input.id, e.target.value)}
                             placeholder="Search a Product..."
                             style={{
                               width: "100%",
@@ -969,60 +1041,53 @@ export function CreateNewInvoice() {
                               boxSizing: "border-box",
                             }}
                           />
-                          {/* Show dropdown only when 2 or more letters are typed */}
-                          {input.query.length >= 2 &&
-                            filteredProducts.length > 0 && (
-                              <div
+                          {input.query.length > 0 && input.query.length < 2 && (
+                            <ul
+                              style={{
+                                position: "absolute",
+                                top: "38px",
+                                left: "0",
+                                width: "100%",
+                                backgroundColor: "#fff",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px",
+                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                                listStyle: "none",
+                                padding: "5px",
+                                margin: "0",
+                                zIndex: 1000,
+                                maxHeight: "300px",
+                                overflowY: "auto",
+                              }}
+                            >
+                              <li style={{ padding: "8px", color: "#666" }}>Write two or more letters</li>
+                            </ul>
+                          )}
+                          {input.showDropdown && (
+                              <ul
                                 style={{
                                   position: "absolute",
-                                  top: "100%",
+                                  top: "38px",
                                   left: "0",
-                                  right: "0",
+                                  width: "100%",
                                   backgroundColor: "#fff",
-                                  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                                  border: "1px solid #ccc",
                                   borderRadius: "6px",
-                                  maxHeight: "200px",
+                                  boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                                  listStyle: "none",
+                                  padding: "5px",
+                                  margin: "0",
+                                  zIndex: 1000,
+                                  maxHeight: "300px",
                                   overflowY: "auto",
                                 }}
                               >
-                                {filteredProducts.map((product, index) => (
-                                  <div
-                                    key={index}
-                                    style={{
-                                      padding: "10px",
-                                      cursor: "pointer",
-                                      borderBottom: "1px solid #eee",
-                                    }}
-                                    onClick={() =>
-                                      handleInputSelect(product.node.title)
-                                    }
-                                  >
-                                    {product.node.title}
-                                  </div>
+                                {input.suggestions.map((product) => (
+                                  <li key={product.id} onClick={() => handleSelect(input.id, product.title)}>{product.title}</li>
                                 ))}
-                              </div>
-                            )}
-
-                          {/* Message when less than 2 characters are typed */}
-                          {Query.length > 0 && Query.length < 2 && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "100%",
-                                left: "0",
-                                right: "0",
-                                padding: "10px",
-                                backgroundColor: "#fff",
-                                borderRadius: "6px",
-                                boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                                fontSize: "14px",
-                                color: "#888",
-                              }}
-                            >
-                              Please type 2 or more letters.
-                            </div>
+                              </ul>
                           )}
-                        </div>
+                       </div>
                         <div style={{ marginTop: "10px" }}>
                           <input
                             type="text"
@@ -1174,6 +1239,7 @@ export function CreateNewInvoice() {
                 </div>
               </div>
             </div>
+
           </Card>
         </div>
         <div style={{ marginTop: "20px" }}>
