@@ -16,7 +16,15 @@ module.exports = {
   appDirectory: "app",
   serverModuleFormat: "cjs",
   dev: { port: process.env.HMR_SERVER_PORT || 8002 },
-  future: {},
   serverBuildTarget: "node-cjs",
   server: "./server.js",
+  serverDependenciesToBundle: "all",
+  devServerBroadcastDelay: 1000,
+  future: {
+    unstable_dev: {
+      proxy: {
+        "/api/customers": "http://localhost:3001"
+      }
+    }
+  }
 };

@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "0b46e223749df9a2c17fc183b9175f99"
-application_url = "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app"
+application_url = "https://8bf36d19ca98d1.lhr.life"
 embedded = true
 name = "Gst Virtue"
 handle = "gst-virtue-2"
@@ -16,13 +16,13 @@ api_version = "2025-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_customers,read_orders,read_products,read_users"
+scopes = "read_customers,read_orders,read_products,write_customers"
 
 [auth]
 redirect_urls = [
-  "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app/auth/callback",
-  "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app/auth/shopify/callback",
-  "https://77c7-2401-4900-1c80-ede1-6c32-fdd6-bd3e-43c4.ngrok-free.app/api/auth/callback"
+  "https://8bf36d19ca98d1.lhr.life/auth/callback",
+  "https://8bf36d19ca98d1.lhr.life/auth/shopify/callback",
+  "https://8bf36d19ca98d1.lhr.life/api/auth/callback"
 ]
 
 [pos]

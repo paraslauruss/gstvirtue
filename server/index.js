@@ -10,7 +10,11 @@ const productRoutes = require('./routes/productRoutes');
 const app = express();
 const port = 3001;
 
-app.use(cors());
+app.use(cors({
+    origin: "https://8bf36d19ca98d1.lhr.life",  // Aapke frontend ka URL
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: "Content-Type,store-name,api-version,access-token"
+  }));
 app.use(express.json());
 
 // Use the product routes

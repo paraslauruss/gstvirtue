@@ -35,59 +35,102 @@ const axios = require('axios');
 //     }
 // });
 
-router.post('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
-        const customers = req.body; // Expecting an array of customer objects
+        const storeName = req.headers['store-name'];
+        const apiVersion = req.headers['api-version'];
+        const accessToken = req.headers['access-token'];
 
-        const storeName = 'gst-virtue-paras'; // Replace with your Shopify store name
-        const apiVersion = '2025-01'; // Replace with the correct API version
-        const accessToken = 'shpua_649d3ab48e3b42cbc6c31b5bd9ad8e89'; // Replace with your Shopify access token
+        if (!storeName || !apiVersion || !accessToken) {
+            return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
+        }
 
-        const url = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/customers.json`;
-
+        const url = `https://${storeName}/admin/api/${apiVersion}/customers.json`;
         const headers = {
             'Content-Type': 'application/json',
             'X-Shopify-Access-Token': accessToken,
         };
-        axios
-            .get(url, { headers })
-            .then(response => {
-                console.log('Response:', response.data);
-                res.status(201).json(response.data);
-            })
-            .catch(error => {
-                console.error('Error:', error.response ? error.response.data : error.message);
-            });
 
-        // if (!Array.isArray(customers)) {
-        //     return res.status(400).json({ error: "Request body should be an array of customers." });
-        // }
+        const shopifyResponse = await axios.get(url, { headers });
+        const shopifyCustomers = shopifyResponse.data.customers;
 
-        // // Find the latest customer ID and increment it for new customers
-        // const lastCustomer = await Customer.findOne().sort({ id: -1 });
-        // let nextId = lastCustomer ? lastCustomer.id + 1 : 1;
+        if (!shopifyCustomers || shopifyCustomers.length === 0) {
+            const allCustomers = await Customer.find();
+            return res.status(200).json(allCustomers);
+        }
 
-        // // Assign unique IDs to each customer
-        // const customersWithIds = customers.map(customer => ({
-        //     ...customer,
-        //     id: nextId++
-        // }));
+        const existingCustomers = await Customer.find({
+            email: { $in: shopifyCustomers.map(c => c.email) }
+        });
 
-        // const newCustomers = await Customer.insertMany(customersWithIds); // Bulk insert
-        // Respond with the created customers
+        const customerMap = new Map(existingCustomers.map(c => [c.email, c]));
+
+        const operations = shopifyCustomers.map(async (shopifyCustomer) => {
+            const existingCustomer = customerMap.get(shopifyCustomer.email);
+
+            if (!existingCustomer) {
+                return Customer.create(shopifyCustomer);
+            } else {
+                return Customer.findOneAndUpdate(
+                    { email: shopifyCustomer.email },
+                    { $set: shopifyCustomer },
+                    { upsert: true, new: true }
+                );
+            }
+        });
+
+        await Promise.all(operations);
+
+        const allCustomers = await Customer.find();
+        res.status(200).json(allCustomers);
+
     } catch (error) {
+        console.error('🚨 API Error:', error.message);
         res.status(400).json({ error: error.message });
     }
 });
 
-// geet
-
-router.get('/', async (req, res) => {
+router.post("/", async (req, res) => {
     try {
-        const customers = await Customer.find(); // Fetch all customers from the database
-        res.status(200).json(customers); // Respond with the customer data
+        const storeName = req.headers['store-name'];
+        const apiVersion = req.headers['api-version'];
+        const accessToken = req.headers['access-token'];
+        const { email, first_name, last_name, phone, addresses } = req.body;
+
+        if (!storeName || !apiVersion || !accessToken) {
+            return res.status(400).json({ error: "Missing required headers" });
+        }
+        if (!email || !first_name) {
+            return res.status(400).json({ error: "First Name and Email are required" });
+        }
+
+        const shopifyUrl = `https://${storeName}/admin/api/${apiVersion}/customers.json`;
+        const shopifyPayload = { customer: { email, first_name, last_name, phone, addresses } };
+
+        const shopifyResponse = await axios.post(shopifyUrl, shopifyPayload, {
+            headers: {
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": accessToken,
+            },
+        });
+
+        const newCustomer = shopifyResponse.data.customer;
+
+        // Save to MongoDB
+        await Customer.create({
+            shopifyId: newCustomer.id,
+            first_name: newCustomer.first_name,
+            last_name: newCustomer.last_name,
+            email: newCustomer.email,
+            phone: newCustomer.phone,
+            addresses: newCustomer.addresses || [],
+            created_at: newCustomer.created_at,
+        });
+
+        res.status(201).json(newCustomer);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error("🚨 Shopify API Error:", error.response?.data || error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
     }
 });
 

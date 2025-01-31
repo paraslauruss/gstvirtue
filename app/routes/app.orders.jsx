@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLoaderData } from "@remix-run/react";
 import {
-    Text,
-    Divider,
+  Text,
+  Divider,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -13,9 +13,9 @@ import { ECreditNotes } from "./orders/e_credit_notes";
 import { OnlineOrders } from "./orders/online_orders";
 
 export const loader = async ({ request }) => {
-    const { admin } = await authenticate.admin(request);
-    const variantResponse = await admin.graphql(
-        `#graphql
+  const { admin } = await authenticate.admin(request);
+  const variantResponse = await admin.graphql(
+    `#graphql
     query {
   orders(first: 10) {
     edges {
@@ -90,11 +90,11 @@ export const loader = async ({ request }) => {
     }
   }
 }`
-    );
-    const variantResponseJson = await variantResponse.json();
+  );
+  const variantResponseJson = await variantResponse.json();
 
-    const productResponse = await admin.graphql(
-                `#graphql
+  const productResponse = await admin.graphql(
+    `#graphql
             query Product { 
               products(first:50){
                 edges{
@@ -120,12 +120,12 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-    const { admin } = await authenticate.admin(request);
-    const formData = await request.formData();
-    console.log("Form data submitted:", Object.fromEntries(formData));
-    return {
-        successMessage: "Success",
-    };
+  const { admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  console.log("Form data submitted:", Object.fromEntries(formData));
+  return {
+    successMessage: "Success",
+  };
 };
 
 // export function Dialog() {
@@ -222,84 +222,84 @@ export const action = async ({ request }) => {
 // }
 
 export default function Index() {
-    const tabs = [
-        {
-            id: 'online-orders',
-            content: 'Online Orders',
-            accessibilityLabel: 'Online Orders',
-            panelID: 'online-orders',
-        },
-        {
-            id: 'offline-orders',
-            content: 'Offline Orders',
-            panelID: 'offline-orders',
-        },
-        {
-            id: 'credit-notes',
-            content: 'Credit Notes',
-            panelID: 'credit-notes',
-        },
-        {
-            id: 'generate-e-invoices',
-            content: 'Generate e-Invoices',
-            panelID: 'generate-e-invoices',
-        },
-        {
-            id: 'e-credit-notes',
-            content: 'e-Credit Notes',
-            panelID: 'e-credit-notes',
-        },
-    ];
+  const tabs = [
+    {
+      id: 'online-orders',
+      content: 'Online Orders',
+      accessibilityLabel: 'Online Orders',
+      panelID: 'online-orders',
+    },
+    {
+      id: 'offline-orders',
+      content: 'Offline Orders',
+      panelID: 'offline-orders',
+    },
+    {
+      id: 'credit-notes',
+      content: 'Credit Notes',
+      panelID: 'credit-notes',
+    },
+    {
+      id: 'generate-e-invoices',
+      content: 'Generate e-Invoices',
+      panelID: 'generate-e-invoices',
+    },
+    {
+      id: 'e-credit-notes',
+      content: 'e-Credit Notes',
+      panelID: 'e-credit-notes',
+    },
+  ];
 
-    const [selected, setSelected] = useState(0);
+  const [selected, setSelected] = useState(0);
 
 
-    // console.log('Variant updated successfully:', data);
-    const handleTabChange = useCallback(
-        (selectedTabIndex) => setSelected(selectedTabIndex),
-        [],
-    );
+  // console.log('Variant updated successfully:', data);
+  const handleTabChange = useCallback(
+    (selectedTabIndex) => setSelected(selectedTabIndex),
+    [],
+  );
 
-    const data = useLoaderData();
-    const orderList = data.orders.data.orders.edges;
-    const shopify = useAppBridge();
+  const data = useLoaderData();
+  const orderList = data.orders.data.orders.edges;
+  const shopify = useAppBridge();
 
-    return (
-        <div style={{ backgroundColor: "#ffffff", padding: '30px' }}>
-            <div style={{ display: "flex" }}>
-                {tabs.map((tab, index) => (
-                    <div
-                        key={tab.id}
-                        style={{
-                            position: 'relative',
-                            padding: '10px 10px',
-                            cursor: 'pointer',
-                        }}
-                        onClick={() => handleTabChange(index)}
-                    >
-                        <Text as="p" fontWeight="regular">{tab.content}</Text>
-                        {selected === index && (
-                            <div style={{
-                                position: 'absolute',
-                                bottom: -2,
-                                left: 0,
-                                right: 0,
-                                height: '4px',
-                                backgroundColor: '#74A535',
-                                borderTopLeftRadius: '10px',
-                                borderTopRightRadius: '10px',
-                            }}
-                            />
-                        )}
-                    </div>
-                ))}
-            </div>
-            <Divider />
-            {selected === 0 && <OnlineOrders />}
-            {selected === 1 && <OfflineOrders/>}
-            {selected === 2 && <CreditNotes />}
-            {selected === 3 && <GenerateEInvoice />}
-            {selected === 4 && <ECreditNotes />}
-        </div>
-    );
+  return (
+    <div style={{ backgroundColor: "#ffffff", padding: '30px' }}>
+      <div style={{ display: "flex" }}>
+        {tabs.map((tab, index) => (
+          <div
+            key={tab.id}
+            style={{
+              position: 'relative',
+              padding: '10px 10px',
+              cursor: 'pointer',
+            }}
+            onClick={() => handleTabChange(index)}
+          >
+            <Text as="p" fontWeight="regular">{tab.content}</Text>
+            {selected === index && (
+              <div style={{
+                position: 'absolute',
+                bottom: -2,
+                left: 0,
+                right: 0,
+                height: '4px',
+                backgroundColor: '#74A535',
+                borderTopLeftRadius: '10px',
+                borderTopRightRadius: '10px',
+              }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <Divider />
+      {selected === 0 && <OnlineOrders />}
+      {selected === 1 && <OfflineOrders />}
+      {selected === 2 && <CreditNotes />}
+      {selected === 3 && <GenerateEInvoice />}
+      {selected === 4 && <ECreditNotes />}
+    </div>
+  );
 }

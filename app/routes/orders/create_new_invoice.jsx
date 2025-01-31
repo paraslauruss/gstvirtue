@@ -11,24 +11,204 @@ import {
 import searchIcon from "../../assets/images/searchIcon.png";
 import { useCallback, useEffect, useState, useRef } from "react";
 import Switch from "react-switch";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import axios from "axios";
 
 export function Dialog({ active, toggleModal }) {
+
+  const [formValues, setFormValues] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    gstNumber: "",
+    name: "",
+    defaultAddressPhone: "",
+    address: "",
+    apartmentSuit: "",
+    city: "",
+    state: "",
+    pincode: "",
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!formValues.firstName) {
+      newErrors.firstName = "Please fill in this field.";
+    }
+    if (!formValues.lastName) {
+      newErrors.lastName = "Please fill in this field.";
+    }
+
+    if (!formValues.email) {
+      newErrors.email = "Please fill in this field.";
+    } else if (!/\S+@\S+\.\S+/.test(formValues.email)) {
+      newErrors.email = "Email is invalid.";
+    }
+
+    if (!formValues.name) {
+      newErrors.name = "Please fill in this field.";
+    }
+    if (!formValues.address) {
+      newErrors.address = "Please fill in this field.";
+    }
+    if (!formValues.city) {
+      newErrors.city = "Please fill in this field.";
+    }
+    if (!formValues.state) {
+      newErrors.state = "Please fill in this field.";
+    }
+    if (!formValues.pincode) {
+      newErrors.pincode = "Please fill in this field.";
+    }
+    console.log("Validation Errors:", newErrors); // This will be helpful for debugging
+    return newErrors;
+  };
+
+  const states = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+    "Andaman and Nicobar Islands",
+    "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi",
+    "Jammu and Kashmir",
+    "Ladakh",
+    "Lakshadweep",
+    "Puducherry",
+  ];
+  const fetcher = useFetcher();
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name]: value,
+    }));
+  };
+  
+  
+  const customers = useLoaderData();
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validate();
+    setErrors(errors);
+    // If errors exist, show alert and stop form submission
+    if (Object.keys(errors).length > 0) {
+      console.error("Validation failed:", errors);
+      alert("Please fill in all required fields correctly.");
+      return;
+    }
+  
+    const requestData = {
+      email: formValues.email,
+      first_name: formValues.firstName,
+      last_name: formValues.lastName,
+      phone: formValues.phone,
+      addresses: [
+        {
+          address1: formValues.address,
+          address2: formValues.address,
+          city: formValues.city,
+          province: formValues.state,
+          country: "India",
+          zip: formValues.zip,
+          phone: formValues.phone,
+          name: formValues.name,
+        }
+      ]
+    };
+
+    try {
+      const response = await fetch("http://localhost:3001/api/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "store-name": customers.storeName,
+          "api-version": "2025-01",
+          "access-token": customers.accessToken
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (response.status !== 201) {
+        console.log("Base Url", "http://localhost:3001/api/customers");
+        console.log("store-name", customers.storeName);
+        console.log("access-token", customers.accessToken);
+        throw new Error(`API returned status code ${response.status}\nBase Url: http://localhost:3001/api/customers\nstore-name:${customers.storeName}\naccess-token:${customers.accessToken}`);
+      }
+
+      console.log("✅ Customer created successfully:", response.data);
+      //alert("Customer created successfully!");
+      setFormValues({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        companyName: "",
+        gstNumber: "",
+        name: "",
+        defaultAddressPhone: "",
+        address: "",
+        apartmentSuit: "",
+        city: "",
+        state: "",
+        pincode: "",
+      });
+      toggleModal();
+    } catch (error) {
+      console.error("🚨 API Error:", error.message);
+      alert(`Error creating customer. Please try again. ${error.message}`);
+    }
+  };
+
+
+
   return (
     <div>
       {/* Backdrop */}
       {active && (
         <Backdrop
           style={{
-            position: "fixed",
+            position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
             zIndex: 1,
           }}
-          onClick={toggleModal} // Close modal if backdrop is clicked
+          onClick={toggleModal}  // Close modal if backdrop is clicked
         />
       )}
 
@@ -36,211 +216,295 @@ export function Dialog({ active, toggleModal }) {
       {active && (
         <div
           style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "white",
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'white',
             zIndex: 9999,
-            width: "60%",
-            borderRadius: "10px",
+            width: '60%',
+            borderRadius: '10px',
           }}
         >
-          <Scrollable scrollbarWidth="none" style={{ height: "500px" }}>
-            <div
-              style={{
-                color: "white",
-                display: "flex",
-                justifyContent: "space-between",
-                backgroundColor: "#74A535",
-                padding: "10px 20px",
-                borderRadius: "8px 8px 0px 0px",
-              }}
-            >
-              <Text variant="headingLg">Create New Customer</Text>
-              <div
-                style={{ cursor: "pointer", marginLeft: "20px" }}
-                onClick={toggleModal}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                >
-                  <path
-                    d="M19.5347 0.465273C18.9142 -0.15509 17.9083 -0.155091 17.2877 0.465273L10 7.75298L2.71229 0.465273C2.09174 -0.155091 1.08583 -0.155091 0.465273 0.465273C-0.155091 1.08582 -0.155091 2.09174 0.465273 2.71229L7.75298 10L0.465273 17.2877C-0.155091 17.9083 -0.15509 18.9142 0.465275 19.5347C1.08583 20.1551 2.09174 20.1551 2.71229 19.5347L10 12.247L17.2877 19.5347C17.9083 20.1551 18.9142 20.1551 19.5347 19.5347C20.1551 18.9142 20.1551 17.9083 19.5347 17.2877L12.247 10L19.5347 2.71229C20.1551 2.09174 20.1551 1.08583 19.5347 0.465273Z"
-                    fill="white"
-                  />
-                </svg>
-              </div>
+          <div
+            style={{
+              color: 'white',
+              display: 'flex',
+              justifyContent: 'space-between',
+              backgroundColor: '#74A535',
+              padding: '15px 20px',
+              borderRadius: '8px 8px 0px 0px',
+            }}
+          >
+            <Text variant="headingLg">Create New Customer</Text>
+            <div style={{ cursor: 'pointer', marginLeft: '20px' }} onClick={toggleModal}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M19.5347 0.465273C18.9142 -0.15509 17.9083 -0.155091 17.2877 0.465273L10 7.75298L2.71229 0.465273C2.09174 -0.155091 1.08583 -0.155091 0.465273 0.465273C-0.155091 1.08582 -0.155091 2.09174 0.465273 2.71229L7.75298 10L0.465273 17.2877C-0.155091 17.9083 -0.15509 18.9142 0.465275 19.5347C1.08583 20.1551 2.09174 20.1551 2.71229 19.5347L10 12.247L17.2877 19.5347C17.9083 20.1551 18.9142 20.1551 19.5347 19.5347C20.1551 18.9142 20.1551 17.9083 19.5347 17.2877L12.247 10L19.5347 2.71229C20.1551 2.09174 20.1551 1.08583 19.5347 0.465273Z" fill="white" />
+              </svg>
             </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>First Name</span>
-                  <span style={{ color: "red" }}>*</span>
+          </div>
+          <Scrollable scrollbarWidth="none" style={{ height: '620px' }}>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>First Name</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formValues.firstName}
+                      onChange={handleChange}
+                      placeholder="Enter first name"
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }}
+                    />
+                    {errors.firstName && <p style={{ color: 'red', fontSize: '12px' }}>{errors.firstName}</p>}
+                  </div>
                 </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Last Name</span>
-                  <span style={{ color: "red" }}>*</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Email</span>
-                  <span style={{ color: "red" }}>*</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Phone</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Company Name</span>
-                  <span style={{ color: "red" }}>*</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Last Name</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter last name"
+                      name="lastName"
+                      value={formValues.lastName}
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}
+                    />
+                    {errors.lastName && <p style={{ color: 'red', fontSize: '12px' }}>{errors.lastName}</p>}
+                  </div>
                 </div>
               </div>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>GST Number</span>
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Email</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter email address"
+                      value={formValues.email}
+                      name="email"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.email && <p style={{ color: 'red', fontSize: '12px' }}>{errors.email}</p>}
+                  </div>
                 </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                marginTop: "10px",
-                marginRight: "20px",
-                marginLeft: "20px",
-              }}
-            >
-              <Text variant="headingMd" fontWeight="bold">
-                Item Details
-              </Text>
-            </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Name</span>
-                  <span style={{ color: "red" }}>*</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Phone</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
+                <div style={{ width: '100%' }}>
+                  <div >
+                    <span style={{ fontWeight: 'bold' }}>Phone</span>
+
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter phone number"
+                      value={formValues.phone}
+                      name="phone"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Address</span>
-                  <span style={{ color: "red" }}>*</span>
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Company Name</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter company name"
+                      value={formValues.companyName}
+                      name="companyName"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.companyName && <p style={{ color: 'red', fontSize: '12px' }}>{errors.companyName}</p>}
+                  </div>
                 </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>
-                    Apartment, suit etc.
-                  </span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>City</span>
-                  <span style={{ color: "red" }}>*</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px", padding: "5px 20px" }}>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>State</span>
-                </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
+                <div style={{ width: '100%' }}>
+                  <div >
+                    <span style={{ fontWeight: 'bold' }}>GST Number</span>
+
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter GST number"
+                      value={formValues.gstNumber}
+                      name="gstNumber"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                  </div>
                 </div>
               </div>
-              <div style={{ width: "100%" }}>
-                <div>
-                  <span style={{ fontWeight: "bold" }}>Pincode</span>
-                  <span style={{ color: "red" }}>*</span>
+              <div style={{ marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
+                <Text variant="headingMd" fontWeight="bold">Item Details</Text>
+              </div>
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Name</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter name"
+                      value={formValues.name}
+                      name="name"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.name && <p style={{ color: 'red', fontSize: '12px' }}>{errors.name}</p>}
+                  </div>
                 </div>
-                <div style={{ marginTop: "5px" }}>
-                  <TextField placeholder="" />
+                <div style={{ width: '100%' }}>
+                  <div >
+                    <span style={{ fontWeight: 'bold' }}>Phone</span>
+
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter phone number"
+                      value={formValues.defaultAddressPhone}
+                      name="defaultAddressPhone"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div
-              style={{
-                justifyContent: "end",
-                display: "flex",
-                padding: "20px",
-              }}
-            >
-              <div
-                style={{
-                  width: "100px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "#74A535",
-                  color: "#ffffff",
-                  padding: "5px",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ marginLeft: "10px", marginRight: "10px" }}>
-                  <Text>Save</Text>
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Address</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter address"
+                      value={formValues.address}
+                      name="address"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.address && <p style={{ color: 'red', fontSize: '12px' }}>{errors.address}</p>}
+                  </div>
                 </div>
               </div>
-            </div>
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Apartment, suit etc.</span>
+
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter apartment name"
+                      value={formValues.apartmentSuit}
+                      name="apartmentSuit"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                  </div>
+                </div>
+                <div style={{ width: '100%' }}>
+                  <div >
+                    <span style={{ fontWeight: 'bold' }}>City</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter city"
+                      value={formValues.city}
+                      name="city"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.city && <p style={{ color: 'red', fontSize: '12px' }}>{errors.city}</p>}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '20px', padding: '5px 20px' }}>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>State</span>
+
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <select
+                      name="state"
+                      value={formValues.state}
+                      onChange={handleChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ccc',
+                        borderRadius: '5px',
+                        appearance: 'none',
+                        position: 'relative',
+                      }}>
+                      <option value="">Select State</option> {/* Default option */}
+                      {states.map((state, index) => (
+                        <option key={index} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                    {/* <input
+                                            type="text"
+                                            placeholder="Select state"
+                                            value={formValues.state}
+                                            name="state"
+                                            onChange={handleChange}
+                                            style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} /> */}
+                    {errors.state && <p style={{ color: 'red', fontSize: '12px' }}>{errors.state}</p>}
+                  </div>
+                </div>
+                <div style={{ width: '100%' }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>Pincode</span>
+                    <span style={{ color: 'red' }}>*</span>
+                  </div>
+                  <div style={{ marginTop: '5px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter pincode"
+                      value={formValues.pincode}
+                      name="pincode"
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.pincode && <p style={{ color: 'red', fontSize: '12px' }}>{errors.pincode}</p>}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                justifyContent: 'end', display: 'flex', padding: '20px'
+              }}>
+                <button
+                  type="submit"
+                  // className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  style={{
+                    cursor: 'pointer',
+                    padding: '10px 30px', backgroundColor: '#74A535', border: 'none', borderRadius: '5px', color: 'white'
+                  }}>Save</button>
+              </div>
+            </form>
+
+
+
           </Scrollable>
+
         </div>
       )}
     </div>
@@ -298,22 +562,46 @@ export function CreateNewInvoice() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const [customers, setCustomers] = useState([
-    { id: 1, title: "Paras Virani", description: "paras@lauruss.com" },
-    { id: 2, title: "Urvi Bhut", description: "urvi@lauruss.com" },
-    { id: 3, title: "Jignesh Pansuriya", description: "jignesh@lauruss.com" },
-    { id: 4, title: "Priti Maradiya", description: "priti@lauruss.com" },
-  ]);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+
+  const customers = useLoaderData();
+
+  //   const [customers, setCustomers] = useState([
+  //     { id: 1, title: "Paras Virani", description: "paras@lauruss.com" },
+  //     { id: 2, title: "Urvi Bhut", description: "urvi@lauruss.com" },
+  //     { id: 3, title: "Jignesh Pansuriya", description: "jignesh@lauruss.com" },
+  //     { id: 4, title: "Priti Maradiya", description: "priti@lauruss.com" },
+  //   ]);
+
+
+
   const [filteredOptions, setFilteredOptions] = useState(options);
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
-    setDropdownVisible(true);
+    if (value.length < 2) {
+      setDropdownVisible(false);
+    } else {
+      setDropdownVisible(true);
+    }
 
     // Filter options based on the search query
-    const filtered = customers.filter((customer) =>
-      customer.title.toLowerCase().includes(value.toLowerCase()),
+    const filtered = customers.customers.filter((customer) =>
+      (customer.first_name + " " + customer.last_name).toLowerCase().includes(value.toLowerCase()),
     );
     setFilteredOptions(filtered);
   };
@@ -445,9 +733,8 @@ export function CreateNewInvoice() {
   return (
     <>
       <Dialog active={active} toggleModal={toggleModal} />
-      <div>
+      <div >
         {/* {productList[0].node.title} */}
-
         <div
           style={{
             display: "flex",
@@ -508,7 +795,7 @@ export function CreateNewInvoice() {
               <span style={{ fontWeight: "bold" }}>Customer</span>
               <span style={{ color: "red" }}>*</span>
             </div>
-            <div style={{ marginTop: "15px" }}>
+            <div ref={dropdownRef} style={{ marginTop: "15px" }}>
               <TextField
                 placeholder="Search a Customer..."
                 value={searchQuery}
@@ -552,7 +839,7 @@ export function CreateNewInvoice() {
                         (e.currentTarget.style.backgroundColor = "#fff")
                       }
                     >
-                      <span style={{ fontSize: "14px" }}>{option.title}</span>
+                      <span style={{ fontSize: "14px" }}>{option.first_name} {option.last_name}</span>
                     </div>
                   ))}
                   <div

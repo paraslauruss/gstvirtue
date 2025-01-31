@@ -30,7 +30,7 @@ export const loader = async ({ request }) => {
  
     const { session } = await authenticate.admin(request);
 
-    return json({ sessionData: session.accessToken });
+    return json({ sessionData: session.shop });
   
 };
 
