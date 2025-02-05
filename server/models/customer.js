@@ -35,6 +35,7 @@ const SmsMarketingConsentSchema = new mongoose.Schema({
 
 const CustomerSchema = new mongoose.Schema({
     shopifyId: { type: Number, unique: true, required: true, index: true },
+    store_name: String,
     email: String,
     created_at: String,
     updated_at: String,

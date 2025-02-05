@@ -56,13 +56,14 @@ router.get('/', async (req, res) => {
         const shopifyCustomers = shopifyResponse.data.customers;
 
         if (!shopifyCustomers || shopifyCustomers.length === 0) {
-            const allCustomers = await Customer.find();
+            const allCustomers = await Customer.find({ store_name: storeName });
             return res.status(200).json(allCustomers);
         }
 
         // **Step 1: Fetch existing customers from MongoDB**
         const existingCustomers = await Customer.find({
-            shopifyId: { $in: shopifyCustomers.map(c => c.id) }
+            shopifyId: { $in: shopifyCustomers.map(c => c.id) },
+            store_name: storeName
         });
 
         const customerMap = new Map(existingCustomers.map(c => [c.shopifyId, c]));
@@ -73,6 +74,7 @@ router.get('/', async (req, res) => {
 
             const customerData = {
                 shopifyId: shopifyCustomer.id, // ✅ Correctly map id → shopifyId
+                store_name: storeName,
                 email: shopifyCustomer.email || null, // ✅ Ensure email exists
                 first_name: shopifyCustomer.first_name,
                 last_name: shopifyCustomer.last_name,
@@ -112,7 +114,7 @@ router.get('/', async (req, res) => {
                 return Customer.create(customerData);
             } else {
                 return Customer.findOneAndUpdate(
-                    { shopifyId: shopifyCustomer.id },
+                    { shopifyId: shopifyCustomer.id, store_name: storeName, },
                     { $set: customerData },
                     { upsert: true, new: true }
                 );
@@ -121,7 +123,7 @@ router.get('/', async (req, res) => {
 
         await Promise.all(operations);
 
-        let query = {};
+        let query = {store_name: storeName};
         if (search) {
             query = {
                 $or: [
@@ -218,6 +220,7 @@ router.post("/", async (req, res) => {
         // Save to MongoDB
         await Customer.create({
             shopifyId: newCustomer.id,  // Ensure this is unique
+            store_name: storeName,
             first_name: newCustomer.first_name,
             last_name: newCustomer.last_name,
             email: newCustomer.email,
