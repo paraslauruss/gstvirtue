@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-    origin: "https://bolt-later-threat-io.trycloudflare.com",  // Aapke frontend ka URL
+    origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,store-name,api-version,access-token"
   }));app.use(express.json());

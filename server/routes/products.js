@@ -158,12 +158,13 @@ router.get('/', async (req, res) => {
       const shopifyProducts = shopifyResponse.data.products;
 
       if (!shopifyProducts || shopifyProducts.length === 0) {
-          const allProducts = await Product.find();
+          const allProducts = await Product.find({ store_name: storeName });
           return res.status(200).json(allProducts);
       }
 
       const existingProducts = await Product.find({
-          handle: { $in: shopifyProducts.map(p => p.handle) }
+          handle: { $in: shopifyProducts.map(p => p.handle) },
+          store_name: storeName
       });
 
 
@@ -175,6 +176,7 @@ router.get('/', async (req, res) => {
 
          const productData = {
            id: shopifyProduct.id,
+           store_name: storeName,
             title: shopifyProduct.title,
             body_html: shopifyProduct.body_html,
             vendor: shopifyProduct.vendor,
@@ -204,7 +206,7 @@ router.get('/', async (req, res) => {
              return Product.create(productData);
          } else {
              return Product.findOneAndUpdate(
-                 { handle: shopifyProduct.handle },
+                 { handle: shopifyProduct.handle, store_name: storeName },
                  { $set: productData },
                  { upsert: true, new: true }
              );
@@ -213,7 +215,7 @@ router.get('/', async (req, res) => {
 
       await Promise.all(operations);
 
-      const allProducts = await Product.find();
+      const allProducts = await Product.find({ store_name: storeName });
       res.status(200).json(allProducts);
 
   } catch (error) {
