@@ -109,12 +109,25 @@ export const loader = async ({ request }) => {
           }`
         );
         const { session } = await authenticate.admin(request);
-
+        const response = await fetch("http://localhost:3001/api/customers", {
+          headers: {
+            "store-name": session.shop,
+            "api-version": "2025-01",
+            "access-token": session.accessToken,
+          },
+        });
+        if (!response.ok) {
+          throw new Response("Failed to load customers", { status: response.status });
+        }
+      
+        const customers = await response.json();
+        
   const productResponseJson = await productResponse.json();
     return {
         orders: variantResponseJson,
         products:productResponseJson,
         accessToken : session.accessToken,
+        customers : customers,
         storeName : session.shop
     };
 };

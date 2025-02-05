@@ -8,10 +8,11 @@ const customerRoute = require('./routes/customer');
 const productRoutes = require('./routes/productRoutes');
 
 const app = express();
+app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-    origin: "https://8bf36d19ca98d1.lhr.life",  // Aapke frontend ka URL
+    origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,store-name,api-version,access-token"
   }));

@@ -34,7 +34,7 @@ const SmsMarketingConsentSchema = new mongoose.Schema({
 });
 
 const CustomerSchema = new mongoose.Schema({
-    id: { type: Number, unique: true, index: true },
+    shopifyId: { type: Number, unique: true, required: true, index: true },
     email: String,
     created_at: String,
     updated_at: String,
@@ -57,7 +57,10 @@ const CustomerSchema = new mongoose.Schema({
     email_marketing_consent: EmailMarketingConsentSchema,
     sms_marketing_consent: SmsMarketingConsentSchema,
     admin_graphql_api_id: String,
-    default_address: AddressSchema
+    default_address: AddressSchema,
+    shipping_address: AddressSchema,
+    company_name: String,
+    gst_number: String
 });
 
 module.exports = mongoose.model('Customer', CustomerSchema);

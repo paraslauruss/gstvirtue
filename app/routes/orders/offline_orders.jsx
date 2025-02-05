@@ -503,6 +503,7 @@ export function OfflineOrders() {
     const [createInvoice, setCreateInvoice] = useState(false);
     const [active, setActive] = useState(false);
     const toggleModal = useCallback(() => setActive((prev) => !prev), []);
+    const onCloseHandle = useCallback(() => setCreateInvoice((prev) => !prev), []);
     const [emailActive, setEmailActive] = useState(false);
     const toggleEmailActiveModal = useCallback(() => setEmailActive((prev) => !prev), []);
     const [content, setContent] = useState('');
@@ -528,7 +529,7 @@ export function OfflineOrders() {
         <SendEmailInvoiceDialog active={emailActive} toggleModal={toggleEmailActiveModal} />
         
             <div>
-                {createInvoice ? (<CreateNewInvoice />) : (<div>
+                {createInvoice ? (<CreateNewInvoice onClose={onCloseHandle}/>) : (<div>
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
                         <Text variant="headingLg" fontWeight="bold">Offline Orders</Text>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#74A535', color: '#ffffff', padding: '5px', width: '130px', borderRadius: '4px', cursor: 'pointer', }}
@@ -735,17 +736,12 @@ export function OfflineOrders() {
                                             <path d="M8.73458 10.9249C8.81844 11.0075 8.88498 11.1056 8.93038 11.2136C8.97578 11.3216 8.99915 11.4374 8.99915 11.5544C8.99915 11.6713 8.97578 11.7872 8.93038 11.8952C8.88498 12.0032 8.81844 12.1013 8.73458 12.1839L5.13642 15.7386C5.05285 15.8215 4.95355 15.8872 4.84421 15.9321C4.73487 15.9769 4.61764 16 4.49925 16C4.38086 16 4.26363 15.9769 4.15429 15.9321C4.04495 15.8872 3.94565 15.8215 3.86208 15.7386L0.263925 12.1839C0.0949367 12.0169 -3.56117e-09 11.7905 0 11.5544C3.56117e-09 11.3183 0.0949367 11.0918 0.263925 10.9249C0.432914 10.7579 0.662112 10.6642 0.901098 10.6642C1.14008 10.6642 1.36928 10.7579 1.53827 10.9249L4.5 13.8494L7.46173 10.9227C7.54542 10.8402 7.64475 10.7748 7.75403 10.7303C7.86331 10.6858 7.98041 10.6629 8.09862 10.6631C8.21683 10.6633 8.33384 10.6866 8.44297 10.7315C8.55209 10.7764 8.65118 10.8421 8.73458 10.9249ZM1.53827 5.07437L4.5 2.14836L7.46173 5.07511C7.63072 5.24206 7.85992 5.33585 8.0989 5.33585C8.33789 5.33585 8.56709 5.24206 8.73607 5.07511C8.90506 4.90816 9 4.68172 9 4.44562C9 4.20952 8.90506 3.98308 8.73607 3.81613L5.13792 0.261382C5.05435 0.178533 4.95505 0.112797 4.84571 0.0679427C4.73637 0.0230889 4.61914 0 4.50075 0C4.38236 0 4.26513 0.0230889 4.15579 0.0679427C4.04645 0.112797 3.94715 0.178533 3.86358 0.261382L0.265425 3.81613C0.0964363 3.98308 0.00149898 4.20952 0.00149898 4.44562C0.00149898 4.68172 0.0964363 4.90816 0.265425 5.07511C0.434414 5.24206 0.663612 5.33585 0.902598 5.33585C1.14158 5.33585 1.37078 5.24206 1.53977 5.07511L1.53827 5.07437Z" fill="#858585" />
                                         </svg>
                                     </div>
-
                                 </div>
                             </div>
-
                         </Card>
                     </div>
-
-
                 </div>)}
             </div>
         </>
-
     );
 }

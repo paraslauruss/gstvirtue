@@ -13,8 +13,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import Switch from "react-switch";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import axios from "axios";
+import { EditDialog } from "./edit_customer_dialog";
+import { EditShippingAddressDialog } from "./edit_shipping_address_dialog";
 
-export function Dialog({ active, toggleModal }) {
+export function Dialog({ active, toggleModal, apiCallback }) {
 
   const [formValues, setFormValues] = useState({
     firstName: "",
@@ -115,10 +117,10 @@ export function Dialog({ active, toggleModal }) {
       [name]: value,
     }));
   };
-  
-  
+
+
   const customers = useLoaderData();
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = validate();
@@ -129,20 +131,22 @@ export function Dialog({ active, toggleModal }) {
       alert("Please fill in all required fields correctly.");
       return;
     }
-  
+
     const requestData = {
       email: formValues.email,
       first_name: formValues.firstName,
       last_name: formValues.lastName,
       phone: formValues.phone,
+      company_name: formValues.companyName,
+      gst_number: formValues.gstNumber,
       addresses: [
         {
           address1: formValues.address,
-          address2: formValues.address,
+          address2: formValues.apartmentSuit,
           city: formValues.city,
           province: formValues.state,
           country: "India",
-          zip: formValues.zip,
+          zip: formValues.pincode,
           phone: formValues.phone,
           name: formValues.name,
         }
@@ -162,13 +166,23 @@ export function Dialog({ active, toggleModal }) {
       });
 
       if (response.status !== 201) {
-        console.log("Base Url", "http://localhost:3001/api/customers");
-        console.log("store-name", customers.storeName);
-        console.log("access-token", customers.accessToken);
-        throw new Error(`API returned status code ${response.status}\nBase Url: http://localhost:3001/api/customers\nstore-name:${customers.storeName}\naccess-token:${customers.accessToken}`);
+        const errorData = await response.json();
+        const apiErrors = errorData.errors || {}; // Extracting errors from the response
+
+        // Map errors from API to the state in a format you can use for display
+        const formattedErrors = {};
+        for (const [field, messages] of Object.entries(apiErrors)) {
+          formattedErrors[field] = messages.join(" "); // Join multiple error messages into a single string
+        }
+
+        console.log("Formatted Errors : ", formattedErrors);
+
+        setErrors(formattedErrors);  // Set API errors to state
+        return;  // Don't proceed if the API returns an error
       }
 
-      console.log("✅ Customer created successfully:", response.data);
+      const responseData = await response.json();
+      //console.log("✅ Customer created successfully:", response.data);
       //alert("Customer created successfully!");
       setFormValues({
         firstName: "",
@@ -186,9 +200,13 @@ export function Dialog({ active, toggleModal }) {
         pincode: "",
       });
       toggleModal();
+      apiCallback(responseData.newCustomer);
+      console.log("Response Data: ", responseData.newCustomer);
+      // fetcher.load("/api/customers");
     } catch (error) {
       console.error("🚨 API Error:", error.message);
-      alert(`Error creating customer. Please try again. ${error.message}`);
+      // alert(`Error creating customer. Please try again. ${error.message}`);
+      setErrors({ apiError: "Error creating customer. Please try again." });
     }
   };
 
@@ -312,6 +330,7 @@ export function Dialog({ active, toggleModal }) {
                       name="phone"
                       onChange={handleChange}
                       style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', }} />
+                    {errors.phone && <p style={{ color: 'red', fontSize: '12px' }}>{errors.phone}</p>}
                   </div>
                 </div>
               </div>
@@ -486,11 +505,16 @@ export function Dialog({ active, toggleModal }) {
                     {errors.pincode && <p style={{ color: 'red', fontSize: '12px' }}>{errors.pincode}</p>}
                   </div>
                 </div>
+
+              </div>
+              <div style={{ margin: '0px 20px' }}>
+                {errors.apiError && <p style={{ color: 'red', fontSize: '12px' }}>{errors.apiError}</p>}
               </div>
 
               <div style={{
                 justifyContent: 'end', display: 'flex', padding: '20px'
               }}>
+
                 <button
                   type="submit"
                   // className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -511,7 +535,7 @@ export function Dialog({ active, toggleModal }) {
   );
 }
 
-export function CreateNewInvoice() {
+export function CreateNewInvoice({ onClose }) {
   const [editOfflineInvoiceNumber, setEditOfflineInvoiceNumber] =
     useState(false);
   const [offlineInvoicePrefix, setOfflineInvoicePrefix] = useState("");
@@ -568,6 +592,7 @@ export function CreateNewInvoice() {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownVisible(false);
+        setShowAddNew(false);
       }
     };
 
@@ -580,46 +605,51 @@ export function CreateNewInvoice() {
 
   const customers = useLoaderData();
 
-  //   const [customers, setCustomers] = useState([
-  //     { id: 1, title: "Paras Virani", description: "paras@lauruss.com" },
-  //     { id: 2, title: "Urvi Bhut", description: "urvi@lauruss.com" },
-  //     { id: 3, title: "Jignesh Pansuriya", description: "jignesh@lauruss.com" },
-  //     { id: 4, title: "Priti Maradiya", description: "priti@lauruss.com" },
-  //   ]);
-
-
 
   const [filteredOptions, setFilteredOptions] = useState(options);
+  const [selectedCustomer, setSelectedCustomer] = useState({});
+  const [showAddNew, setShowAddNew] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
-  const handleSearchChange = (value) => {
+  const handleSearchChange = async (value) => {
     setSearchQuery(value);
-    if (value.length < 2) {
-      setDropdownVisible(false);
-    } else {
-      setDropdownVisible(true);
-    }
+    setDropdownVisible(true);
+    const response = await fetch(`http://localhost:3001/api/customers?search=${value}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "store-name": customers.storeName,
+        "api-version": "2025-01",
+        "access-token": customers.accessToken
+      },
+    });
 
-    // Filter options based on the search query
-    const filtered = customers.customers.filter((customer) =>
-      (customer.first_name + " " + customer.last_name).toLowerCase().includes(value.toLowerCase()),
-    );
-    setFilteredOptions(filtered);
+    const responseData = await response.json();
+    console.log("Search Result: ", responseData);
+    setSearchResults(responseData);
   };
 
   const handleOptionSelect = (customer) => {
-    alert(`You selected: ${customer.title}`);
+    //alert(`You selected: ${customer.first_name}`);
+    setSelectedCustomer(customer)
     setDropdownVisible(false);
+    setShowAddNew(false);
+    setSearchQuery("");
   };
 
   const [active, setActive] = useState(false);
-  const toggleModal = useCallback(() => setActive((active) => !active), []);
+  const toggleModal = () => {
+    setActive((prev) => !prev); // Toggle the Dialog's visibility
+  };
 
-    //  FETCH TITLE FIELD
-    const [query, setQuery] = useState("");
+  
+
+  //  FETCH TITLE FIELD
+  const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
 
   // Fetch suggestions for main search bar
   useEffect(() => {
@@ -678,6 +708,10 @@ export function CreateNewInvoice() {
     setInputs(inputs.filter((input) => input.id !== id));
   };
 
+  const handleFocus = () => {
+    setShowAddNew(true); // Show Add New button when focused
+  };
+
   // Handle input change for dynamic fields
   const handleInputChange = async (id, value) => {
     setInputs((prevInputs) =>
@@ -699,10 +733,10 @@ export function CreateNewInvoice() {
           prevInputs.map((input) =>
             input.id === id
               ? {
-                  ...input,
-                  suggestions: filteredSuggestions,
-                  showDropdown: filteredSuggestions.length > 0,
-                }
+                ...input,
+                suggestions: filteredSuggestions,
+                showDropdown: filteredSuggestions.length > 0,
+              }
               : input
           )
         );
@@ -729,10 +763,45 @@ export function CreateNewInvoice() {
     );
   };
 
+  const handleApiCallback = async (responseData) => {
+    const response = await fetch("http://localhost:3001/api/customers", {
+      headers: {
+        "store-name": customers.storeName,
+        "api-version": "2025-01",
+        "access-token": customers.accessToken,
+      },
+    });
+    const data = await response.json();
+    customers.customers = data
+    setSelectedCustomer(responseData);
+  }
+
+
+  // Edit Billing Address
+  const [editDialog, setEditDialog] = useState(false);
+  const editDialogToggle = () => {
+    setEditDialog((prev) => !prev);
+  }
+
+  const handleApiCallbackEdit = async (responseData) => {
+    console.log("Response Data: ", responseData);
+    setSelectedCustomer(responseData);
+  }
+
+  // Edit Shipping Address
+  const [editShippingDialog, setEditShippingDialog] = useState(false);
+  const editShippingDialogToggle = () => {
+    setEditShippingDialog((prev) => !prev);
+  }
+
+  const handleApiCallbackEditShipping = async (responseData) => {
+    console.log("Response Data: ", JSON.stringify(responseData));
+    setSelectedCustomer(responseData);
+  }
 
   return (
     <>
-      <Dialog active={active} toggleModal={toggleModal} />
+
       <div >
         {/* {productList[0].node.title} */}
         <div
@@ -743,28 +812,31 @@ export function CreateNewInvoice() {
           }}
         >
           <div style={{ display: "flex" }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="21"
-              viewBox="0 0 24 21"
-              fill="none"
-            >
-              <path
-                d="M6.9375 1L1 6.9375L6.9375 12.875"
-                stroke="black"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M1 6.9375H10.5C17.0586 6.9375 22.375 12.2539 22.375 18.8125V20"
-                stroke="black"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <div style={{ cursor: 'pointer' }} onClick={onClose}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="21"
+                viewBox="0 0 24 21"
+                fill="none"
+              >
+                <path
+                  d="M6.9375 1L1 6.9375L6.9375 12.875"
+                  stroke="black"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M1 6.9375H10.5C17.0586 6.9375 22.375 12.2539 22.375 18.8125V20"
+                  stroke="black"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+
             <div style={{ marginLeft: "20px" }}>
               <Text variant="headingLg" fontWeight="bold">
                 Create New Invoice Offline
@@ -801,47 +873,55 @@ export function CreateNewInvoice() {
                 value={searchQuery}
                 autoComplete="off"
                 onChange={handleSearchChange}
+                onFocus={handleFocus}
                 prefix={
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <img src={searchIcon} style={{ height: "15px" }} />
                   </div>
                 }
               />
-              {dropdownVisible && filteredOptions.length > 0 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                    backgroundColor: "#fff",
-                    zIndex: 1000,
-                    left: 20,
-                    right: 20,
-                    overflowY: "auto",
-                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  {filteredOptions.map((option) => (
-                    <div
-                      key={option.id}
-                      onClick={() => handleOptionSelect(option)}
-                      style={{
-                        padding: "10px",
-                        cursor: "pointer",
-                        borderBottom: "1px solid #f0f0f0",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#f9f9f9")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#fff")
-                      }
-                    >
-                      <span style={{ fontSize: "14px" }}>{option.first_name} {option.last_name}</span>
-                    </div>
-                  ))}
+              <div
+                style={{
+                  position: "absolute",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  backgroundColor: "#fff",
+                  zIndex: 1000,
+                  left: 20,
+                  right: 20,
+                  overflowY: "auto",
+                  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+
+                {dropdownVisible && searchResults.length > 0 && (
+                  <div>
+                    {searchResults.map((option) => (
+                      <div
+                        key={option.id}
+                        onClick={() => handleOptionSelect(option)}
+                        style={{
+                          padding: "10px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #f0f0f0",
+                          display: "flex",
+                          flexDirection: "column",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#f9f9f9")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#fff")
+                        }
+                      >
+                        <span style={{ fontSize: "14px" }}>{option.first_name} {option.last_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+
+                {showAddNew && (
                   <div
                     style={{
                       display: "flex",
@@ -875,9 +955,107 @@ export function CreateNewInvoice() {
                       <Text>Add New</Text>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+
             </div>
+            {selectedCustomer.default_address && <div style={{ marginTop: '20px' }}>
+              <div style={{ display: 'flex', gap: '50px' }}>
+                <div style={{
+                  backgroundColor: 'white', width: '100%', border: '1px solid #ccc', borderRadius: '5px'
+                }}>
+                  <div style={{
+                    backgroundColor: '#565656',
+                    color: 'white',
+                    padding: '10px 20px',
+                    borderTopLeftRadius: '5px',
+                    borderTopRightRadius: '5px',
+                    overflow: 'hidden',
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div>Billing Address</div>
+                    <div style={{cursor:'pointer'}} onClick={editDialogToggle}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none">
+                        <path d="M13.475 3.40783L15.592 5.52483M14.836 1.54283L9.109 7.26983C8.81221 7.56467 8.61024 7.94144 8.529 8.35183L8 10.9998L10.648 10.4698C11.058 10.3878 11.434 10.1868 11.73 9.89083L17.457 4.16383C17.6291 3.99173 17.7656 3.78742 17.8588 3.56256C17.9519 3.33771 17.9998 3.09671 17.9998 2.85333C17.9998 2.60994 17.9519 2.36895 17.8588 2.14409C17.7656 1.91923 17.6291 1.71492 17.457 1.54283C17.2849 1.37073 17.0806 1.23421 16.8557 1.14108C16.6309 1.04794 16.3899 1 16.1465 1C15.9031 1 15.6621 1.04794 15.4373 1.14108C15.2124 1.23421 15.0081 1.37073 14.836 1.54283Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M16 13V16C16 16.5304 15.7893 17.0391 15.4142 17.4142C15.0391 17.7893 14.5304 18 14 18H3C2.46957 18 1.96086 17.7893 1.58579 17.4142C1.21071 17.0391 1 16.5304 1 16V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+
+                  </div>
+                  <div style={{ padding: '10px 20px', }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                      {selectedCustomer.default_address.name}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.default_address.address1}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.default_address.address2}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.default_address.city}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.default_address.province}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.default_address.country}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  backgroundColor: 'white', width: '100%', border: '1px solid #ccc', borderRadius: '5px'
+                }}>
+                  <div style={{
+                    backgroundColor: '#565656',
+                    color: 'white',
+                    padding: '10px 20px',
+                    borderTopLeftRadius: '5px',
+                    borderTopRightRadius: '5px',
+                    overflow: 'hidden',
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    justifyContent:'space-between',
+                    display:'flex',
+                    
+                  }}>
+                    <div>Shipping Address</div>
+                    
+                    <div style={{cursor:'pointer'}} onClick={editShippingDialogToggle}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none">
+                        <path d="M13.475 3.40783L15.592 5.52483M14.836 1.54283L9.109 7.26983C8.81221 7.56467 8.61024 7.94144 8.529 8.35183L8 10.9998L10.648 10.4698C11.058 10.3878 11.434 10.1868 11.73 9.89083L17.457 4.16383C17.6291 3.99173 17.7656 3.78742 17.8588 3.56256C17.9519 3.33771 17.9998 3.09671 17.9998 2.85333C17.9998 2.60994 17.9519 2.36895 17.8588 2.14409C17.7656 1.91923 17.6291 1.71492 17.457 1.54283C17.2849 1.37073 17.0806 1.23421 16.8557 1.14108C16.6309 1.04794 16.3899 1 16.1465 1C15.9031 1 15.6621 1.04794 15.4373 1.14108C15.2124 1.23421 15.0081 1.37073 14.836 1.54283Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M16 13V16C16 16.5304 15.7893 17.0391 15.4142 17.4142C15.0391 17.7893 14.5304 18 14 18H3C2.46957 18 1.96086 17.7893 1.58579 17.4142C1.21071 17.0391 1 16.5304 1 16V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div style={{ padding: '10px 20px', }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                      {selectedCustomer.shipping_address.name}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.shipping_address.address1}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.shipping_address.address2}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.shipping_address.city}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.shipping_address.province}
+                    </div>
+                    <div style={{ fontSize: '14px', marginTop: '10px' }}>
+                      {selectedCustomer.shipping_address.country}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>}
 
             <div style={{ marginTop: "20px", marginBottom: "20px" }}>
               <Divider />
@@ -1121,7 +1299,7 @@ export function CreateNewInvoice() {
                       type="text"
                       value={query} // Make input field controlled
                       onChange={(e) => setQuery(e.target.value)} // Update input state
-                       placeholder="Search a Product..."
+                      placeholder="Search a Product..."
                       style={{
                         width: "100%",
                         height: "33px",
@@ -1132,68 +1310,68 @@ export function CreateNewInvoice() {
                         boxSizing: "border-box",
                       }}
                     />
-                      {query.length > 0 && query.length < 2 && (
-                            <ul
-                            style={{
-                                position: "absolute",
-                                top: "38px",
-                                left: "0",
-                                width: "100%",
-                                backgroundColor: "#fff",
-                                border: "1px solid #ccc",
-                                borderRadius: "6px",
-                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                                listStyle: "none",
-                                padding: "5px",
-                                margin: "0",
-                                zIndex: 1000,
-                            }}
+                    {query.length > 0 && query.length < 2 && (
+                      <ul
+                        style={{
+                          position: "absolute",
+                          top: "38px",
+                          left: "0",
+                          width: "100%",
+                          backgroundColor: "#fff",
+                          border: "1px solid #ccc",
+                          borderRadius: "6px",
+                          boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                          listStyle: "none",
+                          padding: "5px",
+                          margin: "0",
+                          zIndex: 1000,
+                        }}
+                      >
+                        <li style={{ padding: "8px", color: "#666" }}>Write two or more letters</li>
+                      </ul>
+                    )}
+                    {showDropdown && (
+                      <ul
+                        style={{
+                          position: "absolute",
+                          top: "38px",
+                          left: "0",
+                          width: "100%",
+                          backgroundColor: "#fff",
+                          border: "1px solid #ccc",
+                          borderRadius: "6px",
+                          boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                          listStyle: "none",
+                          padding: "5px",
+                          margin: "0",
+                          zIndex: 1000,
+                          maxHeight: "300px", // Max height for the dropdown
+                          overflowY: "auto",
+                        }}
+                      >
+                        {loading ? (
+                          <li style={{ padding: "8px", color: "#666" }}>Loading...</li>
+                        ) : suggestions.length > 0 ? (
+                          suggestions.map((product) => (
+                            <li
+                              key={product.id}
+                              onClick={() => handleSelectMain(product.title)}
+                              style={{
+                                padding: "8px",
+                                cursor: "pointer",
+                                borderBottom: "1px solid #eee",
+                              }}
                             >
-                            <li style={{ padding: "8px", color: "#666" }}>Write two or more letters</li>
-                            </ul>
+                              {product.title}
+                            </li>
+                          ))
+                        ) : (
+                          <li style={{ padding: "8px", color: "#666" }}>No products found</li>
                         )}
-                        {showDropdown && (
-                            <ul
-                            style={{
-                                position: "absolute",
-                                top: "38px",
-                                left: "0",
-                                width: "100%",
-                                backgroundColor: "#fff",
-                                border: "1px solid #ccc",
-                                borderRadius: "6px",
-                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                                listStyle: "none",
-                                padding: "5px",
-                                margin: "0",
-                                zIndex: 1000,
-                                maxHeight: "300px", // Max height for the dropdown
-                                overflowY: "auto",
-                            }}
-                            >
-                            {loading ? (
-                                <li style={{ padding: "8px", color: "#666" }}>Loading...</li>
-                            ) : suggestions.length > 0 ? (
-                                suggestions.map((product) => (
-                                <li
-                                    key={product.id}
-                                    onClick={() => handleSelectMain(product.title)}
-                                    style={{
-                                    padding: "8px",
-                                    cursor: "pointer",
-                                    borderBottom: "1px solid #eee",
-                                    }}
-                                >
-                                    {product.title}
-                                </li>
-                                ))
-                            ) : (
-                                <li style={{ padding: "8px", color: "#666" }}>No products found</li>
-                            )}
-                            </ul>
-                        )}
+                      </ul>
+                    )}
 
-                 </div>
+                  </div>
                   {/* Variant Input */}
                   <div style={{ marginTop: "10px" }}>
                     <input
@@ -1313,7 +1491,7 @@ export function CreateNewInvoice() {
                       <div style={{ width: "30%" }}>
                         {/* Input Field */}
                         <div style={{ position: "relative" }}>
-                        <input
+                          <input
                             type="text"
                             value={input.query}
                             onChange={(e) => handleInputChange(input.id, e.target.value)}
@@ -1351,30 +1529,30 @@ export function CreateNewInvoice() {
                             </ul>
                           )}
                           {input.showDropdown && (
-                              <ul
-                                style={{
-                                  position: "absolute",
-                                  top: "38px",
-                                  left: "0",
-                                  width: "100%",
-                                  backgroundColor: "#fff",
-                                  border: "1px solid #ccc",
-                                  borderRadius: "6px",
-                                  boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                                  listStyle: "none",
-                                  padding: "5px",
-                                  margin: "0",
-                                  zIndex: 1000,
-                                  maxHeight: "300px",
-                                  overflowY: "auto",
-                                }}
-                              >
-                                {input.suggestions.map((product) => (
-                                  <li key={product.id} onClick={() => handleSelect(input.id, product.title)}>{product.title}</li>
-                                ))}
-                              </ul>
+                            <ul
+                              style={{
+                                position: "absolute",
+                                top: "38px",
+                                left: "0",
+                                width: "100%",
+                                backgroundColor: "#fff",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px",
+                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                                listStyle: "none",
+                                padding: "5px",
+                                margin: "0",
+                                zIndex: 1000,
+                                maxHeight: "300px",
+                                overflowY: "auto",
+                              }}
+                            >
+                              {input.suggestions.map((product) => (
+                                <li key={product.id} onClick={() => handleSelect(input.id, product.title)}>{product.title}</li>
+                              ))}
+                            </ul>
                           )}
-                       </div>
+                        </div>
                         <div style={{ marginTop: "10px" }}>
                           <input
                             type="text"
@@ -1653,6 +1831,9 @@ export function CreateNewInvoice() {
           </Card>
         </div>
       </div>
+      <Dialog active={active} toggleModal={toggleModal} apiCallback={handleApiCallback} />
+      <EditDialog active={editDialog} toggleModal={editDialogToggle} customerDetails={selectedCustomer} apiCallbackEdit={handleApiCallbackEdit}/>
+      <EditShippingAddressDialog active={editShippingDialog} toggleModal={editShippingDialogToggle} customerDetails={selectedCustomer} apiCallbackEdit={handleApiCallbackEditShipping}/>
     </>
   );
 }

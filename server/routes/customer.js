@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
         const storeName = req.headers['store-name'];
         const apiVersion = req.headers['api-version'];
         const accessToken = req.headers['access-token'];
+        const { search } = req.query;
 
         if (!storeName || !apiVersion || !accessToken) {
             return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
@@ -59,21 +60,60 @@ router.get('/', async (req, res) => {
             return res.status(200).json(allCustomers);
         }
 
+        // **Step 1: Fetch existing customers from MongoDB**
         const existingCustomers = await Customer.find({
-            email: { $in: shopifyCustomers.map(c => c.email) }
+            shopifyId: { $in: shopifyCustomers.map(c => c.id) }
         });
 
-        const customerMap = new Map(existingCustomers.map(c => [c.email, c]));
+        const customerMap = new Map(existingCustomers.map(c => [c.shopifyId, c]));
 
+        // **Step 2: Process customers**
         const operations = shopifyCustomers.map(async (shopifyCustomer) => {
-            const existingCustomer = customerMap.get(shopifyCustomer.email);
+            const existingCustomer = customerMap.get(shopifyCustomer.id);
+
+            const customerData = {
+                shopifyId: shopifyCustomer.id, // ✅ Correctly map id → shopifyId
+                email: shopifyCustomer.email || null, // ✅ Ensure email exists
+                first_name: shopifyCustomer.first_name,
+                last_name: shopifyCustomer.last_name,
+                phone: shopifyCustomer.phone,
+                addresses: shopifyCustomer.addresses || [],
+                created_at: shopifyCustomer.created_at,
+                updated_at: shopifyCustomer.updated_at,
+                orders_count: shopifyCustomer.orders_count,
+                state: shopifyCustomer.state,
+                total_spent: shopifyCustomer.total_spent,
+                last_order_id: shopifyCustomer.last_order_id,
+                note: shopifyCustomer.note,
+                verified_email: shopifyCustomer.verified_email,
+                multipass_identifier: shopifyCustomer.multipass_identifier,
+                tax_exempt: shopifyCustomer.tax_exempt,
+                tags: shopifyCustomer.tags,
+                last_order_name: shopifyCustomer.last_order_name,
+                currency: shopifyCustomer.currency,
+                tax_exemptions: shopifyCustomer.tax_exemptions || [],
+                email_marketing_consent: shopifyCustomer.email_marketing_consent || {},
+                sms_marketing_consent: shopifyCustomer.sms_marketing_consent || {},
+                admin_graphql_api_id: shopifyCustomer.admin_graphql_api_id,
+                default_address: shopifyCustomer.default_address || {},
+                shipping_address: shopifyCustomer.default_address || {}
+            };
+
+            // Check if shipping address exists in MongoDB
+            if (existingCustomer && existingCustomer.shipping_address) {
+                // Shipping address already exists, don't update it
+                customerData.shipping_address = existingCustomer.shipping_address;
+            } else {
+                // Add shipping address for the first time
+                customerData.shipping_address = customerData.shipping_address || {};
+            }
 
             if (!existingCustomer) {
-                return Customer.create(shopifyCustomer);
+                return Customer.create(customerData);
             } else {
                 return Customer.findOneAndUpdate(
-                    { email: shopifyCustomer.email },
-                    { $set: shopifyCustomer },
+                    { shopifyId: shopifyCustomer.id },
+                    { $set: customerData },
                     { upsert: true, new: true }
                 );
             }
@@ -81,7 +121,16 @@ router.get('/', async (req, res) => {
 
         await Promise.all(operations);
 
-        const allCustomers = await Customer.find();
+        let query = {};
+        if (search) {
+            query = {
+                $or: [
+                    { first_name: { $regex: new RegExp(search, 'i') } },
+                    { last_name: { $regex: new RegExp(search, 'i') } }
+                ]
+            };
+        }
+        const allCustomers = await Customer.find(query);
         res.status(200).json(allCustomers);
 
     } catch (error) {
@@ -90,12 +139,52 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.put("/update-shipping-address", async (req, res) => {
+    try {
+        const { customer_id, shipping_address } = req.body;
+
+        if (!customer_id || !shipping_address) {
+            return res.status(400).json({ error: "Customer ID and shipping address are required" });
+        }
+
+        console.log("Received request to update shipping address:", customer_id);
+
+        // Find the customer first
+        const customer = await Customer.findOne({ shopifyId: customer_id });
+
+        if (!customer) {
+            return res.status(404).json({ error: "Customer not found" });
+        }
+
+        // Log the current shipping address
+        console.log("Current Shipping Address:", customer.shipping_address);
+
+        // Update the customer's shipping address in MongoDB using the $set operator
+        const updatedCustomer = await Customer.findOneAndUpdate(
+            { shopifyId: customer_id },
+            { $set: { "shipping_address": shipping_address } }, // Directly update the shipping_address object
+            { new: true } // Return updated customer
+        );
+
+        // Log the updated customer for debugging purposes
+        console.log("Updated Customer:", updatedCustomer);
+
+        res.status(200).json({
+            message: "Shipping address updated successfully",
+            updatedCustomer
+        });
+    } catch (error) {
+        console.error("🚨 MongoDB Update Error:", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 router.post("/", async (req, res) => {
     try {
         const storeName = req.headers['store-name'];
         const apiVersion = req.headers['api-version'];
         const accessToken = req.headers['access-token'];
-        const { email, first_name, last_name, phone, addresses } = req.body;
+        const { email, first_name, last_name, phone, addresses, company_name, gst_number } = req.body;
 
         if (!storeName || !apiVersion || !accessToken) {
             return res.status(400).json({ error: "Missing required headers" });
@@ -115,23 +204,125 @@ router.post("/", async (req, res) => {
         });
 
         const newCustomer = shopifyResponse.data.customer;
+        console.log("Shopify Response:", newCustomer);
+        // Check if shopifyId is present, else return an error or default value
+        if (!newCustomer.id) {
+            return res.status(400).json({ error: "Shopify ID is missing from the response" });
+        }
+
+        // Add custom fields
+        newCustomer.company_name = company_name || "";
+        newCustomer.gst_number = gst_number || "";
+        newCustomer.shipping_address = newCustomer.default_address || "";
 
         // Save to MongoDB
         await Customer.create({
-            shopifyId: newCustomer.id,
+            shopifyId: newCustomer.id,  // Ensure this is unique
             first_name: newCustomer.first_name,
             last_name: newCustomer.last_name,
             email: newCustomer.email,
             phone: newCustomer.phone,
             addresses: newCustomer.addresses || [],
+            default_address: newCustomer.default_address,
+            shipping_address: newCustomer.default_address,
             created_at: newCustomer.created_at,
+            company_name: newCustomer.company_name,  // Save custom field
+            gst_number: newCustomer.gst_number      // Save custom field
         });
 
-        res.status(201).json(newCustomer);
+        // Return response with the customer data including custom fields
+        res.status(201).json({
+            newCustomer
+        });
     } catch (error) {
         console.error("🚨 Shopify API Error:", error.response?.data || error.message);
         res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
     }
 });
+
+router.put("/:customerId", async (req, res) => {
+    try {
+        const storeName = req.headers['store-name'];
+        const apiVersion = req.headers['api-version'];
+        const accessToken = req.headers['access-token'];
+        const { email, first_name, last_name, phone, addresses, company_name, gst_number } = req.body;
+        const { customerId } = req.params;
+
+        if (!storeName || !apiVersion || !accessToken) {
+            return res.status(400).json({ error: "Missing required headers" });
+        }
+        if (!customerId) {
+            return res.status(400).json({ error: "Customer ID is required" });
+        }
+
+        const shopifyUrl = `https://${storeName}/admin/api/${apiVersion}/customers/${customerId}.json`;
+        const shopifyPayload = { 
+            customer: { 
+                id: customerId, 
+                email, 
+                first_name, 
+                last_name, 
+                phone, 
+                addresses 
+            } 
+        };
+
+        const shopifyResponse = await axios.put(shopifyUrl, shopifyPayload, {
+            headers: {
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": accessToken,
+            },
+        });
+
+        const updatedCustomer = shopifyResponse.data.customer;
+        console.log("Shopify Response:", updatedCustomer);
+
+        if (!updatedCustomer.id) {
+            return res.status(400).json({ error: "Shopify ID is missing from the response" });
+        }
+
+        // Update custom fields
+        updatedCustomer.company_name = company_name || "";
+        updatedCustomer.gst_number = gst_number || "";
+
+        // Update MongoDB
+        const updatedMongoCustomer = await Customer.findOneAndUpdate(
+            { shopifyId: updatedCustomer.id },
+            {
+                first_name: updatedCustomer.first_name,
+                last_name: updatedCustomer.last_name,
+                email: updatedCustomer.email,
+                phone: updatedCustomer.phone,
+                addresses: updatedCustomer.addresses || [],
+                default_address: updatedCustomer.default_address,
+                company_name: updatedCustomer.company_name,
+                gst_number: updatedCustomer.gst_number
+            },
+            { new: true, upsert: false }
+        );
+
+        const customer = {
+            shopifyId: updatedCustomer.id, // Rename id to shopify_id
+            first_name: updatedCustomer.first_name,
+            last_name: updatedCustomer.last_name,
+            email: updatedCustomer.email,
+            phone: updatedCustomer.phone,
+            addresses: updatedCustomer.addresses || [],
+            default_address: updatedCustomer.default_address,
+            company_name: updatedCustomer.company_name,
+            gst_number: updatedCustomer.gst_numberm,
+            shipping_address: updatedMongoCustomer.shipping_address
+        };
+        // Return updated customer
+        res.status(200).json({
+            customer
+        });
+    } catch (error) {
+        console.error("🚨 Shopify API Error:", error.response?.data || error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
+    }
+});
+
+
 
 module.exports = router;
