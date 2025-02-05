@@ -2,7 +2,7 @@ import { Card, Divider, Text, TextField } from "@shopify/polaris";
 import ic_refresh from '../../assets/images/ic_refresh.png';
 import "./product.css";
 import { useLoaderData } from "@remix-run/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import CustomCheckbox from "../utils/custom_check_box";
 import ProductList from "./product_list";
 import axios from "axios";
@@ -41,27 +41,24 @@ export function Product() {
     };
 
     // Handle individual checkbox change
-    const handleItemCheckboxChange = (id) => (e) => {
-        const isChecked = e.target.checked;
-        setCheckedItems((prev) => {
-            const updated = { ...prev, [id]: isChecked };
-            // Update the main checkbox state if all items are checked/unchecked
-            const allChecked = productList.every((item) => updated[item.node.id]);
-            setIsMainChecked(allChecked);
-            return updated;
-        });
+    const handleItemCheckboxChange = (productId) => (e) => {
+        const checked = e.target.checked;
+        setCheckedItems((prevCheckedItems) => ({
+            ...prevCheckedItems,
+            [productId]: checked,
+        }));
     };
     
-      const handleInputChange = (id) => (e) => {
-          const { name, value } = e.target;
-           setProductValues(prevValues => ({
+    const handleInputChange = (productId) => (e) => {
+        const { name, value } = e.target;
+        setProductValues((prevValues) => ({
             ...prevValues,
-            [id]: {
-                 ...prevValues[id],
-                  [name]: value,
-              }
-          }));
-      };
+            [productId]: {
+                ...prevValues[productId],
+                [name]: value, // Update the specific field (e.g., miniAmount, gst, etc.)
+            },
+        }));
+    };
 
       const session = useLoaderData();
     // Count checked items
@@ -81,6 +78,8 @@ export function Product() {
             if (!response.ok) throw new Error(`API returned status ${response.status}`);
     
             const data = await response.json();
+            console.log("Fetched Product Data:", data); // Log fetched data
+    
             setProductValues(prevValues => ({
                 ...prevValues,
                 ...data.reduce((acc, product) => ({
@@ -89,7 +88,7 @@ export function Product() {
                         miniAmount: product.miniAmount || "",
                         miniGst: product.miniGst || "",
                         gst: product.gst || "",
-                        hsnCode: product.hsnCode || "",
+                        hsn: product.hsn || "",
                         cess: product.cess || "",
                     },
                 }), {})
@@ -101,51 +100,146 @@ export function Product() {
     useEffect(() => {
         fetchProductDetails();
     }, []);
-
-    const handleUpdate = async () => { 
-        const updatedData = Object.keys(checkedItems)
-            .filter((id) => checkedItems[id]) // Only update checked items
-            .map((id) => ({
-                id,
-                title: productValues[id]?.title || "",
-                gst: parseFloat(productValues[id]?.gst || 0),
-                hsn: productValues[id]?.hsnCode || "",
-                miniAmount: isMyProductGstChecked ? parseFloat(productValues[id]?.miniAmount || 0) : null,
-                minGst: isMyProductGstChecked ? parseFloat(productValues[id]?.miniGst || 0) : null,
-                cess: isCessChecked ? parseFloat(productValues[id]?.cess || 0) : null,
-            }));
     
-        if (updatedData.length === 0) {
-            alert("Please select at least one product to update.");
-            return;
-        }
-    
-        console.log("📤 Sending updated data:", updatedData);
-    
+    const handleUpdate = async () => {
         try {
-            // Sending each product individually, as backend expects the data directly
-            for (const data of updatedData) {
-                const response = await axios.post("http://localhost:3001/api/products", data, {
+            // Iterate through the product values and update the respective fields
+            for (const id in productValues) {
+                const product = productValues[id];
+
+                const updatedData = {
+                    id,
+                    title: product?.title || "",
+                    gst: product?.gst ? product?.gst.toString() : "", // Ensure gst is a string
+                    hsn: product?.hsn || "", // Ensure hsn is a string (it can be treated as a number but stored as string)
+                    miniAmount: isMyProductGstChecked ? (isNaN(parseFloat(product?.miniAmount)) ? null : parseFloat(product?.miniAmount)) : null,
+                    minGst: isMyProductGstChecked ? (isNaN(parseFloat(product?.miniGst)) ? null : parseFloat(product?.miniGst)) : null,
+                    cess: isCessChecked ? (isNaN(parseFloat(product?.cess)) ? null : parseFloat(product?.cess)) : null,
+                };
+    
+                // Send POST request to update the product
+                const response = await fetch("http://localhost:3001/api/products", {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "store-name": session.storeName,
                         "api-version": "2025-01",
                         "access-token": session.accessToken,
                     },
+                    body: JSON.stringify(updatedData),
                 });
     
-                console.log("✅ Product updated/inserted successfully:", responseData);
+                const responseData = await response.json();
+                if (!response.ok) {
+                    throw new Error(responseData.error || "Failed to update product");
+                }
+                console.log("Product Updated:", responseData);
+
             }
-    
-            // Fetch updated product details to reflect in UI
+
+            // Fetch updated product details after the update
             fetchProductDetails();
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 3000);
+    
         } catch (error) {
-            console.error("🚨 Error updating products:", error.message);
+            console.error("Error updating products:", error.message);
             alert("Failed to update products. Please check console logs.");
         }
     };
+
+    // Input field
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const inputRef = useRef(null);
+    const [productsList, setProductsList] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true); // Optional: Add loading state
+    const [error, setError] = useState(null);   // Optional: Add error state
+
+    const fetchDetails = async () => {
+        try {
+            const response = await fetch("http://localhost:3001/api/products", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "store-name": session.storeName,
+                    "api-version": "2025-01",
+                    "access-token": session.accessToken,
+                },
+            });
+
+            if (!response.ok) throw new Error(`API returned status ${response.status}`);
+
+            const data = await response.json();
+            console.log("Fetched Product Data:", data); // Log fetched data
+
+             setProductsList(data.map(product => ({node:product})));
+             setFilteredProducts(data.map(product => ({ node: product }))); // Initialize filtered list
+
+             setLoading(false);
+
+                } catch (error) {
+                    console.error("🚨 Error fetching products:", error.message);
+                    setError(error);
+                    setLoading(false);
+                }
+            };
+            useEffect(() => {
+                fetchDetails();
+            }, []);
+            
+            const handleChange = (event) => {
+                const value = event.target.value;
+                setSearchQuery(value);
+        
+                // Only update suggestions, NOT the filtered product list
+                const filteredSuggestions = productList.filter(item =>
+                    item.node.title.toLowerCase().includes(value.toLowerCase())
+                );
+                setSuggestions(filteredSuggestions);
+                setShowSuggestions(true);
+            };
+             // Filter suggestions as user types
+            useEffect(() => {
+                if (searchQuery) {
+                    const filtered = productsList.filter(item =>
+                        item.node.title.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    setSuggestions(filtered);
+                    setShowSuggestions(true);
+                } else {
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                }
+            }, [searchQuery, productsList]);
+
+            const handleSuggestionClick = (suggestion) => {
+                setSearchQuery(suggestion);
+                setShowSuggestions(false);
+            };
+            const handleSearch = () => {
+                const filtered = productList.filter(item =>
+                    item.node.title.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+                console.log("Filtered Products:", filtered); // Debugging line
+                setFilteredProducts(filtered);
+            };
+        
+            const handleClear = () => {
+                setSearchQuery('');
+                setFilteredProducts([...productList]); // Reset to original product list
+            };
+            if (loading) {
+                return <div>Loading products...</div>; // Or your loading indicator
+            }
+        
+            if (error) {
+                return <div>Error fetching products: {error.message}</div>;
+            }
+
 
     return (
         <div style={{ minHeight: "100vh" }}>
@@ -158,12 +252,45 @@ export function Product() {
                 <div style={{ width: '100%', border: '1px solid #F1F1F4', borderRadius: '10px', padding: '22px', boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', gap: '20px' }}>
+                        <div style={{ position: 'relative' }} ref={inputRef}>
                             <input
-                                style={{ border: '1px solid #000', borderRadius: '4px', padding: '8px', boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)' }}
+                               style={{ border: '1px solid #000', borderRadius: '4px', padding: '8px', boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)' }}
                                 type="text"
-                                placeholder="Product Complete Title"
-                            />
+                                placeholder="Search Product Title"
+                                value={searchQuery}
+                                onChange={handleChange}
 
+                            />
+                            {showSuggestions && suggestions.length > 0 && (
+                                <ul style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    width: '100%',
+                                    backgroundColor: 'white',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                    zIndex: 10,
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    padding:0,
+                                    margin:0,
+                                    listStyle:'none'
+
+                                }}>
+                                    {suggestions.map(item => (
+                                        <li
+                                            key={item.node.id}
+                                            style={{ padding: '8px', cursor: 'pointer' , borderBottom:'1px solid #eee'}}
+                                            onClick={() => handleSuggestionClick(item.node.title)}
+                                            >
+                                            {item.node.title}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                             <input
                                 style={{
                                     border: '1px solid #000',
@@ -179,14 +306,41 @@ export function Product() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '20px' }}>
-                            <div style={{ backgroundColor: '#74A535', padding: '5px 20px', display: 'flex', alignItems: 'center', color: 'white', fontSize: '14px', borderRadius: '4px' }}>
+                        <div>
+                            <button 
+                                style={{
+                                    backgroundColor: '#74A535', 
+                                    padding: '5px 20px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    color: 'white', 
+                                    fontSize: '16px', 
+                                    borderRadius: '4px', 
+                                    cursor: 'pointer', 
+                                    border: 'none'
+                                }}
+                                onClick={handleSearch}
+                            >
                                 Search
-                            </div>
-                            <div style={{ backgroundColor: '#FFFFFF', padding: '5px 20px', display: 'flex', alignItems: 'center', color: 'black', fontSize: '14px', border: '1px solid #000', borderRadius: '4px' }}>
-                                Clear
+                            </button>
+                        </div>
+                            {/* CLEAR */}
+                            <div>
+                                <button style={{
+                                padding: '5px 20px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                color: '#000', 
+                                fontSize: '16px', 
+                                borderRadius: '4px', 
+                                cursor: 'pointer', 
+                                border: '1px solid #ccc'
+                                     }}
+                             onClick={handleClear}> 
+                                     Clear
+                             </button>
                             </div>
                         </div>
-
                     </div>
 
                     <div style={{ width: '100%', height: '1px', backgroundColor: '#E2E2E2', marginTop: '20px', marginBottom: '20px' }}></div>
@@ -229,110 +383,110 @@ export function Product() {
                         <div style={{ width: '70%' }}>HSN Code</div>
                         {isCessChecked && <div style={{ width: '100%' }}>CESS(%)</div>}
                     </div>
-                    {productList.map((items) => {
+                    {filteredProducts.map((items) => {
                         return (
                             <div key={items.node.id}>
-                                <div style={{ color: 'black', fontSize: '16px', fontWeight: '400', display: 'flex', marginTop: '10px', padding: '10px 20px', borderRadius: '10px' }}>
-                                    <div style={{ width: '140%', display: 'flex', alignItems: 'flex-start', justifyContent: 'start', gap: '10px' }}>
+                                {/* Rest of your product item rendering code */}
+                             <div style={{ color: 'black', fontSize: '16px', fontWeight: '400', display: 'flex', marginTop: '10px', padding: '10px 20px', borderRadius: '10px' }}>
+                                 <div style={{ width: '140%', display: 'flex', alignItems: 'flex-start', justifyContent: 'start', gap: '10px' }}>
+                                     {/* Your checkbox and label code here */}
                                         <CustomCheckbox
                                             id={items.node.id}
                                             isChecked={!!checkedItems[items.node.id]}
                                             onChange={handleItemCheckboxChange(items.node.id)}
                                         />
                                         <label htmlFor={items.node.id} className="checkbox-label">{items.node.title}</label>
-                                    </div>
-
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            gap: '10px',
-                                            alignItems: 'center',
-                                            justifyContent: 'flex-start', // Optional: Space them out
-                                            width: '100%',
-                                        }}
-                                    >
-                                        {isMyProductGstChecked && (
-                                            <input
-                                                style={{
-                                                    border: '0.5px solid #000',
-                                                    borderRadius: '4px',
-                                                    padding: '5px',
-                                                    boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
-                                                    color: '#000'
-                                                }}
-                                                type="number"
-                                                name="miniAmount"
-                                                min="0" // Ensures the value cannot go below zero
-                                                placeholder="Mini Amount"
-                                                value={productValues[items.node.id]?.miniAmount || ""}
-                                                onChange={handleInputChange(items.node.id)}
-
-                                            />
-                                        )}
-                                        {isMyProductGstChecked && (
-                                             <input
-                                                style={{
-                                                    border: '0.5px solid #000',
-                                                    borderRadius: '4px',
-                                                    padding: '5px',
-                                                    boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
-                                                }}
-                                                type="number"
-                                                name="miniGst"
-                                                min="0" // Ensures the value cannot go below zero
-                                                value={productValues[items.node.id]?.miniGst || ""}
-                                                onChange={handleInputChange(items.node.id)}
-                                            />
-                                        )}
-                                        <input
-                                            style={{
-                                                border: '0.5px solid #000',
-                                                borderRadius: '4px',
-                                                padding: '5px',
-                                                boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
-                                            }}
-                                            type="number"
-                                            name="gst"
-                                            min="0" // Ensures the value cannot go below zero
-                                                value={productValues[items.node.id]?.gst || ""}
-                                             onChange={handleInputChange(items.node.id)}
-                                        />
-                                        <input
-                                             style={{
-                                                border: '0.5px solid #000',
-                                                borderRadius: '4px',
-                                                padding: '5px',
-                                                boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
-                                            }}
-                                            type="text"
-                                            name="hsnCode"
-                                               value={productValues[items.node.id]?.hsnCode || ""}
-                                             onChange={handleInputChange(items.node.id)}
-                                        />
-                                        {isCessChecked && (
-                                            <input
-                                                style={{
-                                                    border: '0.5px solid #000',
-                                                    borderRadius: '4px',
-                                                    padding: '5px',
-                                                    boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
-                                                }}
-                                                type="number"
-                                                name="cess"
-                                                min="0" // Ensures the value cannot go below zero
-                                               value={productValues[items.node.id]?.cess || ""}
-                                             onChange={handleInputChange(items.node.id)}
-                                            />
-                                        )}
-
-                                    </div>
                                 </div>
-                                <Divider />
+
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    gap: '10px',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // Optional: Space them out
+                                    width: '100%',
+                                }}
+                            >
+                                {/* Your input fields here */}
+                                {isMyProductGstChecked && (
+                                    <input
+                                        style={{
+                                            border: '0.5px solid #000',
+                                            borderRadius: '4px',
+                                            padding: '5px',
+                                            boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
+                                            color: '#000'
+                                        }}
+                                        type="number"
+                                        name="miniAmount"
+                                        min="0" // Ensures the value cannot go below zero
+                                        placeholder="Mini Amount"
+                                        value={productValues[items.node.id]?.miniAmount || ""}
+                                        onChange={handleInputChange(items.node.id)}
+
+                                    />
+                                )}
+                                {isMyProductGstChecked && (
+                                    <input
+                                        style={{
+                                            border: '0.5px solid #000',
+                                            borderRadius: '4px',
+                                            padding: '5px',
+                                            boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
+                                        }}
+                                        type="number"
+                                        name="miniGst"
+                                        min="0" // Ensures the value cannot go below zero
+                                        value={productValues[items.node.id]?.miniGst || ""}
+                                        onChange={handleInputChange(items.node.id)}
+                                    />
+                                )}
+                                <input
+                                    style={{
+                                        border: '0.5px solid #000',
+                                        borderRadius: '4px',
+                                        padding: '5px',
+                                        boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
+                                    }}
+                                    type="number"
+                                    name="gst"
+                                    min="0" // Ensures the value cannot go below zero
+                                    value={productValues[items.node.id]?.gst || ""}
+                                    onChange={handleInputChange(items.node.id)}
+                                />
+                                <input
+                                    style={{
+                                        border: '0.5px solid #000',
+                                        borderRadius: '4px',
+                                        padding: '5px',
+                                        boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
+                                    }}
+                                    type="text"
+                                    name="hsn"
+                                    value={productValues[items.node.id]?.hsn || ""}
+                                    onChange={handleInputChange(items.node.id)}
+                                />
+                                {isCessChecked && (
+                                    <input
+                                        style={{
+                                            border: '0.5px solid #000',
+                                            borderRadius: '4px',
+                                            padding: '5px',
+                                            boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.09)',
+                                        }}
+                                        type="number"
+                                        name="cess"
+                                        min="0" // Ensures the value cannot go below zero
+                                        value={productValues[items.node.id]?.cess || ""}
+                                        onChange={handleInputChange(items.node.id)}
+                                    />
+                                )}
                             </div>
-
-                        );
-                    })}
-
+                        </div>
+                    </div>
+                );
+            })}
+       
                     <div style={{ display: 'flex', justifyContent: 'end', marginTop: '20px' }}>
                         <div
                             style={{

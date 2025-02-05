@@ -209,8 +209,7 @@ export function Dialog({ active, toggleModal, apiCallback }) {
       setErrors({ apiError: "Error creating customer. Please try again." });
     }
   };
-
-
+ 
 
   return (
     <div>
@@ -565,7 +564,26 @@ export function CreateNewInvoice({ onClose }) {
     { label: "Yesterday", value: "yesterday" },
     { label: "Last 7 days", value: "lastWeek" },
   ];
-
+      const handleApiCallback = async (responseData) => {
+        const response = await fetch("http://localhost:3001/api/customers", {
+          headers: {
+            "store-name": customers.storeName,
+            "api-version": "2025-01",
+            "access-token": customers.accessToken,
+          },
+        });
+        const data = await response.json();
+        customers.customers = data
+        setSelectedCustomer(responseData);
+      }
+      const [editDialog, setEditDialog] = useState(false);
+      const editDialogToggle = () => {
+        setEditDialog((prev) => !prev);
+      }
+      const handleApiCallbackEdit = async (responseData) => {
+        console.log("Response Data: ", responseData);
+        setSelectedCustomer(responseData);
+      }
   const [exclusiveOfTax, setExclusiveOfTax] = useState("exclusive-of-tax");
 
   const handleExclusiveOfTaxChange = useCallback(
@@ -583,6 +601,16 @@ export function CreateNewInvoice({ onClose }) {
   const handleShippingChargeToggle = () => {
     setShippingCharge(!shippingCharge);
   };
+   // Edit Shipping Address
+  const [editShippingDialog, setEditShippingDialog] = useState(false);
+  const editShippingDialogToggle = () => {
+    setEditShippingDialog((prev) => !prev);
+  }
+
+  const handleApiCallbackEditShipping = async (responseData) => {
+    console.log("Response Data: ", JSON.stringify(responseData));
+    setSelectedCustomer(responseData);
+  }
 
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -640,164 +668,196 @@ export function CreateNewInvoice({ onClose }) {
   const toggleModal = () => {
     setActive((prev) => !prev); // Toggle the Dialog's visibility
   };
-
-  
-
-  //  FETCH TITLE FIELD
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-
-  // Fetch suggestions for main search bar
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (query.length >= 2) {
-        setLoading(true);
-        setError("");
-        try {
-          const response = await axios.get(
-            `http://localhost:3001/api/all-products?query=${query}`
-          );
-
-          const filteredSuggestions = response.data.filter((product) =>
-            product.title.toLowerCase().includes(query.toLowerCase())
-          );
-
-          setSuggestions(filteredSuggestions);
-          setShowDropdown(filteredSuggestions.length > 0);
-        } catch (err) {
-          console.error("Error fetching products:", err);
-          setError("Error fetching products");
-          setShowDropdown(false);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setSuggestions([]);
-        setShowDropdown(false);
-      }
-    };
-
-    fetchProducts();
-  }, [query]);
-
-  // Handle selection for main search input
-  const handleSelectMain = (title) => {
-    setQuery(title);
-    setTimeout(() => {
-      setShowDropdown(false);
-    }, 100);
-  };
-
-  // Dynamic Inputs State
-  const [inputs, setInputs] = useState([]);
-
-  // Add new input field
-  const addInputField = () => {
-    setInputs([
-      ...inputs,
-      { id: Date.now(), query: "", suggestions: [], showDropdown: false },
-    ]);
-  };
-
-  // Remove input field
-  const removeInputField = (id) => {
-    setInputs(inputs.filter((input) => input.id !== id));
-  };
-
   const handleFocus = () => {
     setShowAddNew(true); // Show Add New button when focused
   };
 
-  // Handle input change for dynamic fields
-  const handleInputChange = async (id, value) => {
-    setInputs((prevInputs) =>
-      prevInputs.map((input) =>
-        input.id === id ? { ...input, query: value } : input
-      )
-    );
+  
 
-    if (value.length >= 2) {
-      try {
-        const response = await axios.get(
-          `http://localhost:3001/api/all-products?query=${value}`
-        );
-        const filteredSuggestions = response.data.filter((product) =>
-          product.title.toLowerCase().includes(value.toLowerCase())
-        );
+    //  FETCH TITLE FIELD
+    const session = useLoaderData();
 
-        setInputs((prevInputs) =>
-          prevInputs.map((input) =>
-            input.id === id
-              ? {
-                ...input,
-                suggestions: filteredSuggestions,
-                showDropdown: filteredSuggestions.length > 0,
+    const [query, setQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
+
+
+        // Fetch suggestions for main search bar
+        useEffect(() => {
+          const fetchProducts = async () => {
+            if (query.length >= 2) {
+                setLoading(true);
+                setError("");
+        
+                try {
+                    // Fetch suggestions
+                    const suggestionResponse = await fetch("http://localhost:3001/api/products", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "store-name": session.storeName,
+                            "api-version": "2025-01",
+                            "access-token": session.accessToken,
+                        },
+                    });
+        
+                    if (!suggestionResponse.ok) {
+                        throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
+                    }
+        
+                    const suggestionData = await suggestionResponse.json();
+        
+                    if (!Array.isArray(suggestionData)) {
+                        throw new Error("Invalid response format: Expected an array");
+                    }
+        
+                    const filteredSuggestions = suggestionData.filter((product) =>
+                        product.title.toLowerCase().includes(query.toLowerCase())
+                    );
+        
+                    setSuggestions(filteredSuggestions);
+                    setShowDropdown(filteredSuggestions.length > 0);
+        
+                    // Find selected product
+                    const selected = filteredSuggestions.find(
+                        (product) => product.title.toLowerCase() === query.toLowerCase()
+                    );
+        
+                    if (selected) {
+                        const detailsResponse = await fetch(
+                            `http://localhost:3001/api/products/${selected.id}`,
+                            {
+                                method: "GET",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "store-name": session.storeName,
+                                    "api-version": "2025-01",
+                                    "access-token": session.accessToken,
+                                },
+                            }
+                        );
+        
+                        if (!detailsResponse.ok) {
+                            throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
+                        }
+        
+                        const productDetails = await detailsResponse.json();
+                        setSelectedProduct(productDetails);
+                    } else {
+                        setSelectedProduct(null);
+                    }
+                } catch (err) {
+                    console.error("Error fetching products:", err);
+                    setError("Error fetching products");
+                    setShowDropdown(false);
+                    setSelectedProduct(null);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setSuggestions([]);
+                setShowDropdown(false);
+                setSelectedProduct(null);
+            }
+        };
+        
+      
+          fetchProducts();
+        }, [query]);
+        // Handle selection for main search input
+        const handleSelectMain = async (title) => {
+          setQuery(title); // Set the title in the input field
+          setShowDropdown(false); // Hide the dropdown
+
+        };
+        const [inputs, setInputs] = useState([]);
+          // Add new input field
+        const addInputField = () => {
+          setInputs([
+            ...inputs,
+            { id: Date.now(), query: "", suggestions: [], showDropdown: false, selectedProduct: null, 
+              hsn: "", 
+              gst: "", 
+              cess: "" },
+          ]);
+        };
+        // Remove input field
+        const removeInputField = (id) => {
+          setInputs(inputs.filter((input) => input.id !== id));
+        };
+
+        // Handle input change for dynamic fields
+        const handleInputChange = async (id, value) => {
+          setInputs((prevInputs) =>
+            prevInputs.map((input) =>
+              input.id === id
+                ? { 
+                    ...input, 
+                    query: value, 
+                    showDropdown: value.length >= 2,
+                    ...(value === "" ? { hsn: "", gst: "", cess: "", selectedProduct: null } : {}) 
+                  }
+                : input
+            )
+          );
+        
+          if (value.length >= 2) {
+            try {
+              const response = await fetch("http://localhost:3001/api/products", {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  "store-name": session.storeName,
+                  "api-version": "2025-01",
+                  "access-token": session.accessToken,
+                },
+              });
+        
+              const data = await response.json();
+              console.log("API Response:", data); // Debugging step
+        
+              if (Array.isArray(data)) {
+                const filteredSuggestions = data.filter((product) =>
+                  product.title.toLowerCase().includes(value.toLowerCase())
+                );
+        
+                console.log("Filtered Suggestions:", filteredSuggestions); // Debugging step
+        
+                setInputs((prevInputs) =>
+                  prevInputs.map((input) =>
+                    input.id === id
+                      ? { ...input, suggestions: filteredSuggestions, showDropdown: filteredSuggestions.length > 0 }
+                      : input
+                  )
+                );
               }
-              : input
-          )
-        );
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      }
-    } else {
-      setInputs((prevInputs) =>
-        prevInputs.map((input) =>
-          input.id === id
-            ? { ...input, suggestions: [], showDropdown: false }
-            : input
-        )
-      );
-    }
-  };
-
-  // Handle selection for dynamic input fields
-  const handleSelect = (id, title) => {
-    setInputs((prevInputs) =>
-      prevInputs.map((input) =>
-        input.id === id ? { ...input, query: title, showDropdown: false } : input
-      )
-    );
-  };
-
-  const handleApiCallback = async (responseData) => {
-    const response = await fetch("http://localhost:3001/api/customers", {
-      headers: {
-        "store-name": customers.storeName,
-        "api-version": "2025-01",
-        "access-token": customers.accessToken,
-      },
-    });
-    const data = await response.json();
-    customers.customers = data
-    setSelectedCustomer(responseData);
-  }
-
-
-  // Edit Billing Address
-  const [editDialog, setEditDialog] = useState(false);
-  const editDialogToggle = () => {
-    setEditDialog((prev) => !prev);
-  }
-
-  const handleApiCallbackEdit = async (responseData) => {
-    console.log("Response Data: ", responseData);
-    setSelectedCustomer(responseData);
-  }
-
-  // Edit Shipping Address
-  const [editShippingDialog, setEditShippingDialog] = useState(false);
-  const editShippingDialogToggle = () => {
-    setEditShippingDialog((prev) => !prev);
-  }
-
-  const handleApiCallbackEditShipping = async (responseData) => {
-    console.log("Response Data: ", JSON.stringify(responseData));
-    setSelectedCustomer(responseData);
-  }
+            } catch (error) {
+              console.error("Error fetching products:", error);
+            }
+          } else {
+            setInputs((prevInputs) =>
+              prevInputs.map((input) =>
+                input.id === id ? { ...input, suggestions: [], showDropdown: false } : input
+              )
+            );
+          }
+        };
+    
+        const handleSelect = (id, title, productDetails) => {
+          setInputs((prevInputs) =>
+            prevInputs.map((input) =>
+              input.id === id ? { ...input, query: title, showDropdown: false,
+                selectedProduct: productDetails, 
+                hsn: productDetails.hsn || "", 
+                gst: productDetails.gst || "", 
+                cess: productDetails.cess || ""  } : input
+            )
+          );
+        };
+        
 
   return (
     <>
@@ -1260,7 +1320,7 @@ export function CreateNewInvoice({ onClose }) {
                   </span>
                   <span style={{ fontSize: "14px", color: "red" }}>*</span>
                 </div>
-                <div style={{ width: "15%" }}>
+                <div style={{ width: "10%" }}>
                   <span style={{ fontSize: "14px", color: "black" }}>
                     HSN Code
                   </span>
@@ -1389,53 +1449,65 @@ export function CreateNewInvoice({ onClose }) {
                     />
                   </div>
                 </div>
-                <div style={{ width: "15%" }}>
-                  <input
-                    type="text"
-                    style={{
-                      width: "100%", // Make input take the full width of the container
-                      height: "33px", // Set height
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      padding: "5px", // Optional: Adds some padding inside the input
-                    }}
-                  />
-                </div>
-
-                <div style={{ width: "10%" }}>
-                  <input
-                    type="text"
-                    placeholder="0%"
-                    style={{
-                      width: "100%", // Make input take the full width of the container
-                      height: "33px", // Set height
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      padding: "5px", // Optional: Adds some padding inside the input
-                    }}
-                  />
-                </div>
-
-                <div style={{ width: "10%" }}>
-                  <input
-                    type="text"
-                    placeholder="0 %"
-                    style={{
-                      width: "100%", // Make input take the full width of the container
-                      height: "33px", // Set height
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      padding: "5px", // Optional: Adds some padding inside the input
-                    }}
-                  />
-                </div>
-
+                      {/* HSN Code Field */}
+                      <div style={{ width: "10%" }}>
+                {/* HSN Field */}
+                <input
+                  type="number"
+                  value={selectedProduct?.hsn || ""} // Populate from selectedProduct
+                  style={{
+                    width: "100%", // Make input take the full width of the container
+                    height: "33px", // Set height
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                    padding: "5px",
+                    appearance: "none", // Hide number scroller in modern browsers
+                    MozAppearance: "textfield", // Hide number scroller in Firefox
+                    WebkitAppearance: "none",
+                    textAlign:'right'
+                  }}
+                />
+              </div>
+              <div style={{ width: "10%" }}>
+                {/* GST Field */}
+                <input
+                  type="text"
+                  placeholder="0%"
+                  value={selectedProduct?.gst ? `${selectedProduct.gst}%` : ""}
+                  style={{
+                    width: "100%", // Make input take the full width of the container
+                    height: "33px", // Set height
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                    padding: "5px",
+                    textAlign:'right'
+                  }}
+                />
+              </div>
+              <div style={{ width: "10%" }}>
+                {/* Cess Field */}
+                <input
+                  type="text"
+                  placeholder="0 %"
+                  value={selectedProduct?.cess? `${selectedProduct.cess}%` : ""}
+                  style={{
+                    width: "100%", // Make input take the full width of the container
+                    height: "33px", // Set height
+                    border: "1px solid #ccc",
+                    alignContent:'center',
+                    borderRadius: "6px",
+                    padding: "5px",
+                    textAlign:'right' 
+                  }}
+                />
+              </div>
                 <div style={{ width: "10%" }}>
                   <input
                     type="number"
                     // placeholder="OTY"
                     min={1}
                     style={{
+                      textAlign:'right',
                       width: "100%", // Make input take the full width of the container
                       height: "33px", // Set height
                       border: "1px solid #ccc",
@@ -1453,6 +1525,7 @@ export function CreateNewInvoice({ onClose }) {
                     type="number"
                     // placeholder="rate"
                     style={{
+                      textAlign:'right',
                       width: "100%", // Make input take the full width of the container
                       height: "33px", // Set height
                       border: "1px solid #ccc",
@@ -1485,8 +1558,7 @@ export function CreateNewInvoice({ onClose }) {
                 {inputs.map((input) => (
                   <div
                     key={input.id}
-                    style={{ marginBottom: "10px", marginTop: "20px" }}
-                  >
+                    style={{ marginBottom: "10px", marginTop: "20px" }}>
                     <div style={{ display: "flex", gap: "20px" }}>
                       <div style={{ width: "30%" }}>
                         {/* Input Field */}
@@ -1529,28 +1601,28 @@ export function CreateNewInvoice({ onClose }) {
                             </ul>
                           )}
                           {input.showDropdown && (
-                            <ul
-                              style={{
-                                position: "absolute",
-                                top: "38px",
-                                left: "0",
-                                width: "100%",
-                                backgroundColor: "#fff",
-                                border: "1px solid #ccc",
-                                borderRadius: "6px",
-                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                                listStyle: "none",
-                                padding: "5px",
-                                margin: "0",
-                                zIndex: 1000,
-                                maxHeight: "300px",
-                                overflowY: "auto",
-                              }}
-                            >
-                              {input.suggestions.map((product) => (
-                                <li key={product.id} onClick={() => handleSelect(input.id, product.title)}>{product.title}</li>
-                              ))}
-                            </ul>
+                              <ul
+                                style={{
+                                  position: "absolute",
+                                  top: "38px",
+                                  left: "0",
+                                  width: "100%",
+                                  backgroundColor: "#fff",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "6px",
+                                  boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                                  listStyle: "none",
+                                  padding: "5px",
+                                  margin: "0",
+                                  zIndex: 1000,
+                                  maxHeight: "300px",
+                                  overflowY: "auto",
+                                }}
+                              >
+                                {input.suggestions.map((product) => (
+                                  <li key={product.id} onClick={() => handleSelect(input.id, product.title, product)}>{product.title}</li>
+                                ))}
+                              </ul>
                           )}
                         </div>
                         <div style={{ marginTop: "10px" }}>
@@ -1570,6 +1642,7 @@ export function CreateNewInvoice({ onClose }) {
                         </div>
                       </div>
                       <div style={{ width: "15%" }}>
+                        {/* HSN */}
                         <input
                           type="text"
                           style={{
@@ -1579,28 +1652,38 @@ export function CreateNewInvoice({ onClose }) {
                             borderRadius: "6px",
                             padding: "5px", // Optional: Adds some padding inside the input
                           }}
+                          value={input.hsn || ""}
+                          readOnly
                         />
                       </div>
 
                       <div style={{ width: "10%" }}>
+                        {/* GST */}
                         <input
                           type="text"
                           placeholder="0%"
                           style={{
+                            textAlign:'right',
                             width: "100%", // Make input take the full width of the container
                             height: "33px", // Set height
                             border: "1px solid #ccc",
                             borderRadius: "6px",
                             padding: "5px", // Optional: Adds some padding inside the input
                           }}
+                          value={input.gst ? `${input.gst}%` : ""}
+                          readOnly
                         />
                       </div>
 
                       <div style={{ width: "10%" }}>
                         <input
+                        // CESS
                           type="text"
+                          value={input.cess ? `${input.cess}%` : ""}
+                          readOnly
                           placeholder="0 %"
                           style={{
+                            textAlign:'right',
                             width: "100%", // Make input take the full width of the container
                             height: "33px", // Set height
                             border: "1px solid #ccc",
@@ -1667,8 +1750,8 @@ export function CreateNewInvoice({ onClose }) {
                           backgroundColor: "red",
                           color: "white",
                           border: "none",
-                          width: "40px",
-                          height: "40px",
+                          width: "33px",
+                          height: "33px",
                           borderRadius: "50%",
                           display: "flex",
                           alignItems: "center",
@@ -1752,8 +1835,11 @@ export function CreateNewInvoice({ onClose }) {
                       Subtotal
                     </Text>
                   </div>
-                  <TextField />
-                </div>
+                  <input 
+                   style={{
+                    width:'44%', 
+                    height:'33px', color:'#000', 
+                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/> </div>
                 <div
                   style={{ display: "flex", gap: "20px", marginTop: "10px" }}
                 >
@@ -1762,8 +1848,24 @@ export function CreateNewInvoice({ onClose }) {
                       Discount Type
                     </Text>
                   </div>
-                  <TextField />
+                  <select
+                    style={{
+                      width: "44%",
+                      height: "33px",
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                      padding: "5px",
+                      backgroundColor: "#fff",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      padding:'5px 10px'
+                    }}
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Flat(Rs.)</option>
+                  </select>
                 </div>
+
                 <div
                   style={{ display: "flex", gap: "20px", marginTop: "10px" }}
                 >
@@ -1772,8 +1874,13 @@ export function CreateNewInvoice({ onClose }) {
                       Discount Amount
                     </Text>
                   </div>
-                  <TextField />
+                   <input 
+                   style={{
+                    width:'44%', 
+                    height:'33px', color:'#000', 
+                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px', textAlign:'right'}}/>
                 </div>
+
                 <div
                   style={{ display: "flex", gap: "20px", marginTop: "10px" }}
                 >
@@ -1804,8 +1911,12 @@ export function CreateNewInvoice({ onClose }) {
                       />
                     </div>
                   </div>
-                  <TextField />
+                  <input style={{
+                    width:'44%', 
+                    height:'33px', color:'#000', 
+                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/>
                 </div>
+
                 <div
                   style={{ display: "flex", gap: "20px", marginTop: "10px" }}
                 >
@@ -1814,7 +1925,10 @@ export function CreateNewInvoice({ onClose }) {
                       Round Off
                     </Text>
                   </div>
-                  <TextField />
+                  <input style={{
+                    width:'44%', 
+                    height:'33px', color:'#000', 
+                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/>
                 </div>
                 <div
                   style={{ display: "flex", gap: "20px", marginTop: "10px" }}
@@ -1824,12 +1938,19 @@ export function CreateNewInvoice({ onClose }) {
                       Total
                     </Text>
                   </div>
-                  <TextField />
+                  <input  type="number"
+                  placeholder="Rs0.0"
+                  style={{
+                    width:'44%', 
+                    height:'33px', color:'#000',
+                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px', padding:'5px', WebkitAppearance: "none",
+                    overflow:'hidden'
+                  }}/>
                 </div>
               </div>
             </div>
           </Card>
-        </div>
+        </div>  
       </div>
       <Dialog active={active} toggleModal={toggleModal} apiCallback={handleApiCallback} />
       <EditDialog active={editDialog} toggleModal={editDialogToggle} customerDetails={selectedCustomer} apiCallbackEdit={handleApiCallbackEdit}/>

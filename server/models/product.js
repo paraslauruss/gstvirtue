@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const ProductSchema = new mongoose.Schema({
-    id: { type: String, required: true, unique: true }, // Shopify product ID (String)
+    id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     body_html: { type: String },
     vendor: { type: String },
@@ -10,6 +10,12 @@ const ProductSchema = new mongoose.Schema({
     handle: { type: String, required: true, unique: true },
     updated_at: { type: Date },
     published_at: { type: Date },
+    gst: { type: String },
+    hsn: { type: String }, // this is correct hsn schema
+    cess: { type: Number },
+    miniAmount: { type: Number },
+    minGst: { type: Number },
+    Amount: { type: Number },
     template_suffix: { type: String },
     published_scope: { type: String },
     tags: { type: String },
@@ -45,7 +51,7 @@ const ProductSchema = new mongoose.Schema({
     }],
     options: [{
         id: { type: String },
-        product_id: { type: String },  // Changed to String, for consistency with `id`
+        product_id: { type: String },
         name: { type: String },
         position: { type: Number },
         values: [String],
@@ -54,34 +60,28 @@ const ProductSchema = new mongoose.Schema({
         id: { type: String },
         alt: { type: String },
         position: { type: Number },
-        product_id: { type: String }, // Changed to String
+        product_id: { type: String },
         created_at: { type: Date },
         updated_at: { type: Date },
         admin_graphql_api_id: { type: String },
         width: { type: Number },
         height: { type: Number },
         src: { type: String },
-        variant_ids: [String]  // Ensure that variant IDs are strings
+        variant_ids: [String]
     }],
     image: {
         id: { type: String, required: true },
         alt: { type: String },
         position: { type: Number },
-        product_id: { type: String },  // Changed to String
+        product_id: { type: String },
         created_at: { type: Date },
         updated_at: { type: Date },
         admin_graphql_api_id: { type: String },
         width: { type: Number },
         height: { type: Number },
         src: { type: String },
-        variant_ids: [String]  // Ensure that variant IDs are strings
-    },
-    gst: { type: String },  // GST field (as String, since it may include decimals)
-    hsn: { type: String },  // HSN field
-    cess: { type: Number }, // Cess field
-    miniAmount: { type: Number }, // MiniAmount field
-    minGst: { type: Number },  // MinGst field
-    Amount: { type: Number }, // Total Amount (including GST, etc.)
+        variant_ids: [String]
+    }
 }, { timestamps: true });  // Automatically include createdAt/updatedAt
 
 const Product = mongoose.model('Product', ProductSchema);

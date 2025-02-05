@@ -12,11 +12,10 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-    origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
+    origin: "https://drawing-humans-tub-modelling.trycloudflare.com",  // Aapke frontend ka URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,store-name,api-version,access-token"
-  }));
-app.use(express.json());
+  }));app.use(express.json());
 
 // Use the product routes
 app.use('/api/products', productRoute);

@@ -119,11 +119,7 @@ export function OnlineOrders() {
         }
 
     };
-
-    
-
     const [value, setValue] = useState('');
-
     const handleChange = useCallback(
         (newValue) => setValue(newValue),
         [],
@@ -131,12 +127,9 @@ export function OnlineOrders() {
 
     const [active, setActive] = useState(false);
 
-    useEffect(() => {
-
-    }, [])
-
     const toggleModal = useCallback(() => setActive((active) => !active), []);
 
+    
     return(
         <div style={{ backgroundColor: '#ffffff', padding: '30px' }}>
             
@@ -246,44 +239,96 @@ export function OnlineOrders() {
                     </div>
                     <div style={{ marginTop: '20px' }}>
                         <Card>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', width: '100%' }}>
-                                    <div style={{ display: 'flow', width: '28%' }}>
-                                        <TextField
+                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                               <div style={{ display: 'flex', width: '100%' }}>
+                                {/* ORDER  */}
+                                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ccc',borderRadius: '8xpx', 
+                                        padding: '5px 10px', 
+                                        height: '33px', backgroundColor:'#F8F8F8',
+                                    }}>
+                                       <img src={searchIcon} 
+                                            alt="Search" 
+                                            style={{ height: '15px', marginRight: '8px' }} />
+                                        <input
                                             value={value}
                                             onChange={handleChange}
-                                            placeholder="Order No,Invoice No,Customer"
-                                            prefix={
-                                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                    <img src={searchIcon}
-                                                        style={{ height: '15px' }} />
-                                                </div>
-                                            }
-                                        />
+                                            placeholder="Order No, Invoice No, Customer"
+                                            style={{
+                                            border: 'none',
+                                            outline: 'none',
+                                            flex: 1,
+                                        }}/>
                                     </div>
-                                    <div style={{ display: 'flow', width: '14%', marginLeft: '16px' }}>
-                                        <TextField
+                                    {/*NAME PRODUCT  */}
+                                    <div style={{ width: '14%', marginLeft: '16px' }}>
+                                        <input
                                             value={value}
                                             onChange={handleChange}
                                             placeholder="Product Name"
+                                            style={{
+                                            width: '100%',
+                                            height: '33px',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '8px',
+                                            padding: '5px',
+                                            backgroundColor:'#F8F8F8',
+                                            }}
                                         />
-                                    </div>
-                                    <div style={{ display: 'flow', width: '15%', marginLeft: '16px' }}>
-                                        <TextField
+                                        </div>
+                                    {/* PAYMENT */}
+                                    <div style={{ width: '15%', marginLeft: '16px' }}>
+                                        <select
                                             value={value}
                                             onChange={handleChange}
-                                            placeholder="Payment Status"
-                                        />
-                                    </div>
-
+                                            style={{
+                                            width: '100%',
+                                            height: '33px',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '8px',
+                                            padding: '5px',
+                                            backgroundColor:'#F8F8F8',
+                                            cursor: 'pointer',
+                                            fontSize:'14px',
+                                            fontFamily:'Inter',
+                                            fontWeight:'400',
+                                            color:'#202020'
+                                            }}>
+                                            <option value=""> Payment Status</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="authorized">Authorized</option>
+                                            <option value="partially_paid">Partially Paid</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="partially_refunded">Partially Refunded</option>
+                                            <option value="refunded">Refunded</option>
+                                            <option value="voided">Voided</option>
+                                        </select>
+                                        </div>
+                                        {/* FULFILLEMENT */}
                                     <div style={{ display: 'flow', width: '16%', marginLeft: '16px' }}>
-                                        <TextField
-                                            value={value}
-                                            onChange={handleChange}
-                                            placeholder="Fulfillment Status"
-                                        />
+                                        <select 
+                                           value={value}
+                                           onChange={handleChange}
+                                           style={{
+                                             width:'100%',
+                                             height:'33px',
+                                             border:'1px solid #ccc',
+                                             borderRadius:'8px',
+                                             backgroundColor:'#F8F8F8',
+                                             cursor:'pointer',
+                                             fontSize:'14px',
+                                             fontFamily:'Inter',
+                                             fontWeight:'400',
+                                             color:'#202020'
+                                            }}
+                                        >
+                                            <option value="">Fullfillement Status</option>
+                                            <option value="fullfilled">Fullfilled</option>
+                                            <option value="not fullfilled">Not Fullfilled</option>
+                                            <option value="partially filled">Partially Fullfilled</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
                                     </div>
-
+                                    {/* DATE  */}
                                     <div style={{ display: 'flow', width: '14%', marginLeft: '16px' }}>
                                         <TextField
                                             value={value}
@@ -294,6 +339,7 @@ export function OnlineOrders() {
                                     </div>
                                 </div>
                                 <div>
+                                    {/* BUTTONS SEARCH AND CLEAR */}
                                     <div
                                         style={{
                                             display: 'flex',

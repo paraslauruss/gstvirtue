@@ -14,13 +14,13 @@ const axios = require('axios');
 
 //         const processedCustomers = [];
 //         for (const customer of customers) {
-//             const { id, title, firstName, lastName, email, phone, companyName,gstNumber,gst,hsnCode,miniAmount,miniGst,cess,address } = customer;
+//             const { id, title, firstName, lastName, email, phone, companyName,gstNumber,gst,hsnCodeCode,miniAmount,miniGst,cess,address } = customer;
 //             if (!id || isNaN(id)) {
 //                 return res.status(400).json({ message: `Invalid product ID format for product: ${title}. ID must be numeric.` });
 //             }
 //             const updatedCustomer = await Customer.findOneAndUpdate(
 //                 { id }, // Find by product ID
-//                 { title, firstName, lastName, email, phone, companyName,gstNumber,gst,hsnCode,miniAmount,miniGst,cess,address  }, // Fields to update
+//                 { title, firstName, lastName, email, phone, companyName,gstNumber,gst,hsnCodeCode,miniAmount,miniGst,cess,address  }, // Fields to update
 //                 { new: true, upsert: true, setDefaultsOnInsert: true } // Upsert options
 //             );
 //             processedCustomers.push(updatedCustomer);
