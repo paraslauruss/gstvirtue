@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "3a4bbaa22deaf3262992d132f7d7f53d"
-application_url = "https://rain-trademarks-cuba-socket.trycloudflare.com"
+application_url = "https://bolt-later-threat-io.trycloudflare.com"
 embedded = true
 name = "gst-virtue"
 handle = "gst-virtue"
@@ -20,9 +20,9 @@ scopes = "read_customers,read_orders,read_products"
 
 [auth]
 redirect_urls = [
-  "https://rain-trademarks-cuba-socket.trycloudflare.com/auth/callback",
-  "https://rain-trademarks-cuba-socket.trycloudflare.com/auth/shopify/callback",
-  "https://rain-trademarks-cuba-socket.trycloudflare.com/api/auth/callback"
+  "https://bolt-later-threat-io.trycloudflare.com/auth/callback",
+  "https://bolt-later-threat-io.trycloudflare.com/auth/shopify/callback",
+  "https://bolt-later-threat-io.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

@@ -126,6 +126,7 @@ router.get('/', async (req, res) => {
         let query = {store_name: storeName};
         if (search) {
             query = {
+                store_name: storeName,
                 $or: [
                     { first_name: { $regex: new RegExp(search, 'i') } },
                     { last_name: { $regex: new RegExp(search, 'i') } }
