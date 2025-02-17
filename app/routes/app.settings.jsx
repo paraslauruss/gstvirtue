@@ -5,6 +5,7 @@ import {
     Tabs,
     Text
 } from "@shopify/polaris";
+import { authenticate } from "../shopify.server";
 import { useCallback, useState } from "react";
 import { StoreInformation } from "../settings/store_information";
 import { Locations } from "../settings/locations";
@@ -14,15 +15,20 @@ import { EmailSettings } from "../settings/email_settings";
 import { Integrations } from "../settings/integrations";
 
 export const loader = async ({ request }) => {
-
-    return null;
-};
-
-export const action = async ({ request }) => {
-    const { admin } = await authenticate.admin(request);
+    const { admin, session } = await authenticate.admin(request);
 
     return {
         successMessage: "Success",
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
+
+export const action = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        successMessage: "Success"
     };
 };
 
@@ -67,7 +73,7 @@ export default function Index() {
     ];
 
     return (
-        <div style={{backgroundColor: "#ffffff", padding: '30px'}}>
+        <div style={{ backgroundColor: "#ffffff", padding: '30px' }}>
             <div style={{ display: "flex" }}>
                 {tabs.map((tab, index) => (
                     <div
@@ -104,8 +110,8 @@ export default function Index() {
             {selected === 4 && <EmailSettings />}
             {selected === 5 && <Integrations />}
         </div>
-        
-        
+
+
 
     );
 }

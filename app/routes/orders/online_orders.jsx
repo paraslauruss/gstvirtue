@@ -21,11 +21,8 @@ import { XIcon } from '@shopify/polaris-icons';
 export function OnlineOrders() {
 
     const fetcher = useFetcher();
-    // const data = fetcher.data;
     const shopify = useAppBridge();
-    const data = useLoaderData();
-    const orderList = data.orders.data.orders.edges;
-    const productList = data.orders.data.orders.edges;
+   
     
 
     const [shopUrl, setShopUrl] = useState(null);
@@ -406,56 +403,56 @@ export function OnlineOrders() {
                                 </div>
                             </div>
                             {  
-                                orderList.map((order, index) => {
-                                    return (
-                                        <div style={{
-                                            borderRadius: '4px', fontSize: '14px', padding: '10px 20px', color: '#000000', backgroundColor: '#ffffff', flexDirection: 'row', display: 'flex'
-                                        }}>
-                                            <div style={{ width: '12.5%' }}>
-                                                <a href={`https://${shopUrl}/admin/orders/${order.node.id.split('/').pop()}`} target="_blank" rel="noopener noreferrer">
-                                                    {order.node.name}
-                                                </a>
-                                                {/* <Link url={`https://admin.shopify.com/store/gst-paras/orders/${order.node.id.split('/').pop()}`}>{order.node.name}</Link> */}
-                                            </div>
-                                            <div style={{ width: '12.5%' }}>
-                                                <Text>{(index + 1).toString().padStart(3, '0')}</Text>
-                                            </div>
-                                            <div style={{ width: '12.5%' }}>
-                                                <Text>{new Intl.DateTimeFormat("en-GB", {
-                                                    day: "2-digit",
-                                                    month: "short",
-                                                    year: "numeric",
-                                                }).format(new Date(order.node.createdAt))}</Text>
-                                            </div>
-                                            <div style={{ width: '12.5%' }}>
-                                                <Text>{order.node.customer?.displayName}</Text>
-                                            </div>
-                                            <div style={{ width: '12.5%' }}>
-                                                <Text>{new Intl.NumberFormat("en-US", {
-                                                    style: "currency",
-                                                    currency: order.node.totalPriceSet.shopMoney.currencyCode,
-                                                }).format(order.node.totalPriceSet.shopMoney.amount)}</Text>
-                                            </div>
-                                            <div style={{ width: '12.5%' }}>
-                                                <CustomBadge status={order.node.displayFinancialStatus} />
-                                            </div>
-                                            <div style={{ width: '12.5%' }}>
-                                                <Text>{order.node.displayFulfillmentStatus === "UNFULFILLED" ? "Not Fulfilled" : "Fulfilled"}</Text>
-                                            </div>
-                                            <div style={{ width: '30%' }}>
-                                                <img src={ic_download} style={{ height: '16px', cursor: 'pointer' }} alt="Download" onClick={() => handleDownload(order, (index + 1).toString().padStart(3, '0'))} />
-                                                <img src={ic_edit} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_swap} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_print} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_email} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_calculator} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_pick_up} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_fulfillment} style={{ height: '16px', marginLeft: '15px' }} />
-                                                <img src={ic_refresh} style={{ height: '16px', marginLeft: '15px' }} />
-                                            </div>
-                                        </div>
-                                    )
-                                })
+                                // orderList.map((order, index) => {
+                                //     return (
+                                //         <div style={{
+                                //             borderRadius: '4px', fontSize: '14px', padding: '10px 20px', color: '#000000', backgroundColor: '#ffffff', flexDirection: 'row', display: 'flex'
+                                //         }}>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <a href={`https://${shopUrl}/admin/orders/${order.node.id.split('/').pop()}`} target="_blank" rel="noopener noreferrer">
+                                //                     {order.node.name}
+                                //                 </a>
+                                //                 {/* <Link url={`https://admin.shopify.com/store/gst-paras/orders/${order.node.id.split('/').pop()}`}>{order.node.name}</Link> */}
+                                //             </div>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <Text>{(index + 1).toString().padStart(3, '0')}</Text>
+                                //             </div>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <Text>{new Intl.DateTimeFormat("en-GB", {
+                                //                     day: "2-digit",
+                                //                     month: "short",
+                                //                     year: "numeric",
+                                //                 }).format(new Date(order.node.createdAt))}</Text>
+                                //             </div>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <Text>{order.node.customer?.displayName}</Text>
+                                //             </div>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <Text>{new Intl.NumberFormat("en-US", {
+                                //                     style: "currency",
+                                //                     currency: order.node.totalPriceSet.shopMoney.currencyCode,
+                                //                 }).format(order.node.totalPriceSet.shopMoney.amount)}</Text>
+                                //             </div>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <CustomBadge status={order.node.displayFinancialStatus} />
+                                //             </div>
+                                //             <div style={{ width: '12.5%' }}>
+                                //                 <Text>{order.node.displayFulfillmentStatus === "UNFULFILLED" ? "Not Fulfilled" : "Fulfilled"}</Text>
+                                //             </div>
+                                //             <div style={{ width: '30%' }}>
+                                //                 <img src={ic_download} style={{ height: '16px', cursor: 'pointer' }} alt="Download" onClick={() => handleDownload(order, (index + 1).toString().padStart(3, '0'))} />
+                                //                 <img src={ic_edit} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_swap} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_print} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_email} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_calculator} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_pick_up} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_fulfillment} style={{ height: '16px', marginLeft: '15px' }} />
+                                //                 <img src={ic_refresh} style={{ height: '16px', marginLeft: '15px' }} />
+                                //             </div>
+                                //         </div>
+                                //     )
+                                // })
                             }
                         </Card>
 

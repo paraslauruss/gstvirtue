@@ -3,106 +3,45 @@ import {
     Card,
     Divider,
     Page,
-    TextField,
-    RadioButton,
 } from "@shopify/polaris";
 import ic_info from '../assets/images/ic_info.png'
 import iv_resync from '../assets/images/iv_resync.png'
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Switch from "react-switch";
+import { useLoaderData } from "@remix-run/react";
+
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
 
 export function Locations() {
 
-    const [companyLegalNameValue, setCompanyLegalNameValue] = useState('');
-    const [locationBrandNameValue, setLocationBrandNameValue] = useState('');
-    const [locationPhoneValue, setLocationPhoneValue] = useState('');
-    const [locationEmailValue, setLocationEmailValue] = useState('');
-    const [locationAddressValue, setLocationAddressValue] = useState('');
-    const [locationInvoicePrefixValue, setLocationInvoicePrefixValue] = useState('');
-    const [locationInvoiceNumberValue, setLocationInvoiceNumberValue] = useState('');
 
-    const [isOn, setIsOn] = useState(false);
-
-    const handleToggle = () => {
-        setIsOn(!isOn);
+    const handleToggle = (index) => {
+        const updatedLocations = [...locations];
+        updatedLocations[index].show_location = !updatedLocations[index].show_location;
+        setLocations(updatedLocations);
     };
 
-    const handleCompanyLegalNameChange = useCallback(
-        (newValue) => setCompanyLegalNameValue(newValue),
-        [],
-    );
-    const handleLocationBrandNameChange = useCallback(
-        (newValue) => setLocationBrandNameValue(newValue),
-        [],
-    );
-    const handleLocationPhoneChange = useCallback(
-        (newValue) => setLocationPhoneValue(newValue),
-        [],
-    );
-    const handleLocationEmailChange = useCallback(
-        (newValue) => setLocationEmailValue(newValue),
-        [],
-    );
-    const handleLocationAddressChange = useCallback(
-        (newValue) => setLocationAddressValue(newValue),
-        [],
-    );
-    const handleLocationInvoicePrefixChange = useCallback(
-        (newValue) => setLocationInvoicePrefixValue(newValue),
-        [],
-    );
-    const handleLocationInvoiceNumberChange = useCallback(
-        (newValue) => setLocationInvoiceNumberValue(newValue),
-        [],
-    );
 
 
-    const [blankaCompanyLegalNameValue, setBlankaCompanyLegalNameValue] = useState('');
-    const [blankaLocationBrandNameValue, setBlankaLocationBrandNameValue] = useState('');
-    const [blankaLocationPhoneValue, setBlankaLocationPhoneValue] = useState('');
-    const [blankaLocationEmailValue, setBlankaLocationEmailValue] = useState('');
-    const [blankaLocationAddressValue, setBlankaLocationAddressValue] = useState('');
-    const [blankaLocationInvoicePrefixValue, setBlankaLocationInvoicePrefixValue] = useState('');
-    const [blankaLocationInvoiceNumberValue, setBlankaLocationInvoiceNumberValue] = useState('');
 
-    const [isBlankaOn, setBlankaIsOn] = useState(false);
 
-    const handleBlankaToggle = () => {
-        setBlankaIsOn(!isBlankaOn);
+    const handleChange = (e, index) => {
+        const { name, value } = e.target;
+        const updatedLocations = [...locations];
+        updatedLocations[index] = { ...updatedLocations[index], [name]: value };
+        setLocations(updatedLocations);
     };
-
-    const handleBlankaCompanyLegalNameChange = useCallback(
-        (newValue) => setBlankaCompanyLegalNameValue(newValue),
-        [],
-    );
-    const handleBlankaLocationBrandNameChange = useCallback(
-        (newValue) => setBlankaLocationBrandNameValue(newValue),
-        [],
-    );
-    const handleBlankaLocationPhoneChange = useCallback(
-        (newValue) => setBlankaLocationPhoneValue(newValue),
-        [],
-    );
-    const handleBlankaLocationEmailChange = useCallback(
-        (newValue) => setBlankaLocationEmailValue(newValue),
-        [],
-    );
-    const handleBlankaLocationAddressChange = useCallback(
-        (newValue) => setBlankaLocationAddressValue(newValue),
-        [],
-    );
-    const handleBlankaLocationInvoicePrefixChange = useCallback(
-        (newValue) => setBlankaLocationInvoicePrefixValue(newValue),
-        [],
-    );
-    const handleBlankaLocationInvoiceNumberChange = useCallback(
-        (newValue) => setBlankaLocationInvoiceNumberValue(newValue),
-        [],
-    );
 
     const [gstSelectedOption, setGstSelectedOption] = useState('gst-store-address');
 
-    const handleChange = (event) => {
+    const handleGSTChange = (event) => {
         setGstSelectedOption(event.target.value);
     };
 
@@ -112,13 +51,82 @@ export function Locations() {
         setPosSelectedOption(event.target.value);
     };
 
-    const [value1, setValue1] = useState('disabled1');
+    const [locations, setLocations] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const session = useLoaderData();
+    const storeName = session?.storeName;
+    const accessToken = session?.accessToken;
 
 
-    const handleChange1 = useCallback(
-        (_, newValue1) => setValue1(newValue1),
-        [],
-    );
+
+    useEffect(() => {
+        if (!storeName || !accessToken) {
+            console.warn("Missing storeName or accessToken");
+            return;
+        }
+        const fetchLocations = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                console.log("Fetching with headers:", { storeName, accessToken });
+                const response = await fetch('http://localhost:3001/api/locations', {
+                    method: 'GET',
+                    headers: {
+                        'store-name': storeName,
+                        'api-version': '2025-01',
+                        'access-token': accessToken
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching data: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                setLocations(data.locations);
+                setGstSelectedOption(data.invoice_gst);
+                setPosSelectedOption(data.pos_order);
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLocations();
+    }, [storeName, accessToken]);
+
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/locations', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'store-name': storeName,
+                    'api-version': '2025-01',
+                    'access-token': accessToken
+                },
+                body: JSON.stringify({
+                    invoice_gst: gstSelectedOption,
+                    pos_order: posSelectedOption,
+                    locations: locations
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error updating locations: ${response.statusText}`);
+            }
+
+            const updatedLocations = await response.json();
+            setLocations(updatedLocations.locations);
+            shopify.toast.show('Locations updated successfully');
+        } catch (error) {
+            setError(error.message);
+        }
+    };
 
     return (
         <Page>
@@ -130,8 +138,9 @@ export function Locations() {
                         padding: '10px 20px',
                         fontSize: '15px',
                         color: 'white',
-                        borderRadius: '10px'
-                    }}>Save</div>
+                        borderRadius: '10px',
+                        cursor: 'pointer'
+                    }} onClick={handleSubmit}>Save</div>
             </div>
             <div style={{ marginTop: '20px' }}>
                 <Card>
@@ -155,152 +164,289 @@ export function Locations() {
                         </div>
                     </div>
                 </Card>
-
-                <div style={{ marginTop: '20px' }}>
+                {loading && <p>Loading...</p>}
+                {error && <p className="text-red-500">{error}</p>}
+                {!loading && !error && locations.map((location, index) => (<div style={{ marginTop: '20px' }}>
                     <Card>
-                        <Text variant="headingLg" fontWeight="bold">Shop location</Text>
+                        <Text variant="headingLg" fontWeight="bold">{location.name}</Text>
                         <div style={{ marginTop: '20px', marginBottom: '20px' }}>
                             <Divider />
                         </div>
 
                         <div style={{ display: 'flex' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Company Legal Name"
-                                    value={companyLegalNameValue}
-                                    onChange={handleCompanyLegalNameChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Company Legal Name
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="company_legal_name"
+                                    value={location.company_legal_name}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Company Name"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Brand Name"
-                                    value={locationBrandNameValue}
-                                    onChange={handleLocationBrandNameChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Brand Name
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_brand_name"
+                                    value={location.location_brand_name}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Brand Name"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Phone"
-                                    value={locationPhoneValue}
-                                    onChange={handleLocationPhoneChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Phone
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_phone"
+                                    value={location.location_phone}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Phone"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Email"
-                                    value={locationEmailValue}
-                                    onChange={handleLocationEmailChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Email
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_email"
+                                    value={location.location_email}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Email"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Address"
-                                    value={locationAddressValue}
-                                    onChange={handleLocationAddressChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Address
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_address"
+                                    value={location.location_address}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Address"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location City"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location City
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="city"
+                                    value={location.city}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location City"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    disabled
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Pincode"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Pincode
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="zip"
+                                    value={location.zip}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Pincode"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    disabled
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location State"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location State
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="province"
+                                    value={location.province}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location State"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    disabled
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location State Code"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location State Code
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="province_code"
+                                    value={location.province_code}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location State Code"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    disabled
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Country Name"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Country Name
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="country_name"
+                                    value={location.country_name}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Country Name"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    disabled
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Country Code"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Country Code
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="country_code"
+                                    value={location.country_code}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Country Code"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    disabled
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location GST Number"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location GST Number
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_gst_number"
+                                    value={location.location_gst_number}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location GST Number"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location PAN Number"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location PAN Number
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_pan_number"
+                                    value={location.location_pan_number}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location PAN Number"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location CIN Number"
-                                    disabled autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location CIN Number
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_cin_number"
+                                    value={location.location_cin_number}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location CIN Number"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', marginTop: '20px' }}>
                             <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Invoice Prefix"
-                                    value={locationInvoicePrefixValue}
-                                    onChange={handleLocationInvoicePrefixChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Invoice Prefix
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_invoice_prefix"
+                                    value={location.location_invoice_prefix}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Invoice Prefix"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                             <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Invoice Number"
-                                    value={locationInvoiceNumberValue}
-                                    onChange={handleLocationInvoiceNumberChange}
-                                    autoComplete="off"
+                                <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+                                    Location Invoice Number
+                                </div>
+
+                                <input
+                                    type="text"
+                                    name="location_invoice_number"
+                                    value={location.location_invoice_number}
+                                    onChange={(e) => handleChange(e, index)}
+                                    placeholder="Enter Location Invoice Number"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
+
                             </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px', height: '100%' }}>
                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginRight: '10px', height: '100%' }}>
                                 <Switch
-                                    onChange={handleToggle}
-                                    checked={isOn}
+                                    onChange={() => handleToggle(index)}
+                                    checked={location.show_location}
                                     uncheckedIcon={false}
                                     checkedIcon={false}
                                     height={15}
@@ -318,173 +464,8 @@ export function Locations() {
                             </Text>
                         </div>
                     </Card>
-                </div>
+                </div>))}
 
-                <div style={{ marginTop: '20px' }}>
-                    <Card>
-                        <Text variant="headingLg" fontWeight="bold">Blanka</Text>
-                        <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-                            <Divider />
-                        </div>
-
-                        <div style={{ display: 'flex' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Company Legal Name"
-                                    value={blankaCompanyLegalNameValue}
-                                    onChange={handleBlankaCompanyLegalNameChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Brand Name"
-                                    value={blankaLocationBrandNameValue}
-                                    onChange={handleBlankaLocationBrandNameChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Phone"
-                                    value={blankaLocationPhoneValue}
-                                    onChange={handleBlankaLocationPhoneChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Email"
-                                    value={blankaLocationEmailValue}
-                                    onChange={handleBlankaLocationEmailChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Address"
-                                    value={blankaLocationAddressValue}
-                                    onChange={handleBlankaLocationAddressChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location City"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Pincode"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location State"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location State Code"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Country Name"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Country Code"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location GST Number"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location PAN Number"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location CIN Number"
-                                    disabled autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', marginTop: '20px' }}>
-                            <div style={{ width: '100%', marginRight: '20px' }}>
-                                <TextField
-                                    label="Location Invoice Prefix"
-                                    value={blankaLocationInvoicePrefixValue}
-                                    onChange={handleBlankaLocationInvoicePrefixChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                            <div style={{ width: '100%', marginLeft: '20px' }}>
-                                <TextField
-                                    label="Location Invoice Number"
-                                    value={blankaLocationInvoiceNumberValue}
-                                    onChange={handleBlankaLocationInvoiceNumberChange}
-                                    autoComplete="off"
-                                />
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px', height: '100%' }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginRight: '10px', height: '100%' }}>
-                                <Switch
-                                    onChange={handleBlankaToggle}
-                                    checked={isBlankaOn}
-                                    uncheckedIcon={false}
-                                    checkedIcon={false}
-                                    height={15}
-                                    width={30}
-                                    onColor="#E2EBD6"
-                                    offColor="#F4F4F4"
-                                    onHandleColor="#74A535"
-                                    boxShadow="none"
-                                    activeBoxShadow="none"
-                                    handleDiameter={12}
-                                />
-                            </div>
-                            <Text as="p" fontWeight="bold" style={{ margin: 0 }}>
-                                Show Location Invoice No in Invoice
-                            </Text>
-                        </div>
-                    </Card>
-
-
-                </div>
 
                 <div style={{ marginTop: '20px' }}>
                     <Card>
@@ -505,7 +486,7 @@ export function Locations() {
                                                 style={{
                                                     display: 'none', // Hide default radio button
                                                 }}
-                                                onChange={handleChange}
+                                                onChange={handleGSTChange}
                                             />
                                             <span
                                                 style={{
@@ -535,7 +516,7 @@ export function Locations() {
                                             </span>
                                             <div style={{ marginLeft: "5px" }}>
                                                 <Text variant="headingXs" fontWeight="regular" style={{ margin: 0 }}>
-                                                Store Address
+                                                    Store Address
                                                 </Text>
                                             </div>
                                         </label>
@@ -558,7 +539,7 @@ export function Locations() {
                                             }}
                                             value="gst-location-address"
                                             checked={gstSelectedOption === 'gst-location-address'}
-                                            onChange={handleChange}
+                                            onChange={handleGSTChange}
                                         />
                                         <span
                                             style={{
@@ -602,7 +583,7 @@ export function Locations() {
                         <div style={{ marginTop: '20px' }}></div>
                         <Text variant="headingMd" fontWeight="bold">For POS Orders, Select Invoice GST Calculation based on Store address or POS Location</Text>
                         <div style={{ display: 'flex', marginTop: '10px' }}>
-                        <div style={{ marginRight: '10px' }}>
+                            <div style={{ marginRight: '10px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px', }}>
                                         <label style={{
@@ -647,7 +628,7 @@ export function Locations() {
                                             </span>
                                             <div style={{ marginLeft: "5px" }}>
                                                 <Text variant="headingXs" fontWeight="regular" style={{ margin: 0 }}>
-                                                Store Address
+                                                    Store Address
                                                 </Text>
                                             </div>
                                         </label>
@@ -700,7 +681,7 @@ export function Locations() {
                                         </span>
                                         <div style={{ marginLeft: "5px" }}>
                                             <Text variant="headingXs" fontWeight="regular" style={{ margin: 0 }}>
-                                            POS Location Address
+                                                POS Location Address
                                             </Text>
                                         </div>
                                     </label>

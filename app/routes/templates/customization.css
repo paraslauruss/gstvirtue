@@ -1,0 +1,94 @@
+.container {
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+}
+
+.backButton {
+    cursor: pointer;
+}
+
+.title {
+    font-size: 18px;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+.headerRight {
+    display: flex;
+    gap: 20px;
+}
+
+.customizeLabels {
+    font-size: 14px;
+    background-color: #74A535;
+    border-radius: 4px;
+    padding: 5px 10px;
+    color: white;
+}
+
+.changeStyle,
+.reset {
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 10px;
+    color: black;
+}
+
+.custom-body {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.custom-text {
+    font-size: 16px;
+}
+
+.custom-columns {
+    margin-top: 5px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.custom-button-container {
+    display: flex;
+    margin-top: 10px;
+}
+
+.custom-button {
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 10px;
+    color: black;
+    background: none;
+    cursor: pointer;
+}
+
+.custom-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+    font-size: 18px;
+    color: white;
+    padding: 10px 20px;
+    background-color: #565656;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.custom-container {
+    margin-top: 20px;
+}

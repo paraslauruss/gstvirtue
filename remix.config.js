@@ -26,5 +26,12 @@ module.exports = {
         "/api/customers": "http://localhost:3001"
       }
     }
-  }
+  },
+  routes: async (defineRoutes) => {
+    return defineRoutes((route) => {
+      route('invoicePreview', 'routes/invoicePreview.jsx');
+      route('invoice', 'routes/invoice.jsx');
+      route('template.movie', 'routes/template.movie.jsx');
+    });
+  },
 };

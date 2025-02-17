@@ -6,31 +6,52 @@ const bodyParser = require('body-parser');
 const productRoute = require('./routes/products');
 const customerRoute = require('./routes/customer');
 const productRoutes = require('./routes/productRoutes');
+const settingRoutes = require('./routes/setting');
+const locationsRoute = require('./routes/location');
+const prefixRunningNumbersRoute = require('./routes/prefix_running_numbers');
+const gstSettingsRoute = require('./routes/gst_settings');
+const emailSettingsRoute = require('./routes/email_settings');
+const htmlRoutes = require('./routes/htmlRoutes');
+const templateRoutes = require('./routes/template');
+const customizeLabelRoutes = require('./routes/customize_label');
+const path = require('path');
 
 const app = express();
 app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-    origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
-    methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type,store-name,api-version,access-token"
-  }));app.use(express.json());
+  origin: "https://limits-supported-axis-ave.trycloudflare.com",  // Aapke frontend ka URL
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,store-name,api-version,access-token"
+}));
+
+app.use(express.json());
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Use the product routes
 app.use('/api/products', productRoute);
 app.use('/api/customers', customerRoute);
 app.use('/api/all-products', productRoutes);
-// Connect to MongoDB
+app.use('/api/settings', settingRoutes);
+app.use('/api/locations', locationsRoute);
+app.use('/api/prefix-running-numbers', prefixRunningNumbersRoute);
+app.use('/api/gst-settings', gstSettingsRoute);
+app.use('/api/email-settings', emailSettingsRoute);
+app.use('/api/html', htmlRoutes);
+app.use('/api/template', templateRoutes);
+app.use('/api/customize-label', customizeLabelRoutes);
 
+// Connect to MongoDB
 require('dotenv').config(); // This will load the variables from the .env file
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 }).then(() => console.log('MongoDB connected'))
-.catch(err => console.log('Error connecting to MongoDB:', err));
+  .catch(err => console.log('Error connecting to MongoDB:', err));
 
 
 
