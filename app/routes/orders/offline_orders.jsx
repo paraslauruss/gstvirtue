@@ -1,4 +1,4 @@
-import {
+    import {
     Text,
     Card,
     Divider,
@@ -10,19 +10,18 @@ import searchIcon from '../../assets/images/searchIcon.png';
 import ic_date from '../../assets/images/ic_date.png';
 import ic_download from '../../assets/images/ic_download.png';
 import ic_edit from '../../assets/images/ic_edit.png';
-import ic_swap from '../../assets/images/ic_swap.png';
 import ic_print from '../../assets/images/ic_print.png';
 import ic_email from '../../assets/images/ic_email.png';
-import ic_calculator from '../../assets/images/ic_calculator.png';
-import ic_pick_up from '../../assets/images/ic_pick_up.png';
-import ic_fulfillment from '../../assets/images/ic_fulfillment.png';
-import ic_refresh from '../../assets/images/ic_refresh.png';
-import { useCallback, useState, useRef } from "react";
+import ic_warning from '../../assets/images/ic_warning.jpg';
+import ic_delete from '../../assets/images/ic_delete.png';
+import { useCallback, useState, useRef , useEffect} from "react";
 import { CreateNewInvoice } from "./create_new_invoice";
-import { Modal, TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import RichTextEditor from "./rich_text_editor";
-
-
+// import { Modal, TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+ import RichTextEditor from "./rich_text_editor";
+ import DatePicker from "react-datepicker";
+ import "react-datepicker/dist/react-datepicker.css";
+ import "../report/DatePickerDialog.css";
+ import moment from 'moment';
 
 export function Dialog({ active, toggleModal }) {
 
@@ -392,19 +391,86 @@ export function Dialog({ active, toggleModal }) {
     );
 }
 
-export function SendEmailInvoiceDialog({ active, toggleModal }) {
+export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice }) {
 
-    const [editorContent, setEditorContent] = useState('');
+    // const defaultEditorContent = '<p>Hi <strong>Customer_Name</strong>,</p><p><br></p><h2><strong>Thank you for your purchase!</strong></h2><p>We\'re 
+    // getting your order ready to be shipped. We will notify you when it has been sent.</p><p><br></p><p><br></p><p>Kindly 
+    // Download your invoice of your Order <strong>invoice_number.</strong></p>';
 
-    const handleEditorChange = (content) => {
-      setEditorContent(content);
+    const defaultEditorContent = `
+           <div style="font-family: 'Inter', sans-serif; width: 100%; margin: 0 auto; background: #ffffff; padding: 20px;">
+                <!-- Header Section -->
+                <div style="text-align: center; padding-bottom: 10px;">
+                    <a href="https://admin.shopify.com/store/gst-paras/apps/gst-virtue/app" 
+                    style="color: #0073e6; text-decoration: none; font-size: 18px; font-weight: bold;">
+                    VirtueGst
+                    </a>
+                </div>
+
+                <hr style="border: none; border-top: 3px solid #003366; width: 100%;" />
+
+                <!-- Body Section -->
+                <p style="font-size: 14px; text-align: center;">Hi <strong>Customer_Name</strong>,</p>
+
+                <h2 style="color: #333333; text-align: center;">Thank you for your purchase!</h2>
+                <p style="color: #555555; font-size: 14px; text-align: center;">
+                    We're getting your order ready to be shipped. We will notify you when it has been sent.
+                </p>
+
+                <p style="font-size: 14px; text-align: center;">
+                    Kindly download your invoice for your order <strong>#invoice_number</strong>
+                </p>
+
+                <!-- Button Section (Left-Aligned) -->
+                <div style="margin: 20px 0; text-align: left;">
+                    <a href="YOUR_INVOICE_LINK" 
+                    style="background: #2937f0; color: #ffffff; padding: 12px 20px; text-decoration: none; 
+                            font-weight: bold; border-radius: 5px; display: inline-block;">
+                    Download Invoice
+                    </a>
+                </div>
+
+                <!-- Footer Section -->
+                <hr style="border: none; border-top: 3px solid #666; width: 100%;" />
+                <div style="text-align: center; font-size: 12px; background-color:#B8B8B8; color:#fff;">
+                    © by 
+                    <a href="https://admin.shopify.com/store/gst-paras/apps/gst-virtue/app" 
+                    style="color: #0073e6;">VirtueGst</a>, 
+                    Powered by 
+                    <a href="https://admin.shopify.com/store/gst-paras/apps/gst-virtue/app" 
+                    style="color: #0073e6;">VirtueGst</a>
+                </div>
+
+                </div>
+      `;
+    const [editorContent, setEditorContent] = useState(defaultEditorContent);
+
+    const [emailSubject, setEmailSubject] = useState('');
+    const [emailTo, setEmailTo] = useState('');
+    const [emailStatus, setEmailStatus] = useState(''); 
+
+    useEffect(() => {
+        if (selectedInvoice) {
+             // Construct the full email content, replacing the placeholders
+            const customerName = selectedInvoice.customerName || 'N/A';
+            const invoiceNumber = selectedInvoice.invoiceNumber || 'N/A';
+
+            //Replace the Values In editor content
+            let updatedEditorContent = defaultEditorContent.replace('Customer_Name', customerName);
+            updatedEditorContent = updatedEditorContent.replace('invoice_number', invoiceNumber);
+
+            setEditorContent(updatedEditorContent); // Set updated content in editor
+        } else {
+            setEditorContent(defaultEditorContent);//Setting default editor content
+            setEmailSubject('');
+            setEmailTo('');
+        }
+    }, [selectedInvoice]);
+
+    const handleEditorChange = (value) => {
+        setEditorContent(value);
     };
   
-    const handleSubmit = () => {
-      console.log('Editor Content:', editorContent);
-      // Add logic to handle form submission
-    }; 
-
     const [invoiceOption, setInvoiceOption] = useState('original');
 
     const handleInvoiceChange = (event) => {
@@ -416,6 +482,43 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
     const handleDownloadChange = (event) => {
         setDownloadOption(event.target.value);
     };
+
+    const handleSendEmail = async () => {
+        setEmailStatus('Sending...'); // Indicate sending status
+
+        const emailData = {
+            to: emailTo,
+            subject: emailSubject,
+            content: editorContent,
+        };
+ console.log('email', emailData);
+        try {
+            const response = await fetch('http://localhost:3001/send-email', { // Replace with your backend URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setEmailStatus('Email sent successfully!');
+                console.log('Email sent:', data);
+                // Optionally close the modal after successful sending
+                // toggleModal();
+            } else {
+                setEmailStatus(`Error sending email: ${data.message}`);
+                console.error('Error sending email:', data);
+            }
+        } catch (error) {
+            setEmailStatus(`Error sending email: ${error.message}`);
+            console.error('Error sending email:', error);
+        }
+    };
+
+  
 
     return (
         <div>
@@ -444,7 +547,8 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
                         backgroundColor: 'white',
                         zIndex: 9999,
                         width: '35%',
-                        borderRadius: '10px',
+                        borderRadius: '6px',
+                        paddingBottom: '20px'
                     }}
                 >
                     <div
@@ -454,7 +558,7 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
                             justifyContent: 'space-between',
                             backgroundColor: '#74A535',
                             padding: '10px 20px',
-                            borderRadius: '8px 8px 0px 0px',
+                            borderRadius: '6px 6px 0px 0px',
                         }}
                     >
                         <Text variant="headingLg">Send Invoice Email</Text>
@@ -466,29 +570,71 @@ export function SendEmailInvoiceDialog({ active, toggleModal }) {
                     </div>
 
                     <div style={{ marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
-                        <TextField
-                            label="Subject"
-                            placeholder="Invoice_Number"
+                         <h1 style={{fontFamily:'Inter', fontSize:'14px', color:'#000', marginBottom:'5px'}}>Subject :</h1>
+                        <input 
+                           placeholder="Invoice Number"
+                           style={{
+                             width:'100%',
+                             height:'33px',
+                             border:'1px solid #ccc',
+                             borderRadius:'4px',
+                             padding:'7px'
+                           }}
+                           value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
                         />
                     </div>
 
                     <div style={{ marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
-                        <TextField
-                            label="To"
-                            placeholder="Customer_Name"
+                         <h1 style={{fontFamily:'Inter', fontSize:'14px', color:'#000', marginBottom:'5px'}}>To:</h1>
+                        <input 
+                           placeholder="Custoemr_Name"
+                           style={{
+                             width:'100%',
+                             height:'33px',
+                             border:'1px solid #ccc',
+                             borderRadius:'4px',
+                             padding:'7px'
+                           }}
+                           value={emailTo}
+                            onChange={(e) => setEmailTo(e.target.value)}
                         />
                     </div>
 
-                    <div style={{ marginTop: '10px', marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
+                    <div style={{ marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
                         <Text as="p" fontWeight="regular">
                             Content
                         </Text>
+                        <div>
+                            <RichTextEditor 
+                               text={editorContent}
+                               onChange={handleEditorChange}
+                            />
+                        </div>
                     </div>
 
-                    <div>
-                        {/* <RichText /> */}
-                        
-                    </div>
+                    <div style={{fontSize:'12px',marginTop: '10px', marginRight: '20px', marginLeft: '20px' }}>
+                        <span style={{color:'red', fontWeight:'bold',paddingRight:'5px'}}>Note:</span> 
+                        Do Not Remove the <span style={{fontWeight:'bold'}}>"Customer_Name"</span> and 
+                       <span style={{fontWeight:'bold'}}> "Invoice_Number"</span>. These will be replaced with dynamic values of the invoice.
+                   </div>
+
+                   <div style={{display:'flex', justifyContent:'flex-end', alignContent:'center',marginTop: '10px', marginRight: '20px', marginLeft: '20px'}}>
+                      <button
+                        style={{
+                            width:'90px',
+                            height:'33px',
+                            backgroundColor:'#74A535',
+                            border:'1px solid #ccc',
+                            borderRadius:'4px',
+                            fontSize:'16px',
+                            color:'#fff',
+                            fontFamily:'Inter',
+                            cursor:'pointer'
+                        }}
+                      onClick={handleSendEmail}
+                      >Send</button>
+                   </div>
 
                 </div>
             )}
@@ -522,12 +668,154 @@ export function OfflineOrders() {
     if (typeof window === 'undefined') {
       return <div>Loading editor...</div>; // Fallback for SSR
     }
-  
+    // OFFLINE DATA 
+    const [invoiceData, setInvoiceData] = useState([]);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+    // SEARCH FUNCTIONALITY
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+
+    useEffect(() => {
+        const fetchAndMigrateInvoices = async () => { // Renamed for clarity
+          try {
+            const storedInvoices = JSON.parse(localStorage.getItem("invoiceData")) || [];
+    
+            if (!Array.isArray(storedInvoices)) {
+              console.error("Error: invoiceData is not an array", storedInvoices);
+              setInvoiceData([]);
+              setSearchResults([]); // Also clear search results
+              return; 
+            }
+            const updatedInvoices = storedInvoices.map(invoice => {
+              if (!invoice.customerName && invoice.hasOwnProperty('invoiceNumber')) {
+                const customerName = "Customer N/A"; // Or try to derive the name some other way
+                return { ...invoice, customerName: customerName };    
+              }
+              return invoice; // Return the original invoice if customerName already exists
+            });
+             localStorage.setItem("invoiceData", JSON.stringify(updatedInvoices));
+            setInvoiceData(updatedInvoices); 
+            setSearchResults(updatedInvoices); 
+    
+          } catch (error) {
+            console.error("Error retrieving/migrating invoice data:", error);
+            setInvoiceData([]);
+            setSearchResults([]); // Also clear search results
+          }
+        };
+    
+        fetchAndMigrateInvoices(); // Call the function
+    
+        const handleInvoiceSaved = () => {
+          fetchAndMigrateInvoices(); 
+        };
+    
+        window.addEventListener("invoiceSaved", handleInvoiceSaved);
+    
+        return () => {
+          window.removeEventListener("invoiceSaved", handleInvoiceSaved);
+        };
+      }, []);
+
+      const handleSearchTermChange = (event) => {
+        setSearchTerm(event.target.value);
+      };
+
+      const handleSearch = () => {
+        const startDateTimestamp = startDate ? startDate.getTime() : null;
+        const endDateTimestamp = endDate ? endDate.getTime() : null;
+
+        const filteredResults = invoiceData.filter(invoice => {
+            const searchTermMatch = searchTerm === '' ||
+                invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (invoice.customerName && invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+            let dateRangeMatch = true;
+            if (startDateTimestamp && endDateTimestamp) {
+                // Use moment to parse the invoiceDate with the correct format
+                const invoiceDateTimestamp = moment(invoice.invoiceDate, "DD/MM/YYYY").valueOf();
+                dateRangeMatch = invoiceDateTimestamp >= startDateTimestamp && invoiceDateTimestamp <= endDateTimestamp;
+            } else if (startDateTimestamp) {
+                // Use moment to parse the invoiceDate with the correct format
+                const invoiceDateTimestamp = moment(invoice.invoiceDate, "DD/MM/YYYY").valueOf();
+                dateRangeMatch = invoiceDateTimestamp >= startDateTimestamp;
+            } else if (endDateTimestamp) {
+                // Use moment to parse the invoiceDate with the correct format
+                const invoiceDateTimestamp = moment(invoice.invoiceDate, "DD/MM/YYYY").valueOf();
+                dateRangeMatch = invoiceDateTimestamp <= endDateTimestamp;
+            }
+
+            return searchTermMatch && dateRangeMatch;
+        });
+
+        setSearchResults(filteredResults);
+    };
+
+    const handleClear = () => {
+        setStartDate(null);
+        setSearchTerm('');
+        setSearchResults(invoiceData);
+    };
+
+    
+    //   DELTE THE ENTRY
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
+    const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+    const handleDeleteClick = (invoice) => {
+        setInvoiceToDelete(invoice);
+        setShowDeletePopup(true);
+      };
+
+      const handleConfirmDelete = () => {
+        if (!invoiceToDelete) return;
+      
+        const storedInvoices = JSON.parse(localStorage.getItem("invoiceData")) || [];
+        const updatedInvoices = storedInvoices.filter(inv => inv.invoiceNumber !== invoiceToDelete.invoiceNumber);
+      
+        localStorage.setItem("invoiceData", JSON.stringify(updatedInvoices));
+        setInvoiceData(updatedInvoices);  // Update UI
+        setShowDeletePopup(false);  // Close popup
+      };
+
+    //   EMAIL FUNCTION
+    // Function to open the email modal with a selected invoice
+    const openEmailModal = (invoice) => {
+        setSelectedInvoice(invoice);
+        setEmailActive(true);
+    };
+
+    // Function to close the email modal
+    const closeEmailModal = () => {
+        setSelectedInvoice(null);
+        setEmailActive(false);
+    };
+
+    // DATE PICKER
+    const [startDate , setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+    const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+    const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+
+    const handleStartDateChange = (date) => {
+        setStartDate(date);
+        setIsStartDatePickerOpen(false);
+    };
+
+    const handleEndDateChange = (date) => {
+        setEndDate(date);
+        setIsEndDatePickerOpen(false);
+    };
+    
+
     return (
       <>
         <Dialog active={active} toggleModal={toggleModal} />
-        <SendEmailInvoiceDialog active={emailActive} toggleModal={toggleEmailActiveModal} />
-        
+        <SendEmailInvoiceDialog
+                 active={emailActive}
+                 toggleModal={closeEmailModal}
+                 selectedInvoice={selectedInvoice}
+            />        
             <div>
                 {createInvoice ? (<CreateNewInvoice onClose={onCloseHandle}/>) : (<div>
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -546,8 +834,8 @@ export function OfflineOrders() {
                         <Card>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex' }}>
-                                    <div style={{ display: 'flow', width: '35%' }}>
-                                        <TextField
+                                    <div style={{ display: 'flow', width: '45%' }}>
+                                        <input
                                             placeholder="Order No,Invoice No,Customer"
                                             prefix={
                                                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -555,22 +843,78 @@ export function OfflineOrders() {
                                                         style={{ height: '15px' }} />
                                                 </div>
                                             }
+                                            style={{
+                                                width:'300px',
+                                                height:'33px',
+                                                border:'1px solid #ccc',
+                                                borderRadius:'4px',
+                                                backgroundColor:'#F0F0F0',
+                                                color:'#000',
+                                                padding:'4px'
+                                            }}
+                                            value={searchTerm}
+                                            onChange={handleSearchTermChange}
                                         />
                                     </div>
-                                    <div style={{ display: 'flow', width: '20%', marginLeft: '16px' }}>
-                                        <TextField
-                                            placeholder="Select Date"
-                                            prefix={<div style={{ display: 'flex', alignItems: 'center' }}><img src={ic_date} style={{ height: '15px' }} /></div>}
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flow', width: '20%', marginLeft: '16px' }}>
-                                        <TextField
-                                            placeholder="Select End Date"
-                                            prefix={<div style={{ display: 'flex', alignItems: 'center' }}><img src={ic_date} style={{ height: '15px' }} /></div>}
-                                        />
-                                    </div>
+                                    <div style={{ display: "flex", marginLeft: "16px", position: "relative", width:'35%'}}>
+                                    {/* Start Date Clickable Input Field */}
                                     <div
+                                        onClick={() => setIsStartDatePickerOpen(!isStartDatePickerOpen)}
                                         style={{
+                                            padding: "12px",
+                                            height: "33px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            width: "100%",
+                                            border: "1px solid #000",
+                                            borderRadius: "5px",
+                                            cursor: "pointer",
+                                            background: "#fff",
+                                        }}
+                                    >
+                                        <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                                        <span>{startDate ? startDate.toLocaleDateString("en-US") : "Select Start Date"}</span>
+                                    </div>
+
+                                    {/* Start Date Picker (Appears Below the Input) */}
+                                    {isStartDatePickerOpen && (
+                                        <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                                            <DatePicker
+                                                selected={startDate}
+                                                onChange={handleStartDateChange}
+                                                inline
+                                            />
+                                        </div>
+                                    )}
+                           </div>
+                     {/* END Start DATE */}
+                            <div style={{ display: "flex", width: "33%", marginLeft: "16px", position: "relative" }}>
+                                <div onClick={() => setIsEndDatePickerOpen(!isEndDatePickerOpen)}
+                                     style={{ padding: "12px",height: "33px",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                width: "100%",
+                                                border: "1px solid #000",
+                                                borderRadius: "5px",
+                                                cursor: "pointer",
+                                                background: "#fff",
+                                        }}>
+                                        <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                                        <span>{endDate ? endDate.toLocaleDateString("en-US") : "Select End Date"}</span>
+                                 </div>
+                                {isEndDatePickerOpen && (
+                                    <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                                         <DatePicker
+                                             selected={endDate}
+                                             onChange={handleEndDateChange}
+                                             inline
+                                          />
+                                    </div>
+                                  )}
+                            </div>  
+                            
+                                            
+                                    <div style={{
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -582,7 +926,7 @@ export function OfflineOrders() {
                                             cursor: 'pointer',
                                             marginLeft: '16px'
                                         }}
-                                        onClick={() => alert('Button clicked!')}
+                                        onClick={handleSearch}
                                     ><Text>Search</Text></div>
 
                                 </div>
@@ -600,7 +944,7 @@ export function OfflineOrders() {
                                         borderRadius: '4px',
                                         cursor: 'pointer',
                                     }}
-                                    onClick={() => alert('Button clicked!')}
+                                    onClick={handleClear}
                                 >
                                     <Text as="p" tone="subdued">Clear</Text>
                                 </div>
@@ -629,7 +973,7 @@ export function OfflineOrders() {
                                     >
                                         <Text as="p" tone="subdued">Bulk Download</Text>
                                     </div>
-                                    <div style={{ backgroundColor: '#74A535', padding: '5px 20px', marginLeft: '20px', borderRadius: '4px' }}>
+                                    <div style={{ backgroundColor: '#74A535', padding: '5px 20px', marginLeft: '20px', borderRadius: '4px', cursor:'pointer' }}>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="21" viewBox="0 0 18 21" fill="none">
                                             <path d="M13.1143 21C13.7281 21 14.3167 20.7511 14.7507 20.308C15.1847 19.865 15.4286 19.2641 15.4286 18.6375V17.8563H16.4571C16.8663 17.8563 17.2588 17.6904 17.5481 17.395C17.8375 17.0996 18 16.699 18 16.2813V11.8125C18 11.3948 17.8375 10.9942 17.5481 10.6988C17.2588 10.4034 16.8663 10.2375 16.4571 10.2375H6.17143C5.76224 10.2375 5.36981 10.4034 5.08046 10.6988C4.79112 10.9942 4.62857 11.3948 4.62857 11.8125V16.2813C4.62857 16.699 4.79112 17.0996 5.08046 17.395C5.36981 17.6904 5.76224 17.8563 6.17143 17.8563H13.8857V18.6375C13.8857 18.8464 13.8044 19.0467 13.6598 19.1943C13.5151 19.342 13.3189 19.425 13.1143 19.425H2.31429C2.10969 19.425 1.91347 19.342 1.7688 19.1943C1.62413 19.0467 1.54286 18.8464 1.54286 18.6375V8.1375H5.65714C5.96123 8.1375 6.26234 8.07632 6.54326 7.95746C6.82417 7.83861 7.07939 7.6644 7.29432 7.4448C7.50925 7.2252 7.67967 6.96451 7.79586 6.67763C7.91204 6.39076 7.9717 6.08332 7.97143 5.7729L7.9704 1.575H13.1153C13.3199 1.575 13.5161 1.65797 13.6608 1.80565C13.8055 1.95334 13.8867 2.15364 13.8867 2.3625V10.2249H15.4296V2.3625C15.4296 2.05216 15.3697 1.74487 15.2533 1.45817C15.137 1.17147 14.9664 0.910981 14.7514 0.691589C14.5364 0.472197 14.2811 0.298198 14.0002 0.179533C13.7193 0.0608685 13.4183 -0.000137694 13.1143 2.33354e-07H7.83566C7.5315 -2.54051e-06 7.23032 0.0612015 6.94934 0.180112C6.66837 0.299023 6.41311 0.473308 6.19817 0.693L0.678857 6.3315C0.463648 6.55092 0.29292 6.81149 0.176436 7.09832C0.059952 7.38515 -2.71716e-06 7.6926 0 8.0031V18.6375C0 19.2641 0.243826 19.865 0.677839 20.308C1.11185 20.7511 1.7005 21 2.31429 21H13.1143ZM6.42754 2.68695L6.4296 5.77395C6.42974 5.87745 6.40988 5.97997 6.37117 6.07564C6.33247 6.1713 6.27567 6.25824 6.20402 6.33148C6.13237 6.40471 6.04728 6.46281 5.95362 6.50245C5.85996 6.5421 5.75956 6.5625 5.65817 6.5625H2.63314L6.42754 2.68695ZM14.1603 11.8251C14.4552 11.8251 14.7141 11.8864 14.9369 12.0089C15.1611 12.1279 15.3333 12.2993 15.4533 12.5233C15.5781 12.7438 15.6405 12.9976 15.6405 13.2846C15.6405 13.5681 15.576 13.818 15.4471 14.0343C15.3177 14.2511 15.1298 14.4254 14.9061 14.5362C14.6736 14.6538 14.4062 14.713 14.1038 14.7137H13.4455C13.4249 14.7137 13.4143 14.7241 13.4136 14.7451V16.1731C13.4141 16.1989 13.4053 16.2239 13.3889 16.2435C13.3697 16.2602 13.3452 16.2692 13.32 16.2687H12.3377C12.3125 16.2692 12.288 16.2602 12.2688 16.2435C12.2526 16.2242 12.2439 16.1996 12.2441 16.1742V11.9196C12.2439 11.8942 12.2526 11.8696 12.2688 11.8503C12.288 11.8336 12.3125 11.8246 12.3377 11.8251H14.1603ZM10.6354 16.2435C10.6189 16.2244 10.6098 16.1997 10.6097 16.1742V11.9196C10.6095 11.8942 10.6182 11.8696 10.6344 11.8503C10.6536 11.8336 10.6781 11.8246 10.7033 11.8251H11.6856C11.7108 11.8246 11.7353 11.8336 11.7545 11.8503C11.7707 11.8696 11.7794 11.8942 11.7792 11.9196V16.1742C11.7794 16.1996 11.7707 16.2242 11.7545 16.2435C11.7353 16.2602 11.7108 16.2692 11.6856 16.2687H10.7033C10.6784 16.269 10.6543 16.26 10.6354 16.2435ZM7.11771 16.2687C7.09249 16.2692 7.06797 16.2602 7.0488 16.2435C7.03264 16.2242 7.02387 16.1996 7.02412 16.1742V15.2534C7.02387 15.211 7.0393 15.1701 7.06732 15.1389L8.8776 12.8856C8.88583 12.8765 8.88789 12.8677 8.88377 12.8593C8.87966 12.8509 8.87143 12.8467 8.85909 12.8467H7.11771C7.09249 12.8473 7.06797 12.8383 7.0488 12.8216C7.03264 12.8023 7.02387 12.7776 7.02412 12.7523V11.9196C7.02387 11.8942 7.03264 11.8696 7.0488 11.8503C7.06797 11.8336 7.09249 11.8246 7.11771 11.8251H10.1088C10.134 11.8246 10.1585 11.8336 10.1777 11.8503C10.1939 11.8696 10.2027 11.8942 10.2024 11.9196V12.8342C10.2032 12.8563 10.1997 12.8783 10.1921 12.899C10.1845 12.9198 10.173 12.9387 10.1582 12.9549L8.33657 15.2093C8.32834 15.2177 8.32629 15.2261 8.3304 15.2345C8.33451 15.2429 8.34274 15.2471 8.35509 15.2471H10.1088C10.134 15.2465 10.1585 15.2555 10.1777 15.2723C10.1939 15.2915 10.2027 15.3162 10.2024 15.3415V16.1742C10.2027 16.1996 10.1939 16.2242 10.1777 16.2435C10.1585 16.2602 10.134 16.2692 10.1088 16.2687H7.11771Z" fill="white" />
                                         </svg>
@@ -680,39 +1024,107 @@ export function OfflineOrders() {
                                     <Text>Action</Text>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', padding: '10px' }}>
-                                <div style={{ color: 'black', width: '10%' }}>
-                                    <Text>001</Text>
-                                </div>
-                                <div style={{ color: 'black', width: '10%' }}>
-                                    <Text>Paras Virani</Text>
-                                </div>
-                                <div style={{ color: 'black', width: '10%' }}>
-                                    <Text>3 Dec 2024</Text>
-                                </div>
-                                <div style={{ color: 'black', width: '10%' }}>
-                                    <Text>0.00</Text>
-                                </div>
-                                <div style={{ color: 'black', width: '10%' }}>
-                                    <Text>100.00</Text>
-                                </div>
-                                <div style={{ color: 'black', width: '10%' }}>
-                                    <div style={{ display: 'flex', width: '50px', backgroundColor: '#EDF7DF', color: "#74A535", justifyContent: 'center', borderRadius: '50px' }}>
-                                        <Text>Paid</Text>
+                            <div>
+                            <div style={{ display: 'flex', flexDirection: 'column', padding: '10px' }}>
+                            {Array.isArray(searchResults) && searchResults.length > 0 ? (
+                searchResults.map((invoice, index) => (
+                    <div key={index} style={{ display: 'flex', padding: '4px', alignItems: 'center' }}>
+                        <div style={{ color: 'black', width: '10%' }}>
+                            <span>{invoice.invoiceNumber}</span>
+                        </div>
+                        <div style={{ color: 'black', width: '10%' }}>
+                            <span>{invoice.customerName || "N/A"}</span>
+                        </div>
+                        <div style={{ color: 'black', width: '10%' }}>
+                            <span>{invoice.invoiceDate}</span>
+                        </div>
+                        <div style={{ color: 'black', width: '10%' }}>
+                            <span>{invoice.subtotal}</span>
+                        </div>
+                        <div style={{ color: 'black', width: '10%' }}>
+                            <span>{invoice.total}</span>
+                        </div>
+                        <div style={{ color: 'black', width: '65px' }}>
+                            <div style={{
+                                display: 'flex', padding: '5px 10px', backgroundColor: '#EDF7DF', color: "#74A535", justifyContent: 'center', borderRadius: '20px'
+                            }}>
+                                <span>{invoice.status}</span>
+                            </div>
                                     </div>
+                                    <div style={{ width: '30%', paddingLeft:'50px' }}>
+                                        <img src={ic_download} style={{ height: '16px', cursor: 'pointer' }} alt="Download" />
+                                        <img 
+                                            src={ic_edit} 
+                                            style={{ height: '16px', marginLeft: '15px', cursor: 'pointer' }} 
+                                            onClick={() => {
+                                            setSelectedInvoice(invoice); // Set invoice for editing
+                                            setCreateInvoice(true); // Navigate to CreateNewInvoice
+                                            }} 
+                                        />
+                                        <img src={ic_delete} style={{ height: '16px', marginLeft: '15px', cursor:'pointer' }}  onClick={() => handleDeleteClick(invoice)} />
+                                        {showDeletePopup && (
+                                            <div 
+                                                style={{
+                                                position: "fixed", 
+                                                top: 0, left: 0, width: "100%", height: "100%",
+                                                backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                zIndex: 1000
+                                                }}
+                                            >
+                                                <div 
+                                                style={{
+                                                    backgroundColor: "white",
+                                                    width: "400px", // Increased width
+                                                    height: "200px", // Increased height
+                                                    padding: "20px",
+                                                    borderRadius: "12px",
+                                                    textAlign: "center",
+                                                    border:'1px solid #ccc',
+                                                }}
+                                                >
+                                                <div>
+                                                     <img src={ic_warning} alt="information"
+                                                        style={{
+                                                            width:'73px',
+                                                            height:'70px',
+                                                            marginBottom:'20px'
+                                                        }}
+                                                     />
+                                                      <div style={{ fontSize: "16px", alignContent:'center', fontFamily:'Inter'  }}>
+                                                        <span>This can't be undone.</span>
+                                                      </div>
+                                                </div>
+                                                
+                                                <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop:'20px' }}>
+                                                    <button 
+                                                    style={{ backgroundColor: "red", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
+                                                    onClick={handleConfirmDelete} >
+                                                       Delete
+                                                    </button>
 
+                                                    <button 
+                                                    style={{ backgroundColor: "#C8C8C8", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
+                                                    onClick={() => setShowDeletePopup(false)}>
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                                </div>
+                                            </div>
+                                            )}
+                                        
+                                        <img src={ic_print} style={{ height: '16px', marginLeft: '15px' }} />
+                                        <img src={ic_email} 
+                                            style={{ height: '16px', marginLeft: '15px', cursor: 'pointer' }} 
+                                            onClick={() => openEmailModal(invoice)}/>                                        
+                                    </div>
                                 </div>
-                                <div style={{ width: '30%' }}>
-                                    <img src={ic_download} style={{ height: '16px', cursor: 'pointer' }} alt="Download" />
-                                    <img src={ic_edit} style={{ height: '16px', marginLeft: '15px' }} />
-                                    <img src={ic_swap} style={{ height: '16px', marginLeft: '15px' }} />
-                                    <img src={ic_print} style={{ height: '16px', marginLeft: '15px' }} />
-                                    <img src={ic_email} style={{ height: '16px', marginLeft: '15px', cursor: 'pointer' }} onClick={toggleEmailActiveModal} />
-                                    <img src={ic_calculator} style={{ height: '16px', marginLeft: '15px' }} />
-                                    <img src={ic_pick_up} style={{ height: '16px', marginLeft: '15px' }} />
-                                    <img src={ic_fulfillment} style={{ height: '16px', marginLeft: '15px' }} />
-                                    <img src={ic_refresh} style={{ height: '16px', marginLeft: '15px' }} />
-                                </div>
+                                ))
+                            ) : (
+                                <div style={{ color: 'gray', padding: '10px' }}>No invoices available.</div>
+                            )}
+                            </div>
+                               
                             </div>
                             <Divider />
                             <div style={{ display: 'flex', justifyContent: 'end', marginTop: '20px' }}>
@@ -740,7 +1152,8 @@ export function OfflineOrders() {
                             </div>
                         </Card>
                     </div>
-                </div>)}
+                </div>
+            )}
             </div>
         </>
     );

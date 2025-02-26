@@ -154,73 +154,113 @@ router.get('/', async (req, res) => {
           'X-Shopify-Access-Token': accessToken,
       };
 
-      const shopifyResponse = await axios.get(url, { headers });
-      const shopifyProducts = shopifyResponse.data.products;
+      let shopifyProducts = [];
+      try {
+          const shopifyResponse = await axios.get(url, { headers });
+          shopifyProducts = shopifyResponse.data.products;
+      } catch (shopifyError) {
+          console.error('🚨 Shopify API Error:', shopifyError.response?.data || shopifyError.message);
+          return res.status(400).json({ error: 'Failed to fetch products from Shopify', details: shopifyError.message });
+      }
 
       if (!shopifyProducts || shopifyProducts.length === 0) {
-          const allProducts = await Product.find({ store_name: storeName });
-          return res.status(200).json(allProducts);
+          const allProducts = await Product.find({ store_name: storeName }).lean();
+
+          // **Modification: Fetch price from the first variant**
+          const productsWithPrice = allProducts.map(product => {
+              let productPrice = null; // Initialize to null
+
+              if (product?.variants?.length > 0) { // Short and safe check
+                  productPrice = product.variants[0].price;
+              }
+
+              return {
+                  ...product,
+                  price: productPrice // Add 'price' field to the product object
+              };
+          });
+
+          return res.status(200).json(productsWithPrice);
       }
 
       const existingProducts = await Product.find({
           handle: { $in: shopifyProducts.map(p => p.handle) },
           store_name: storeName
-      });
-
+      }).lean();
 
       const productMap = new Map(existingProducts.map(p => [p.handle, p]));
 
+      const operations = shopifyProducts.map((shopifyProduct) => {
+          return (async () => {
+              if (!shopifyProduct || !shopifyProduct.title || !shopifyProduct.handle) { // Check if shopifyProduct exists
+                  console.warn(`Skipping product with missing title/handle or is null/undefined:`, shopifyProduct);
+                  return;
+              }
 
-      const operations = shopifyProducts.map(async (shopifyProduct) => {
-         const existingProduct = productMap.get(shopifyProduct.handle);
+              let productPrice = null; // Initialize to null
 
-         const productData = {
-           id: shopifyProduct.id,
-           store_name: storeName,
-            title: shopifyProduct.title,
-            body_html: shopifyProduct.body_html,
-            vendor: shopifyProduct.vendor,
-            product_type: shopifyProduct.product_type,
-            created_at: shopifyProduct.created_at,
-            handle: shopifyProduct.handle,
-            updated_at: shopifyProduct.updated_at,
-            published_at: shopifyProduct.published_at,
-            template_suffix: shopifyProduct.template_suffix,
-            published_scope: shopifyProduct.published_scope,
-            tags: shopifyProduct.tags,
-            status: shopifyProduct.status,
-            admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
-            variants: shopifyProduct.variants,
-            options: shopifyProduct.options,
-            images: shopifyProduct.images,
-            image: shopifyProduct.image,
-            // gst: '',
-            // hsnCode: '',
-            // cess: '',
-            // miniAmount: '',
-            // minGst: '',
-            // Amount: ''
-         }  
+             if (shopifyProduct?.variants?.length > 0) { // Short and safe check
+                  productPrice = shopifyProduct.variants[0].price;
+              }
 
-         if (!existingProduct) {
-             return Product.create(productData);
-         } else {
-             return Product.findOneAndUpdate(
-                 { handle: shopifyProduct.handle, store_name: storeName },
-                 { $set: productData },
-                 { upsert: true, new: true }
-             );
-         }
+              const productData = {
+                  shopify_id: shopifyProduct.id, // Avoids conflict with MongoDB _id
+                  store_name: storeName,
+                  title: shopifyProduct.title,
+                  body_html: shopifyProduct.body_html,
+                  vendor: shopifyProduct.vendor,
+                  product_type: shopifyProduct.product_type,
+                  created_at: shopifyProduct.created_at,
+                  handle: shopifyProduct.handle,
+                  updated_at: shopifyProduct.updated_at,
+                  published_at: shopifyProduct.published_at,
+                  template_suffix: shopifyProduct.template_suffix,
+                  published_scope: shopifyProduct.published_scope,
+                  tags: shopifyProduct.tags,
+                  status: shopifyProduct.status,
+                  admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
+                  variants: shopifyProduct.variants,
+                  options: shopifyProduct.options,
+                  images: shopifyProduct.images,
+                  image: shopifyProduct.image,
+                  price: productPrice  // Add price here
+              };
+
+              if (!existingProducts) {
+                  return Product.create(productData);
+              } else {
+                  return Product.findOneAndUpdate(
+                      { handle: shopifyProduct.handle, store_name: storeName },
+                      { $set: productData },
+                      { upsert: true, new: true }
+                  );
+              }
+          })();
       });
 
       await Promise.all(operations);
 
-      const allProducts = await Product.find({ store_name: storeName });
-      res.status(200).json(allProducts);
+      const allProducts = await Product.find({ store_name: storeName }).lean();
+
+      // **Modification: Fetch price from the first variant**
+      const productsWithPrice = allProducts.map(product => {
+          let productPrice = null; // Initialize to null
+
+          if (product?.variants?.length > 0) { // Short and safe check
+              productPrice = product.variants[0].price;
+          }
+
+          return {
+              ...product,
+              price: productPrice // Add 'price' field to the product object
+          };
+      });
+
+      res.status(200).json(productsWithPrice);
 
   } catch (error) {
       console.error('🚨 API Error:', error);
-      res.status(400).json({ error: error.message });
+      res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 

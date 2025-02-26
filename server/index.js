@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -6,13 +5,21 @@ const bodyParser = require('body-parser');
 const productRoute = require('./routes/products');
 const customerRoute = require('./routes/customer');
 const productRoutes = require('./routes/productRoutes');
+const orderRoutes = require('./routes/orders');
+const nodemailer = require('nodemailer');
+const payeeRouter = require('./routes/PayeeRoute');
+const billRoute = require('./routes/BillRoute');
+const estimateRoute = require('./routes/EstimateRoute');
+const expenseRoute = require('./routes/ExpenseRoute');
+const smtpRoutes = require('./routes/smtp');
+
 
 const app = express();
 app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-    origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
+    // origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,store-name,api-version,access-token"
   }));app.use(express.json());
@@ -21,6 +28,13 @@ app.use(cors({
 app.use('/api/products', productRoute);
 app.use('/api/customers', customerRoute);
 app.use('/api/all-products', productRoutes);
+app.use('/api/orders',orderRoutes );
+app.use('/api/payees', payeeRouter);
+app.use('/api/bills', billRoute);
+app.use('/api/estimate', estimateRoute);
+app.use('/api/expense', expenseRoute);
+
+app.use('/api', smtpRoutes);
 // Connect to MongoDB
 
 require('dotenv').config(); // This will load the variables from the .env file
@@ -32,7 +46,56 @@ mongoose.connect(MONGO_URI, {
 }).then(() => console.log('MongoDB connected'))
 .catch(err => console.log('Error connecting to MongoDB:', err));
 
+// EMAIL SENDING
+const emailUser = process.env.MAIL_USER;
+const emailPass = process.env.MAIL_PASS;
+const emailHost = process.env.MAIL_HOST;
 
+const transporter = nodemailer.createTransport({
+  host: emailHost, 
+  port: 465,
+  secure: true, 
+  auth: {
+      user: emailUser,
+      pass: emailPass,
+  },
+});
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+      console.log(error);
+  } else {
+      console.log("Server is ready to take our messages");
+  }
+});
+app.post('/send-email', async (req, res) => {
+  try {
+      const { to, subject, content } = req.body;
+
+      // Input validation (very basic example)
+      if (!to || !subject || !content) {
+          return res.status(400).json({ message: 'Missing required fields.' });
+      }
+
+      // Email options
+      const mailOptions = {
+          from: emailUser,
+          to: to,
+          subject: subject,
+          html: content, // Use `html` for rich text
+      };
+
+      // Send the email
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Message sent: %s', info.messageId);
+
+      res.status(200).json({ message: 'Email sent successfully!', info: info });
+
+  } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ message: 'Failed to send email.', error: error.message });
+  }
+});
 
 // Start the server
 app.listen(port, () => console.log(`Server running on http://localhost:${port}`));

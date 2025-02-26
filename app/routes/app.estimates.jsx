@@ -8,8 +8,8 @@ import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import {Payees} from "./estimates/payees";
 import {Estimates} from "./estimates/Estimates";
-import {Expenses} from "./estimates/expenses";
-import {Bills} from "./estimates/bills";
+import {Expenses} from "./estimates/Expenses";
+import {Bills} from './estimates/Bills';
 
 
 export const loader = async ({request}) => {
@@ -93,18 +93,36 @@ export const loader = async ({request}) => {
     );
 
     const variantResponseJson = await variantResponse.json();
+
+    const { session } = await authenticate.admin(request);
+  const response = await fetch("http://localhost:3001/api/customers", {
+    headers: {
+      "store-name": session.shop,
+      "api-version": "2025-01",
+      "access-token": session.accessToken,
+    },
+  });
+  if (!response.ok) {
+    throw new Response("Failed to load customers", { status: response.status });
+  }
+  const customers = await response.json();
+  
     return {
         orders: variantResponseJson,
-    };
+        accessToken: session.accessToken,
+        customers: customers,
+        storeName: session.shop,
+    };  
+};
+export const action = async ({ request }) => {
+  const { admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  console.log("Form data submitted:", Object.fromEntries(formData));
+  return {
+    successMessage: "Success",
+  };
 };
 
-export const action = async ({request}) => {
-    const {admin } =  await authenticate.admin(request);
-
-    return {
-        successMessage: "Success",
-    };
-};
 
 export default function Index() {
     const tabs = [
@@ -125,9 +143,9 @@ export default function Index() {
             panelId: "expenses",
         },
         {
-            id:'bills',
+            id:'Bills',
             content: "Bills",
-            panelId: 'bills',
+            panelId: 'Bills',
         },
 
     ];

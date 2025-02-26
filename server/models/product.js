@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const ProductSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true },
-    store_name: String,
+    store_name: {type: String},
     title: { type: String, required: true },
     body_html: { type: String },
     vendor: { type: String },
@@ -22,6 +22,7 @@ const ProductSchema = new mongoose.Schema({
     tags: { type: String },
     status: { type: String },
     admin_graphql_api_id: { type: String },
+    price: { type: String },
     variants: [{
         id: { type: String },
         product_id: { type: String },

@@ -138,7 +138,7 @@ export function Product() {
             }
 
             // Fetch updated product details after the update
-            fetchProductDetails();
+            fetchProductDetails();  
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 3000);
     

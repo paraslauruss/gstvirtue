@@ -12,9 +12,9 @@ import searchIcon from "../../assets/images/searchIcon.png";
 import { useCallback, useEffect, useState, useRef } from "react";
 import Switch from "react-switch";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import axios from "axios";
 import { EditDialog } from "./edit_customer_dialog";
 import { EditShippingAddressDialog } from "./edit_shipping_address_dialog";
+
 
 export function Dialog({ active, toggleModal, apiCallback }) {
 
@@ -523,9 +523,6 @@ export function Dialog({ active, toggleModal, apiCallback }) {
                   }}>Save</button>
               </div>
             </form>
-
-
-
           </Scrollable>
 
         </div>
@@ -672,7 +669,6 @@ export function CreateNewInvoice({ onClose }) {
     setShowAddNew(true); // Show Add New button when focused
   };
 
-  
 
     //  FETCH TITLE FIELD
     const session = useLoaderData();
@@ -858,7 +854,52 @@ export function CreateNewInvoice({ onClose }) {
           );
         };
         
+      //  SAVE THE DETAILS
+      const [invoiceNumber, setInvoiceNumber] = useState('');
+      const [customerName, setCustomerName] = useState('');
+      const [invoiceDate, setInvoiceDate] = useState('');
+      const [dateOfSupply, setDateOfSupply] = useState('');
+      const [status, setStatus] = useState('pending');
+      const [subtotal, setSubtotal] = useState('');
+      const [total, setTotal] = useState('');
+      
+      const [showPopup, setShowPopup] = useState(false);
+    
+      const handleSave = () => {
 
+        if (!selectedCustomer || Object.keys(selectedCustomer).length === 0) { // Check if a customer is actually selected
+          alert("Please select a customer before saving.");
+          return;
+        }
+        const invoice = {
+          invoiceNumber,
+          customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`, // Use the selected customer            invoiceDate,
+          dateOfSupply,
+          status,
+          invoiceDate,
+          subtotal,
+          total,
+        };
+    
+        // Retrieve existing invoices from localStorage
+          const existingInvoices = JSON.parse(localStorage.getItem("invoiceData")) || [];
+
+          if (!Array.isArray(existingInvoices)) {
+            console.error("Error: existingInvoices is not an array", existingInvoices);
+            return;
+          }
+          const updatedInvoices = [...existingInvoices, invoice];    
+          localStorage.setItem("invoiceData", JSON.stringify(updatedInvoices));
+        
+          console.log("Saved invoices:", updatedInvoices);
+        
+          // Dispatch event to notify other components
+          window.dispatchEvent(new Event("invoiceSaved"));
+          setShowPopup(true);
+          setTimeout(() => setShowPopup(false), 2000);
+  };
+
+    
   return (
     <>
 
@@ -903,21 +944,41 @@ export function CreateNewInvoice({ onClose }) {
               </Text>
             </div>
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#74A535",
-              color: "#ffffff",
-              padding: "5px",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
+          <div>
             <div style={{ marginLeft: "10px", marginRight: "10px" }}>
-              <Text>Save</Text>
+                 <button 
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#74A535",
+                      color: "#ffffff",
+                      padding: "5px",
+                      border:'1px solid #ccc',
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      width:'80px',
+                      height:'33px',
+                      fontSize:'14px',
+                      fontFamily:'Inter'
+                    }}
+                 type="button" onClick={handleSave}>Save</button>
             </div>
+            {showPopup && (
+              <div style={{
+                position: 'fixed',
+                top: '10%',
+                left: '50%',
+                transform: 'translate(-50%, 0)',
+                backgroundColor: 'white',
+                padding: '10px 20px',
+                borderRadius: '5px',
+                boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.2)',
+                zIndex: 1000
+              }}>
+                ✅ Data saved successfully!
+              </div>
+            )}
           </div>
         </div>
 
@@ -1151,14 +1212,19 @@ export function CreateNewInvoice({ onClose }) {
                   </span>
                 </div>
                 <div style={{ marginTop: "5px" }}>
-                  <TextField
-                    placeholder=""
-                    disabled={!editOfflineInvoiceNumber}
-                    value={offlineInvoiceNumber}
-                    onChange={(value) =>
-                      handleOfflineInvoiceNumberChange(value)
-                    }
-                  />
+                  <input
+                      type="text"
+                      value={invoiceNumber}
+                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                      style={{
+                        width: "300px",
+                        height: "33px",
+                        border: "1px solid #ccc",
+                        backgroundColor: "#F0F0F0",
+                        borderRadius: "5px",
+                        padding: "5px",
+                      }}
+                    />
                 </div>
               </div>
 
@@ -1190,7 +1256,9 @@ export function CreateNewInvoice({ onClose }) {
                 <div style={{ marginTop: "5px" }}>
                   <input
                     type="text"
-                    placeholder="MM/DD/YYYY" // Custom format placeholder
+                    value={invoiceDate}
+                    onChange={(e) => setInvoiceDate(e.target.value)}
+                    placeholder="DD/MM/YYYY" 
                     style={{
                       width: "300px",
                       height: "33px",
@@ -1230,20 +1298,22 @@ export function CreateNewInvoice({ onClose }) {
                   <span style={{ fontWeight: "bold" }}>Date of Supply</span>
                   <span style={{ color: "red" }}>*</span>
                 </div>
-                <div style={{ marginTop: "5px", position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="Select a date"
-                    style={{
-                      width: "350px", // Width adjusted as per your desired style
-                      height: "33px", // Height adjusted as per your desired style
-                      border: "1px solid #ccc",
-                      backgroundColor: "#F0F0F0",
-                      borderRadius: "5px",
-                      padding: "5px", // Optional: Adds some padding inside the input
-                    }}
-                  />
-                </div>
+                  <div style={{ marginTop: "5px", position: "relative" }}>
+                    <input
+                      type="text"
+                      placeholder="Select a date"
+                      value={dateOfSupply}
+                      onChange={(e) => setDateOfSupply(e.target.value)}
+                      style={{
+                        width: "350px", // Width adjusted as per your desired style
+                        height: "33px", // Height adjusted as per your desired style
+                        border: "1px solid #ccc",
+                        backgroundColor: "#F0F0F0",
+                        borderRadius: "5px",
+                        padding: "5px", // Optional: Adds some padding inside the input
+                      }}
+                    />
+                  </div>
               </div>
               <div style={{ width: "100%" }}>
                 <div>
@@ -1251,19 +1321,25 @@ export function CreateNewInvoice({ onClose }) {
                   <span style={{ color: "red" }}>*</span>
                 </div>
                 <div style={{ marginTop: "5px", position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="Status"
-                    style={{
-                      width: "350px", // Width adjusted as per your desired style
-                      height: "33px", // Height adjusted as per your desired style
-                      border: "1px solid #ccc",
-                      backgroundColor: "#F0F0F0",
-                      borderRadius: "5px",
-                      padding: "5px", // Optional: Adds some padding inside the input
-                    }}
-                  />
-                </div>
+                    <select
+                     value={status}
+                     onChange={(e) => setStatus(e.target.value)}
+                      style={{
+                        width: "350px", // Adjust width as needed
+                        height: "33px", // Adjust height as needed
+                        border: "1px solid #ccc",
+                        backgroundColor: "#F0F0F0",
+                        borderRadius: "5px",
+                        padding: "5px", 
+                        fontSize:'14px',
+                        fontFamily:'Inter'
+                      }}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                      <option value="void">Void</option>
+                    </select>
+                  </div>
               </div>
             </div>
           </Card>
@@ -1831,15 +1907,17 @@ export function CreateNewInvoice({ onClose }) {
               <div style={{ width: "50%" }}>
                 <div style={{ display: "flex", gap: "20px" }}>
                   <div style={{ width: "40%" }}>
-                    <Text variant="headingMd" fontWeight="bold">
-                      Subtotal
-                    </Text>
+                      <span style={{ fontWeight: "bold" }}>Subtotal</span>
                   </div>
-                  <input 
-                   style={{
-                    width:'44%', 
-                    height:'33px', color:'#000', 
-                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/> </div>
+                      <input 
+                       type="number"
+                       value={subtotal}
+                       onChange={(e) => setSubtotal(e.target.value)}
+                      style={{
+                        width:'44%', 
+                        height:'33px', color:'#000', 
+                        backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/> 
+                  </div>
                 <div
                   style={{ display: "flex", gap: "20px", marginTop: "10px" }}
                 >
@@ -1931,14 +2009,13 @@ export function CreateNewInvoice({ onClose }) {
                     backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/>
                 </div>
                 <div
-                  style={{ display: "flex", gap: "20px", marginTop: "10px" }}
-                >
+                  style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
                   <div style={{ width: "40%" }}>
-                    <Text variant="headingMd" fontWeight="bold">
-                      Total
-                    </Text>
+                      <span style={{ fontWeight: "bold" }}>Total</span>
                   </div>
                   <input  type="number"
+                  value={total}
+                  onChange={(e) => setTotal(e.target.value)}
                   placeholder="Rs0.0"
                   style={{
                     width:'44%', 
