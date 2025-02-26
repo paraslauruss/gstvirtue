@@ -12,6 +12,15 @@ const templateSchema = new mongoose.Schema({
     signatureUrl: {
         type: String
     },
+    fontStyle: {
+        type: String
+    },
+    textColor: {
+        type: String
+    },
+    backgroundColor: {
+        type: String
+    },
     createdAt: {
         type: Date,
         default: Date.now

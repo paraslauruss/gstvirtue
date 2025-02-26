@@ -13,7 +13,7 @@ export const loader = async ({ request }) => {
     };
 };
 
-export const CustomizationLabel = ({ onSaveAndPreview }) => {
+export const CustomizationLabel = ({ onFormDataChange }) => {
 
     const session = useLoaderData();
     const storeName = session?.storeName;
@@ -155,6 +155,25 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
     };
 
 
+    const handleToggleProductTitle = (checked) => {
+        // Agar doosra switch already OFF hai, to ye switch OFF nahi ho sakta
+        if (!checked && !isHideShowProductSKU) {
+            alert("You can either hide Product title or Product SKU!");
+            return;
+        }
+        setIsHideShowProductTitleItem(checked);
+    };
+
+    const handleToggleProductSKU = (checked) => {
+        // Agar doosra switch already OFF hai, to ye switch OFF nahi ho sakta
+        if (!checked && !isHideShowProductTitleItem) {
+            alert("You can either hide Product title or Product SKU!");
+            return;
+        }
+        setIsHideShowProductSKU(checked);
+    };
+
+
     useEffect(() => {
         if (!storeName || !accessToken) {
             console.warn("Missing storeName or accessToken");
@@ -227,38 +246,38 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
                         authorised_signature: data.data.others_labels.this_is_a_computer_generated_invoice_and_does_not_require_a_signature || "",
                         thank_you_for_your_business: data.data.footer_labels.thank_you_for_your_business,
                     });
-                    setPosSelectedOption(data.data.product_items_labels.cgst_igst || "");
-                    setIsGstIsIncludedInProductPrice(data.data.customize_store_labels.tax_invoice || "");
-                    setIsGstin(data.data.customize_store_labels.is_gstin || "");
-                    setIsIecCode(data.data.customize_store_labels.is_iec_code || "");
-                    setIsCin(data.data.customize_store_labels.is_cin || "");
-                    setIsPanNo(data.data.customize_store_labels.is_pan_no || "");
-                    setIsFssaiLicNo(data.data.customize_store_labels.is_fssai_lic_no || "");
-                    setIsInvoiceNo(data.data.customize_store_labels.is_invoice_no || "");
-                    setIsOrderNo(data.data.customize_store_labels.is_order_no || "");
-                    setIsInvoiceDate(data.data.customize_store_labels.is_invoice_date || "");
-                    setIsOrderDate(data.data.customize_store_labels.is_order_date || "");
-                    setIsTransportMode(data.data.customize_store_labels.is_transport_mode || "");
-                    setIsDateOfSupply(data.data.customize_store_labels.is_date_of_supply || "");
-                    setIsPlaceOfSupply(data.data.customize_store_labels.is_place_of_supply || "");
-                    setIsShopDomain(data.data.store_information.is_shop_domain || "");
-                    setIsHideShowPhone(data.data.billing_shipping_labels.hide_show_phone || "");
-                    setIsHideShowGSTIN(data.data.billing_shipping_labels.hide_show_gstin || "");
-                    setIsHideShowCustomerEmail(data.data.billing_shipping_labels.hide_show_customer_email || "");
-                    setIsHideShowShippingSection(data.data.billing_shipping_labels.hide_show_shipping_section || "");
-                    setIsHideShowProductTitleItem(data.data.product_items_labels.hide_show_product_title || "");
-                    setIsHideShowProductSKU(data.data.product_items_labels.hide_show_product_sku || "");
-                    setIsHideShowProductHSN(data.data.product_items_labels.hide_show_product_hsn || "");
-                    setIsHideShowProductDiscount(data.data.product_items_labels.hide_show_product_discount || "");
-                    setIsPaymentMode(data.data.others_labels.is_payment_mode || "");
-                    setIsOrderNote(data.data.others_labels.is_order_note || "");
-                    setIsTermsAndConditions(data.data.others_labels.is_term_and_conditions || "");
-                    setTotalInvoiceAmountInWords(data.data.others_labels.is_total_invoice_amount_in_words || "");
-                    setHideShowFinancialStatus(data.data.others_labels.hide_show_financial_status || "");
-                    setHideShowQRCodeImage(data.data.others_labels.hide_show_qr_code_image || "");
-                    setThankYouForYourBusiness(data.data.footer_labels.is_thank_you_for_your_business || "");
-                    setHideShowGeneratedFrom(data.data.footer_labels.hide_show_generated_from || "");
-                    setHideShowPageNo(data.data.footer_labels.hide_show_page_no || "");
+                    setPosSelectedOption(data.data.product_items_labels.cgst_igst);
+                    setIsGstIsIncludedInProductPrice(data.data.customize_store_labels.export_invoice);
+                    setIsGstin(data.data.customize_store_labels.is_gstin);
+                    setIsIecCode(data.data.customize_store_labels.is_iec_code);
+                    setIsCin(data.data.customize_store_labels.is_cin);
+                    setIsPanNo(data.data.customize_store_labels.is_pan_no);
+                    setIsFssaiLicNo(data.data.customize_store_labels.is_fssai_lic_no);
+                    setIsInvoiceNo(data.data.customize_store_labels.is_invoice_no);
+                    setIsOrderNo(data.data.customize_store_labels.is_order_no);
+                    setIsInvoiceDate(data.data.customize_store_labels.is_invoice_date);
+                    setIsOrderDate(data.data.customize_store_labels.is_order_date);
+                    setIsTransportMode(data.data.customize_store_labels.is_transport_mode);
+                    setIsDateOfSupply(data.data.customize_store_labels.is_date_of_supply);
+                    setIsPlaceOfSupply(data.data.customize_store_labels.is_place_of_supply);
+                    setIsShopDomain(data.data.store_information.is_shop_domain);
+                    setIsHideShowPhone(data.data.billing_shipping_labels.hide_show_phone);
+                    setIsHideShowGSTIN(data.data.billing_shipping_labels.hide_show_gstin);
+                    setIsHideShowCustomerEmail(data.data.billing_shipping_labels.hide_show_customer_email);
+                    setIsHideShowShippingSection(data.data.billing_shipping_labels.hide_show_shipping_section);
+                    setIsHideShowProductTitleItem(data.data.product_items_labels.hide_show_product_title);
+                    setIsHideShowProductSKU(data.data.product_items_labels.hide_show_product_sku);
+                    setIsHideShowProductHSN(data.data.product_items_labels.hide_show_product_hsn);
+                    setIsHideShowProductDiscount(data.data.product_items_labels.hide_show_product_discount);
+                    setIsPaymentMode(data.data.others_labels.is_payment_mode);
+                    setIsOrderNote(data.data.others_labels.is_order_note);
+                    setIsTermsAndConditions(data.data.others_labels.is_term_and_conditions);
+                    setTotalInvoiceAmountInWords(data.data.others_labels.is_total_invoice_amount_in_words);
+                    setHideShowFinancialStatus(data.data.others_labels.hide_show_financial_status);
+                    setHideShowQRCodeImage(data.data.others_labels.hide_show_qr_code_image);
+                    setThankYouForYourBusiness(data.data.footer_labels.is_thank_you_for_your_business);
+                    setHideShowGeneratedFrom(data.data.footer_labels.hide_show_generated_from);
+                    setHideShowPageNo(data.data.footer_labels.hide_show_page_no);
                 }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
@@ -268,103 +287,103 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
         fetchData();
     }, []);
 
-    const handleSaveAndPreview = () => {
+    useEffect(() => {
         const data = {
-                customize_store_labels: {
-                    tax_invoice: formValues.tax_invoice,
-                    export_invoice: isOnGstIsIncludedInProductPrice,
-                    gstin: formValues.gstin,
-                    is_gstin: isGstin,
-                    iec_code: formValues.iec_code,
-                    is_iec_code: isIecCode,
-                    cin: formValues.cin,
-                    is_cin: isCin,
-                    pan_no: formValues.pan_no,
-                    is_pan_no: isPanNo,
-                    fssai_lic_no: formValues.fssai_lic_no,
-                    is_fssai_lic_no: isFssaiLicNo,
-                    invoice_no: formValues.invoice_no,
-                    is_invoice_no: isInvoiceNo,
-                    order_no: formValues.order_no,
-                    is_order_no: isOrderNo,
-                    invoice_date: formValues.invoice_date,
-                    is_invoice_date: isInvoiceDate,
-                    order_date: formValues.order_date,
-                    is_order_date: isOrderDate,
-                    transport_mode: formValues.transport_mode,
-                    is_transport_mode: isTransportMode,
-                    date_of_supply: formValues.date_of_supply,
-                    is_date_of_supply: isDateOfSupply,
-                    place_of_supply: formValues.place_of_supply,
-                    is_place_of_supply: isPlaceOfSupply,
-                    original: formValues.original
-                },
-                store_information: {
-                    company_legal_name: formValues.store_name,
-                    branch_name: formValues.branch_name,
-                    shop_domain: formValues.shop_domain,
-                    is_shop_domain: isShopDomain,
-                    store_address: formValues.store_address,
-                    contact_person: formValues.contact_person,
-                    store_phone: formValues.store_phone,
-                    store_email: formValues.store_email,
-                    terms_and_conditions: formValues.term_and_condition
-                },
-                billing_shipping_labels: {
-                    bill_to_party: formValues.bill_to_party,
-                    ship_to_party: formValues.ship_to_party,
-                    billing_phone: formValues.billing_phone,
-                    shipping_phone: formValues.shipping_phone,
-                    billing_gstin: formValues.billing_gstin,
-                    shipping_gstin: formValues.shipping_gstin,
-                    hide_show_phone: isHideShowPhone,
-                    hide_show_gstin: isHideShowGSTIN,
-                    hide_show_customer_email: isHideShowCustomerEmail,
-                    hide_show_shipping_section: isHideShowShippingSection
-                },
-                product_items_labels: {
-                    item_sku: formValues.item_sku,
-                    hide_show_product_title: isHideShowProductTitleItem,
-                    hide_show_product_sku: isHideShowProductSKU,
-                    hide_show_product_hsn: isHideShowProductHSN,
-                    hide_show_product_discount: isHideShowProductDiscount,
-                    qty: formValues.qty,
-                    rate_per_item: formValues.rate_per_item,
-                    discount_item: formValues.discount_item,
-                    texable_item: formValues.taxable_item,
-                    hsn: formValues.hsn,
-                    gst: formValues.gst,
-                    cgst_igst: productItemLabel,
-                    cgst: formValues.cgst,
-                    sgst: formValues.sgst,
-                    cess: formValues.cess,
-                    total: formValues.total
-                },
-                others_labels: {
-                    payment_mode: formValues.payment_mode,
-                    is_payment_mode: isPaymentMode,
-                    order_note: formValues.order_note,
-                    is_order_note: isOrderNote,
-                    term_and_conditions: formValues.terms_and_conditions,
-                    is_term_and_conditions: isTermsAndConditions,
-                    total_invoice_amount_in_words: formValues.total_invoice_amount_in_words,
-                    is_total_invoice_amount_in_words: isTotalInvoiceAmountInWords,
-                    e_and_o_e: formValues.e_and_o_e,
-                    this_is_a_computer_generated_invoice_and_does_not_require_a_signature: formValues.authorised_signature,
-                    hide_show_financial_status: isHideShowFinancialStatus,
-                    hide_show_qr_code_image: isHideShowQRCodeImage
-                },
-                footer_labels: {
-                    thank_you_for_your_business: formValues.thank_you_for_your_business,
-                    is_thank_you_for_your_business: isThankYouForYourBusiness,
-                    hide_show_generated_from: isHideShowGeneratedFrom,
-                    hide_show_page_no: isHideShowPageNo
-                }
-            
+            customize_store_labels: {
+                tax_invoice: formValues.tax_invoice,
+                export_invoice: isOnGstIsIncludedInProductPrice,
+                gstin: formValues.gstin,
+                is_gstin: isGstin,
+                iec_code: formValues.iec_code,
+                is_iec_code: isIecCode,
+                cin: formValues.cin,
+                is_cin: isCin,
+                pan_no: formValues.pan_no,
+                is_pan_no: isPanNo,
+                fssai_lic_no: formValues.fssai_lic_no,
+                is_fssai_lic_no: isFssaiLicNo,
+                invoice_no: formValues.invoice_no,
+                is_invoice_no: isInvoiceNo,
+                order_no: formValues.order_no,
+                is_order_no: isOrderNo,
+                invoice_date: formValues.invoice_date,
+                is_invoice_date: isInvoiceDate,
+                order_date: formValues.order_date,
+                is_order_date: isOrderDate,
+                transport_mode: formValues.transport_mode,
+                is_transport_mode: isTransportMode,
+                date_of_supply: formValues.date_of_supply,
+                is_date_of_supply: isDateOfSupply,
+                place_of_supply: formValues.place_of_supply,
+                is_place_of_supply: isPlaceOfSupply,
+                original: formValues.original
+            },
+            store_information: {
+                company_legal_name: formValues.store_name,
+                branch_name: formValues.branch_name,
+                shop_domain: formValues.shop_domain,
+                is_shop_domain: isShopDomain,
+                store_address: formValues.store_address,
+                contact_person: formValues.contact_person,
+                store_phone: formValues.store_phone,
+                store_email: formValues.store_email,
+                terms_and_conditions: formValues.term_and_condition
+            },
+            billing_shipping_labels: {
+                bill_to_party: formValues.bill_to_party,
+                ship_to_party: formValues.ship_to_party,
+                billing_phone: formValues.billing_phone,
+                shipping_phone: formValues.shipping_phone,
+                billing_gstin: formValues.billing_gstin,
+                shipping_gstin: formValues.shipping_gstin,
+                hide_show_phone: isHideShowPhone,
+                hide_show_gstin: isHideShowGSTIN,
+                hide_show_customer_email: isHideShowCustomerEmail,
+                hide_show_shipping_section: isHideShowShippingSection
+            },
+            product_items_labels: {
+                item_sku: formValues.item_sku,
+                hide_show_product_title: isHideShowProductTitleItem,
+                hide_show_product_sku: isHideShowProductSKU,
+                hide_show_product_hsn: isHideShowProductHSN,
+                hide_show_product_discount: isHideShowProductDiscount,
+                qty: formValues.qty,
+                rate_per_item: formValues.rate_per_item,
+                discount_item: formValues.discount_item,
+                texable_item: formValues.taxable_item,
+                hsn: formValues.hsn,
+                gst: formValues.gst,
+                cgst_igst: productItemLabel,
+                cgst: formValues.cgst,
+                sgst: formValues.sgst,
+                cess: formValues.cess,
+                total: formValues.total
+            },
+            others_labels: {
+                payment_mode: formValues.payment_mode,
+                is_payment_mode: isPaymentMode,
+                order_note: formValues.order_note,
+                is_order_note: isOrderNote,
+                term_and_conditions: formValues.terms_and_conditions,
+                is_term_and_conditions: isTermsAndConditions,
+                total_invoice_amount_in_words: formValues.total_invoice_amount_in_words,
+                is_total_invoice_amount_in_words: isTotalInvoiceAmountInWords,
+                e_and_o_e: formValues.e_and_o_e,
+                this_is_a_computer_generated_invoice_and_does_not_require_a_signature: formValues.authorised_signature,
+                hide_show_financial_status: isHideShowFinancialStatus,
+                hide_show_qr_code_image: isHideShowQRCodeImage
+            },
+            footer_labels: {
+                thank_you_for_your_business: formValues.thank_you_for_your_business,
+                is_thank_you_for_your_business: isThankYouForYourBusiness,
+                hide_show_generated_from: isHideShowGeneratedFrom,
+                hide_show_page_no: isHideShowPageNo
+            }
+
         };
 
-        onSaveAndPreview(data);
-    };
+        onFormDataChange(data);
+    }, [formValues, isGstin, isIecCode, isCin, isPanNo, isFssaiLicNo, isInvoiceNo, isOrderNo, isInvoiceDate, isOrderDate, isTransportMode, isDateOfSupply, isPlaceOfSupply, isShopDomain, isHideShowPhone, isHideShowGSTIN, isHideShowCustomerEmail, isHideShowShippingSection, isHideShowProductTitleItem, isHideShowProductSKU, isHideShowProductHSN, isHideShowProductDiscount, isPaymentMode, isOrderNote, isTermsAndConditions, isTotalInvoiceAmountInWords, isHideShowFinancialStatus, isHideShowQRCodeImage, isThankYouForYourBusiness, isHideShowGeneratedFrom, isHideShowPageNo, onFormDataChange]);
 
     return (
         <div>
@@ -433,7 +452,7 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
                                     handleDiameter={12}
                                 />
                             </div>
-                            <Text as="p" fontWeight="regular" style={{ margin: 0 }}>Display <b>"Tax Invoice"</b> for international orders</Text>
+                            <Text as="p" fontWeight="regular" style={{ margin: 0 }}>Display <b>{`${isOnGstIsIncludedInProductPrice ? "\"Export invoice\"" : "\"Tax Invoice\""}`}</b> for international orders</Text>
                         </div>
                         <div style={{ display: 'flex', flex: '1' }}>
                             <div style={{ width: '100%', marginRight: '20px', marginTop: '20px', display: 'flex', alignItems: 'center' }}>
@@ -1147,7 +1166,7 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
                             <div style={{ display: 'flex', flex: '1' }}>
                                 <div style={{ marginRight: '10px' }}>
                                     <Switch
-                                        onChange={handleToggle(setIsHideShowProductTitleItem)}
+                                        onChange={handleToggleProductTitle}
                                         checked={isHideShowProductTitleItem}
                                         uncheckedIcon={false}
                                         checkedIcon={false}
@@ -1169,7 +1188,7 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
                             <div style={{ display: 'flex', flex: '1' }}>
                                 <div style={{ marginRight: '10px' }}>
                                     <Switch
-                                        onChange={handleToggle(setIsHideShowProductSKU)}
+                                        onChange={handleToggleProductSKU}
                                         checked={isHideShowProductSKU}
                                         uncheckedIcon={false}
                                         checkedIcon={false}
@@ -1781,8 +1800,6 @@ export const CustomizationLabel = ({ onSaveAndPreview }) => {
 
                 )}
             </div>
-            <button onClick={handleSaveAndPreview}>Save & Preview</button>
-
         </div>
     );
 }

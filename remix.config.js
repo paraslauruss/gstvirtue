@@ -14,6 +14,10 @@ if (
 module.exports = {
   ignoredRouteFiles: ["**/.*"],
   appDirectory: "app",
+  assetsBuildDirectory: "public/build",
+  publicPath: "/build/",
+  serverBuildDirectory: "build",
+  devServerPort: 8002,
   serverModuleFormat: "cjs",
   dev: { port: process.env.HMR_SERVER_PORT || 8002 },
   serverBuildTarget: "node-cjs",

@@ -3,9 +3,9 @@ import ic_info from '../../assets/images/ic_info.png';
 
 export function ProductImportExport() {
     return (
-        <div style={{minHeight:"100vh", padding:'50px 100px'}}>
+        <div style={{ minHeight: "100vh", padding: '50px 100px' }}>
             <Text variant="headingLg">Product Imports/Export</Text>
-            <div style={{ display: 'flex', gap: '20px', marginTop:'20px' }}>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
                 <div style={{ width: '100%' }}>
                     <Card padding={0}>
                         <div style={{ color: 'white', background: '#565656', padding: '10px 20px' }}>
@@ -91,7 +91,18 @@ export function ProductImportExport() {
                                 <Text variant="bodySm">123256576895459</Text>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'end', marginTop: '20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#74A535', color: '#ffffff', padding: '5px', width: '130px', borderRadius: '4px', cursor: 'pointer', }}
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: '#74A535',
+                                        color: '#ffffff',
+                                        padding: '5px',
+                                        width: '130px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                    }}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
                                         <path d="M8.58966 1.414L7.86453 0.707L8.58966 0L9.31479 0.707L8.58966 1.414ZM9.6153 10.414C9.6153 10.6792 9.50724 10.9336 9.3149 11.1211C9.12255 11.3086 8.86168 11.414 8.58966 11.414C8.31764 11.414 8.05677 11.3086 7.86442 11.1211C7.67208 10.9336 7.56402 10.6792 7.56402 10.414H9.6153ZM2.73633 5.707L7.86453 0.707L9.31479 2.121L4.18658 7.121L2.73633 5.707ZM9.31479 0.707L14.443 5.707L12.9927 7.121L7.86453 2.121L9.31479 0.707ZM9.6153 1.414V10.414H7.56402V1.414H9.6153Z" fill="white" />
@@ -104,13 +115,7 @@ export function ProductImportExport() {
                         </Card>
                     </div>
                 </div>
-
-
-
             </div>
-
-
-
         </div>
     );
 }

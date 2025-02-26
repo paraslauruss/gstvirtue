@@ -5,6 +5,83 @@ const mongoose = require("mongoose");
 const axios = require('axios');
 const bodyParser = require('body-parser');
 
+router.get('/collection', async (req, res) => {
+  const collectionId = req.query.collection_id;
+  const storeName = req.headers['store-name'];
+  const accessToken = req.headers['access-token'];
+
+  try {
+    // Call Shopify API
+    const response = await axios.get(`https://${storeName}/admin/api/2025-01/collections/${collectionId}/products.json`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': accessToken
+      }
+    });
+
+    const shopifyProducts = response.data.products;
+    const shopifyProductIds = shopifyProducts.map(product => product.id);
+
+    const existingProducts = await Product.find({ store_name: storeName, id: { $in: shopifyProductIds } });
+
+    const mergedProducts = shopifyProducts.map(shopifyProduct => {
+      const existingProduct = existingProducts.find(product => `${product.id}` === `${shopifyProduct.id}`);
+      if (existingProduct) {
+        return {
+          ...shopifyProduct,
+          gst: existingProduct.gst,
+          hsn: existingProduct.hsn,
+          cess: existingProduct.cess,
+          miniAmount: existingProduct.miniAmount,
+          minGst: existingProduct.minGst,
+          Amount: existingProduct.Amount,
+          ...existingProduct._doc // Merge MongoDB fields
+        };
+      } else {
+        return shopifyProduct;
+      }
+    });
+
+    for (const product of mergedProducts) {
+      const existingProduct = existingProducts.find(p => p.id === product.id);
+      if (!existingProduct) {
+        const newProduct = new Product({
+          id: product.id,
+          store_name: storeName,
+          title: product.title,
+          body_html: product.body_html,
+          vendor: product.vendor,
+          product_type: product.product_type,
+          created_at: product.created_at,
+          handle: product.handle,
+          updated_at: product.updated_at,
+          published_at: product.published_at,
+          template_suffix: product.template_suffix,
+          published_scope: product.published_scope,
+          tags: product.tags,
+          status: product.status,
+          admin_graphql_api_id: product.admin_graphql_api_id,
+          variants: product.variants,
+          options: product.options,
+          images: product.images,
+          image: product.image,
+        });
+        await newProduct.save();
+      }
+    }
+    // Return the response from Shopify API
+    return res.json(mergedProducts);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      error: error.message
+    });
+  }
+});
+
+
+
 // // CREATE: Add a new product
 // router.post("/", async (req, res) => {
 //   try {
@@ -140,87 +217,191 @@ const bodyParser = require('body-parser');
 
 router.get('/', async (req, res) => {
   try {
-      const storeName = req.headers['store-name'];
-      const apiVersion = req.headers['api-version'];
-      const accessToken = req.headers['access-token'];
+    const storeName = req.headers['store-name'];
+    const apiVersion = req.headers['api-version'];
+    const accessToken = req.headers['access-token'];
 
-      if (!storeName || !apiVersion || !accessToken) {
-          return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
-      }
+    if (!storeName || !apiVersion || !accessToken) {
+      return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
+    }
 
-      const url = `https://${storeName}/admin/api/${apiVersion}/products.json`;
-      const headers = {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': accessToken,
-      };
+    const url = `https://${storeName}/admin/api/${apiVersion}/products.json`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': accessToken,
+    };
 
-      const shopifyResponse = await axios.get(url, { headers });
-      const shopifyProducts = shopifyResponse.data.products;
+    const shopifyResponse = await axios.get(url, { headers });
+    const shopifyProducts = shopifyResponse.data.products;
 
-      if (!shopifyProducts || shopifyProducts.length === 0) {
-          const allProducts = await Product.find({ store_name: storeName });
-          return res.status(200).json(allProducts);
-      }
-
-      const existingProducts = await Product.find({
-          handle: { $in: shopifyProducts.map(p => p.handle) },
-          store_name: storeName
-      });
-
-
-      const productMap = new Map(existingProducts.map(p => [p.handle, p]));
-
-
-      const operations = shopifyProducts.map(async (shopifyProduct) => {
-         const existingProduct = productMap.get(shopifyProduct.handle);
-
-         const productData = {
-           id: shopifyProduct.id,
-           store_name: storeName,
-            title: shopifyProduct.title,
-            body_html: shopifyProduct.body_html,
-            vendor: shopifyProduct.vendor,
-            product_type: shopifyProduct.product_type,
-            created_at: shopifyProduct.created_at,
-            handle: shopifyProduct.handle,
-            updated_at: shopifyProduct.updated_at,
-            published_at: shopifyProduct.published_at,
-            template_suffix: shopifyProduct.template_suffix,
-            published_scope: shopifyProduct.published_scope,
-            tags: shopifyProduct.tags,
-            status: shopifyProduct.status,
-            admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
-            variants: shopifyProduct.variants,
-            options: shopifyProduct.options,
-            images: shopifyProduct.images,
-            image: shopifyProduct.image,
-            // gst: '',
-            // hsnCode: '',
-            // cess: '',
-            // miniAmount: '',
-            // minGst: '',
-            // Amount: ''
-         }  
-
-         if (!existingProduct) {
-             return Product.create(productData);
-         } else {
-             return Product.findOneAndUpdate(
-                 { handle: shopifyProduct.handle, store_name: storeName },
-                 { $set: productData },
-                 { upsert: true, new: true }
-             );
-         }
-      });
-
-      await Promise.all(operations);
-
+    if (!shopifyProducts || shopifyProducts.length === 0) {
       const allProducts = await Product.find({ store_name: storeName });
-      res.status(200).json(allProducts);
+      return res.status(200).json(allProducts);
+    }
+
+    const existingProducts = await Product.find({
+      handle: { $in: shopifyProducts.map(p => p.handle) },
+      store_name: storeName
+    });
+
+
+    const productMap = new Map(existingProducts.map(p => [p.handle, p]));
+
+
+    const operations = shopifyProducts.map(async (shopifyProduct) => {
+      const existingProduct = productMap.get(shopifyProduct.handle);
+
+      const productData = {
+        id: shopifyProduct.id,
+        store_name: storeName,
+        title: shopifyProduct.title,
+        body_html: shopifyProduct.body_html,
+        vendor: shopifyProduct.vendor,
+        product_type: shopifyProduct.product_type,
+        created_at: shopifyProduct.created_at,
+        handle: shopifyProduct.handle,
+        updated_at: shopifyProduct.updated_at,
+        published_at: shopifyProduct.published_at,
+        template_suffix: shopifyProduct.template_suffix,
+        published_scope: shopifyProduct.published_scope,
+        tags: shopifyProduct.tags,
+        status: shopifyProduct.status,
+        admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
+        variants: shopifyProduct.variants,
+        options: shopifyProduct.options,
+        images: shopifyProduct.images,
+        image: shopifyProduct.image,
+        // gst: '',
+        // hsnCode: '',
+        // cess: '',
+        // miniAmount: '',
+        // minGst: '',
+        // Amount: ''
+      }
+
+      if (!existingProduct) {
+        return Product.create(productData);
+      } else {
+        return Product.findOneAndUpdate(
+          { handle: shopifyProduct.handle, store_name: storeName },
+          { $set: productData },
+          { upsert: true, new: true }
+        );
+      }
+    });
+
+    await Promise.all(operations);
+
+    const allProducts = await Product.find({ store_name: storeName });
+    res.status(200).json(allProducts);
 
   } catch (error) {
-      console.error('🚨 API Error:', error);
-      res.status(400).json({ error: error.message });
+    console.error('🚨 API Error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/update-products', async (req, res) => {
+  try {
+    const storeName = req.headers["store-name"];
+    const apiVersion = req.headers["api-version"];
+    const accessToken = req.headers["access-token"];
+    const productsToUpdate = req.body.products;
+
+    // Validate required headers
+    if (!storeName || !apiVersion || !accessToken) {
+      return res.status(400).json({ error: "Missing required headers" });
+    }
+
+    // Validate the request body
+    if (!Array.isArray(productsToUpdate) || productsToUpdate.length === 0) {
+      return res.status(400).json({ error: "Products array is required" });
+    }
+
+    const updatedProducts = [];
+    const newProducts = [];
+
+    for (const productData of productsToUpdate) {
+      let { id, gst, hsn, cess, miniAmount, minGst } = productData;
+
+      // Validate and extract the numeric product ID
+      if (!id) {
+        return res.status(400).json({ error: "Product ID is required" });
+      }
+      const numericId = id.replace("gid://shopify/Product/", ""); // Extracts the numeric ID
+
+      // Check if product exists in MongoDB
+      let product = await Product.findOne({ id: numericId });
+
+      if (product) {
+        // Update only the specified fields if they exist
+        let updateFields = {
+          gst: gst !== undefined ? gst.toString() : product.gst,
+          hsn: hsn !== undefined ? hsn : product.hsn,
+          cess: !isNaN(parseFloat(cess)) ? parseFloat(cess) : product.cess,
+          miniAmount: !isNaN(parseFloat(miniAmount)) ? parseFloat(miniAmount) : product.miniAmount,
+          minGst: !isNaN(parseFloat(minGst)) ? parseFloat(minGst) : product.minGst,
+          updatedAt: new Date(), // Update timestamp
+        };
+
+        // Use findOneAndUpdate for reliability
+        let updatedProduct = await Product.findOneAndUpdate(
+          { id: numericId },
+          { $set: updateFields },
+          { new: true, runValidators: true }
+        );
+
+        updatedProducts.push(updatedProduct);
+      } else {
+        // If product doesn't exist, fetch from Shopify
+        const shopifyUrl = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/products/${numericId}.json`;
+
+        try {
+          const shopifyResponse = await axios.get(shopifyUrl, {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": accessToken,
+            },
+          });
+
+          const shopifyProduct = shopifyResponse.data.product;
+
+          if (!shopifyProduct) {
+            return res.status(404).json({ error: "Product not found in Shopify" });
+          }
+
+          // Insert new product in MongoDB
+          const newProduct = await Product.create({
+            id: numericId, // Store numeric ID
+            title: shopifyProduct.title,
+            gst: gst ? gst.toString() : "",
+            hsn: hsn || "",
+            cess: !isNaN(parseFloat(cess)) ? parseFloat(cess) : null,
+            miniAmount: !isNaN(parseFloat(miniAmount)) ? parseFloat(miniAmount) : null,
+            minGst: !isNaN(parseFloat(minGst)) ? parseFloat(minGst) : null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          newProducts.push(newProduct);
+        } catch (shopifyError) {
+          console.error("Shopify API Error:", shopifyError.response?.data || shopifyError.message);
+
+          return res.status(shopifyError.response?.status || 500).json({
+            error: shopifyError.response?.data || "Error fetching product from Shopify",
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({
+      message: "Products processed successfully",
+      updatedProducts,
+      newProducts,
+    });
+  } catch (error) {
+    console.error("Unexpected Error:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -252,13 +433,13 @@ router.post("/", async (req, res) => {
       // Update only the specified fields if they exist
       let updateFields = {
         gst: gst !== undefined ? gst.toString() : product.gst,
-        hsn: hsn !== undefined ? hsn: product.hsn,
+        hsn: hsn !== undefined ? hsn : product.hsn,
         cess: !isNaN(parseFloat(cess)) ? parseFloat(cess) : product.cess,
         miniAmount: !isNaN(parseFloat(miniAmount)) ? parseFloat(miniAmount) : product.miniAmount,
         minGst: !isNaN(parseFloat(minGst)) ? parseFloat(minGst) : product.minGst,
         updatedAt: new Date(), // Update timestamp
       };
-     
+
       console.log("🔄 Updating fields:", updateFields);
       console.log("Updating product with id:", numericId);
       // Use findOneAndUpdate for reliability
@@ -273,7 +454,7 @@ router.post("/", async (req, res) => {
     }
 
     // If product doesn't exist, fetch from Shopify
-    console.log(`❌ Product not found in MongoDB. Fetching from Shopify...`);    
+    console.log(`❌ Product not found in MongoDB. Fetching from Shopify...`);
     const shopifyUrl = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/products/${numericId}.json`;
 
     try {
@@ -302,36 +483,11 @@ router.post("/", async (req, res) => {
         minGst: !isNaN(parseFloat(minGst)) ? parseFloat(minGst) : null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        // id: numericId, // Save numeric ID in MongoDB
-        // title: shopifyProduct.title,
-        // body_html: shopifyProduct.body_html,
-        // vendor: shopifyProduct.vendor,
-        // product_type: shopifyProduct.product_type,
-        // created_at: shopifyProduct.created_at,
-        // updated_at: shopifyProduct.updated_at,
-        // handle: shopifyProduct.handle,
-        // published_at: shopifyProduct.published_at,
-        // template_suffix: shopifyProduct.template_suffix,
-        // published_scope: shopifyProduct.published_scope,
-        // tags: shopifyProduct.tags,
-        // status: shopifyProduct.status,
-        // admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
-        // variants: shopifyProduct.variants,
-        // options: shopifyProduct.options,
-        // images: shopifyProduct.images,
-        // image: shopifyProduct.image,
-        // gst: gst ? gst.toString() : "", // Ensure gst is a string
-        // hsn: hsn || "",
-        // cess: typeof cess !== "undefined" ? parseFloat(cess) : null,
-        // miniAmount: typeof miniAmount !== "undefined" ? parseFloat(miniAmount) : null,
-        // minGst: typeof minGst !== "undefined" ? parseFloat(minGst) : null,
-        // createdAt: new Date(),
-        // updatedAt: new Date(),
       });
 
       console.log("Product added successfully:", newProduct);
       return res.status(201).json({ message: "Product added successfully", product: newProduct });
-    } 
+    }
 
     catch (shopifyError) {
       console.error("Shopify API Error:", shopifyError.response?.data || shopifyError.message);
@@ -346,88 +502,88 @@ router.post("/", async (req, res) => {
   }
 });
 
+
+
 // GET method to get single product with id
 router.get('/:productId', async (req, res) => {
   try {
-      const storeName = req.headers['store-name'];
-      const apiVersion = req.headers['api-version'];
-      const accessToken = req.headers['access-token'];
-      const productId = req.params.productId;  // Get the product ID from the URL parameters
+    const storeName = req.headers['store-name'];
+    const apiVersion = req.headers['api-version'];
+    const accessToken = req.headers['access-token'];
+    const productId = req.params.productId;  // Get the product ID from the URL parameters
 
-      if (!storeName || !apiVersion || !accessToken) {
-          return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
+    if (!storeName || !apiVersion || !accessToken) {
+      return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
+    }
+
+    if (!productId) {
+      return res.status(400).json({ error: 'Product ID is required' });
+    }
+
+    // Try to find the product in MongoDB first
+    const existingProduct = await Product.findOne({ id: productId });
+
+    if (existingProduct) {
+      // Product found in MongoDB, return it
+      return res.status(200).json(existingProduct);
+    }
+
+    // If product not found in MongoDB, try to fetch it from Shopify
+    const shopifyUrl = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/products/${productId}.json`;
+
+    try {
+      const shopifyResponse = await axios.get(shopifyUrl, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': accessToken,
+        }
+      });
+
+      const shopifyProduct = shopifyResponse.data.product;
+
+      if (!shopifyProduct) {
+        return res.status(404).json({ error: 'Product not found in Shopify' });
       }
 
-      if (!productId) {
-          return res.status(400).json({ error: 'Product ID is required' });
-      }
+      // Construct the product data from Shopify and save to MongoDB
+      const newProduct = new Product({
+        id: productId,
+        title: shopifyProduct.title,
+        body_html: shopifyProduct.body_html,
+        vendor: shopifyProduct.vendor,
+        product_type: shopifyProduct.product_type,
+        created_at: shopifyProduct.created_at,
+        handle: shopifyProduct.handle,
+        updated_at: shopifyProduct.updated_at,
+        published_at: shopifyProduct.published_at,
+        template_suffix: shopifyProduct.template_suffix,
+        published_scope: shopifyProduct.published_scope,
+        tags: shopifyProduct.tags,
+        status: shopifyProduct.status,
+        admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
+        variants: shopifyProduct.variants,
+        options: shopifyProduct.options,
+        images: shopifyProduct.images,
+        image: shopifyProduct.image,
+        gst: shopifyProduct.gst || '',
+        hsn: shopifyProduct.hsn || "",
+        cess: shopifyProduct.cess || '',
 
-      // Try to find the product in MongoDB first
-      const existingProduct = await Product.findOne({ id: productId });
+        // you may have to add other properties here to be saved to MongoDB
+      });
 
-      if (existingProduct) {
-          // Product found in MongoDB, return it
-          return res.status(200).json(existingProduct);
-      }
+      await newProduct.save();
 
-      // If product not found in MongoDB, try to fetch it from Shopify
-      const shopifyUrl = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/products/${productId}.json`;
-
-      try {
-          const shopifyResponse = await axios.get(shopifyUrl, {
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-Shopify-Access-Token': accessToken,
-              }
-          });
-
-          const shopifyProduct = shopifyResponse.data.product;
-
-          if (!shopifyProduct) {
-              return res.status(404).json({ error: 'Product not found in Shopify' });
-          }
-
-          // Construct the product data from Shopify and save to MongoDB
-          const newProduct = new Product({
-              id: productId,
-              title: shopifyProduct.title,
-              body_html: shopifyProduct.body_html,
-              vendor: shopifyProduct.vendor,
-              product_type: shopifyProduct.product_type,
-              created_at: shopifyProduct.created_at,
-              handle: shopifyProduct.handle,
-              updated_at: shopifyProduct.updated_at,
-              published_at: shopifyProduct.published_at,
-              template_suffix: shopifyProduct.template_suffix,
-              published_scope: shopifyProduct.published_scope,
-              tags: shopifyProduct.tags,
-              status: shopifyProduct.status,
-              admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
-              variants: shopifyProduct.variants,
-              options: shopifyProduct.options,
-              images: shopifyProduct.images,
-              image: shopifyProduct.image,
-              gst:shopifyProduct.gst || '',
-              hsn: shopifyProduct.hsn || "",
-              cess: shopifyProduct.cess || '',
-              
-              // you may have to add other properties here to be saved to MongoDB
-          });
-
-          await newProduct.save();
-
-          return res.status(200).json(newProduct);
-      } catch (shopifyError) {
-          console.error('🚨 Shopify API Error:', shopifyError);
-          return res.status(500).json({ error: 'Error fetching product from Shopify', details: shopifyError.message });
-      }
+      return res.status(200).json(newProduct);
+    } catch (shopifyError) {
+      console.error('🚨 Shopify API Error:', shopifyError);
+      return res.status(500).json({ error: 'Error fetching product from Shopify', details: shopifyError.message });
+    }
 
   } catch (error) {
-      console.error('🚨 API Error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('🚨 API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-
 module.exports = router;
-

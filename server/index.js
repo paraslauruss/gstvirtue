@@ -14,6 +14,9 @@ const emailSettingsRoute = require('./routes/email_settings');
 const htmlRoutes = require('./routes/htmlRoutes');
 const templateRoutes = require('./routes/template');
 const customizeLabelRoutes = require('./routes/customize_label');
+const emailFormateRoutes = require('./routes/email_formate');
+const collectionRoutes = require('./routes/collection');
+const smartCollectionRoutes = require('./routes/smart_collection');
 const path = require('path');
 
 const app = express();
@@ -21,7 +24,7 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  origin: "https://limits-supported-axis-ave.trycloudflare.com",  // Aapke frontend ka URL
+  origin: "https://generally-vertex-variety-isa.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
 }));
@@ -42,6 +45,9 @@ app.use('/api/email-settings', emailSettingsRoute);
 app.use('/api/html', htmlRoutes);
 app.use('/api/template', templateRoutes);
 app.use('/api/customize-label', customizeLabelRoutes);
+app.use('/api/email-formate', emailFormateRoutes);
+app.use('/api/collection', collectionRoutes);
+app.use('/api/smart-collection', smartCollectionRoutes);
 
 // Connect to MongoDB
 require('dotenv').config(); // This will load the variables from the .env file

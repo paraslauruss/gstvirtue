@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "0b46e223749df9a2c17fc183b9175f99"
-application_url = "https://limits-supported-axis-ave.trycloudflare.com"
+application_url = "https://generally-vertex-variety-isa.trycloudflare.com"
 embedded = true
 name = "Gst Virtue"
 handle = "gst-virtue-2"
@@ -15,9 +15,9 @@ scopes = "read_customers,read_orders,read_products,write_customers,read_location
 
 [auth]
 redirect_urls = [
-  "https://limits-supported-axis-ave.trycloudflare.com/auth/callback",
-  "https://limits-supported-axis-ave.trycloudflare.com/auth/shopify/callback",
-  "https://limits-supported-axis-ave.trycloudflare.com/api/auth/callback"
+  "https://generally-vertex-variety-isa.trycloudflare.com/auth/callback",
+  "https://generally-vertex-variety-isa.trycloudflare.com/auth/shopify/callback",
+  "https://generally-vertex-variety-isa.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

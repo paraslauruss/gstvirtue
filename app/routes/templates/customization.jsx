@@ -10,10 +10,24 @@ import PopupDialog from '../utils/PopupDialog';
 import { createRoot } from 'react-dom/client';
 import invoice_ph from '../../assets/images/invoice_ph.png'
 import { CustomizationLabel } from "./customization_label";
+import { useLoaderData } from "@remix-run/react";
+import ColorPickerModal from "../components/ColorPickerModal";
+import { Standard } from "./invoice/standard";
 
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
 
 export const Customization = ({ onClick }) => {
 
+    const session = useLoaderData();
+    const storeName = session?.storeName;
+    const accessToken = session?.accessToken;
     // Open Logo Image Popup
     const [isPopupOpen, setIsPopupOpen] = useState(false);
 
@@ -40,6 +54,46 @@ export const Customization = ({ onClick }) => {
     const [logoUrl, setLogoUrl] = useState(null);
     const [signatureUrl, setSignatureLogoUrl] = useState(null);
 
+    const [isBgModalOpen, setIsBgModalOpen] = useState(false);
+    const [bgColor, setBgColor] = useState("#ccc");
+
+    const handleBgSave = (bg, text) => {
+        setBgColor(bg);
+        setIsBgModalOpen(false);
+    };
+
+    const [isTextModalOpen, setIsTextModalOpen] = useState(false);
+    const [textColor, setTextColor] = useState("#000");
+
+    const handleTextSave = (bg, text) => {
+        setTextColor(bg);
+        setIsTextModalOpen(false);
+    };
+
+    const states = [
+        "Arial",
+        "Roboto",
+        "Poppins",
+        "Rubik",
+        "Calibri",
+        "Helvetica",
+        "Verdana",
+        "EB Garamond",
+        "Open Sans",
+        "Futura",
+    ];
+
+    const [formValues, setFormValues] = useState({
+        state: "Arial"
+    });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormValues((prevValues) => ({
+            ...prevValues,
+            [name]: value,
+        }));
+    };
+
     // Fetch Logo
     useEffect(() => {
         const fetchLogoUrl = async () => {
@@ -63,6 +117,20 @@ export const Customization = ({ onClick }) => {
                         setSignatureLogoUrl(`http://localhost:3001${data.signatureUrl}`);
                     }
 
+                    if (data.fontStyle != null) {
+                        setFormValues({
+                            state: `${data.fontStyle}`
+                        });
+                    }
+
+                    if (data.textColor != null) {
+                        setTextColor(`${data.textColor}`);
+                    }
+
+                    if (data.backgroundColor != null) {
+                        setBgColor(`${data.backgroundColor}`);
+                    }
+
                 } else {
                     console.error('Error fetching logo URL:', response.statusText);
                 }
@@ -73,6 +141,69 @@ export const Customization = ({ onClick }) => {
 
         fetchLogoUrl();
     }, []);
+
+    const handleSaveStyle = () => {
+        console.log("Save and Preview", JSON.stringify(formData));
+        fetch('http://localhost:3001/api/template/change-style', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'store-name': storeName,
+                'api-version': '2025-01',
+                'access-token': accessToken
+            },
+            body: JSON.stringify({
+                fontStyle: formValues.state,
+                textColor: textColor,
+                backgroundColor: bgColor
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                closeChangeStylePopup();
+                shopify.toast.show("Success");
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                shopify.toast.show("Error");
+            });
+    };
+    const handleResetStyle = () => {
+        console.log("Save and Preview", JSON.stringify(formData));
+        fetch('http://localhost:3001/api/template/reset-style', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'store-name': storeName,
+                'api-version': '2025-01',
+                'access-token': accessToken
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                if (data.fontStyle != null) {
+                    setFormValues({
+                        state: `${data.fontStyle}`
+                    });
+                }
+
+                if (data.textColor != null) {
+                    setTextColor(`${data.textColor}`);
+                }
+
+                if (data.backgroundColor != null) {
+                    setBgColor(`${data.backgroundColor}`);
+                }
+                closeChangeStylePopup();
+                shopify.toast.show("Success");
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                shopify.toast.show("Error");
+            });
+    };
 
 
 
@@ -105,95 +236,64 @@ export const Customization = ({ onClick }) => {
         }
     };
 
-    // Logo Button Injection
-    useEffect(() => {
-        const checkContainer = () => {
-            const container = document.getElementById("logoButtonContainer");
-            if (container) {
-                // Render the button when the container exists
-                const root = createRoot(container);
-                root.render(
-                    <div>
-                        <input type="file" accept="image/*" id="logoInput" style={{ display: "none" }} />
-                        {logoUrl ? (
-                            <img
-                                src={logoUrl}
-                                alt="Logo"
-                                id="logoImage"
-                                onClick={openPopup}
-                                style={{ cursor: 'pointer', width: "100px", height: "auto", marginTop: "10px" }}
-                            />
-                        ) : (
-                            <button
-                                style={{
-                                    backgroundColor: "#74A535",
-                                    border: "none",
-                                    borderRadius: "5px",
-                                    padding: "10px 20px",
-                                    color: "white",
-                                    cursor: "pointer",
-                                }}
-                                type="button"
-                                onClick={openPopup}
-                            >
-                                Add Logo
-                            </button>
-                        )}
-                    </div>
-                );
-            } else {
-                // If the container doesn't exist yet, retry after a short delay
-                setTimeout(checkContainer, 100); // Retry after 100ms
-            }
-        };
+    const logo = (<div>
+        <input type="file" accept="image/*" id="logoInput" style={{ display: "none" }} />
+        {logoUrl ? (
+            <img
+                src={logoUrl}
+                alt="Logo"
+                id="logoImage"
+                onClick={openPopup}
+                style={{ cursor: 'pointer', width: "250px", height: "125px", marginTop: "10px" }}
+            />
+        ) : (
+            <button
+                style={{
+                    backgroundColor: "#74A535",
+                    border: "none",
+                    borderRadius: "5px",
+                    padding: "10px 20px",
+                    color: "white",
+                    cursor: "pointer",
+                }}
+                type="button"
+                onClick={openPopup}
+            >
+                Add Logo
+            </button>
+        )}
+    </div>);
 
-        checkContainer();
-    }, [logoUrl]);
+    const signature = (
+        <div>
+            <input type="file" accept="image/*" id="signatureInput" style={{ display: "none" }} />
+            {signatureUrl ? (
+                <img
+                    src={signatureUrl}
+                    alt="Signature"
+                    id="signatureImage"
+                    onClick={openSignaturePopup}
+                    style={{ cursor: 'pointer', width: "150px", height: "80px", marginTop: "10px" }}
+                />
+            ) : (
+                <button
+                    style={{
+                        backgroundColor: "#74A535",
+                        border: "none",
+                        borderRadius: "5px",
+                        padding: "10px 20px",
+                        color: "white",
+                        cursor: "pointer",
+                    }}
+                    type="button"
+                    onClick={openSignaturePopup}
+                >
+                    Add Signature
+                </button>
+            )}
+        </div>
+    );
 
-    // Signature Button Injection
-    useEffect(() => {
-        const checkContainer = () => {
-            const container = document.getElementById("signatureButtonContainer");
-            if (container) {
-                // Render the button when the container exists
-                const root = createRoot(container);
-                root.render(
-                    <div>
-                        <input type="file" accept="image/*" id="signatureInput" style={{ display: "none" }} />
-                        {signatureUrl ? (
-                            <img
-                                src={signatureUrl}
-                                alt="Signature"
-                                id="signatureImage"
-                                onClick={openSignaturePopup}
-                                style={{ cursor: 'pointer', width: "100px", height: "auto", marginTop: "10px" }}
-                            />
-                        ) : (
-                            <button
-                                style={{
-                                    backgroundColor: "#74A535",
-                                    border: "none",
-                                    borderRadius: "5px",
-                                    padding: "10px 20px",
-                                    color: "white",
-                                    cursor: "pointer",
-                                }}
-                                type="button"
-                                onClick={openSignaturePopup}
-                            >
-                                Add Signature
-                            </button>
-                        )}
-                    </div>
-                );
-            } else {
-                // If the container doesn't exist yet, retry after a short delay
-                setTimeout(checkContainer, 100); // Retry after 100ms
-            }
-        };
-
-        checkContainer();
-    }, [signatureUrl]);
 
     useEffect(() => {
         const addLogoButton = document.getElementById('addLogoButton');
@@ -267,24 +367,6 @@ export const Customization = ({ onClick }) => {
         };
     }, []);
 
-    const injectLogoButton = (html) => {
-        const placeholder = `<div id="logoButtonContainer"></div>`;
-
-        return html.replace('<!-- LOGO_PLACEHOLDER -->', placeholder);
-    };
-
-    const injectSignatureButton = (html) => {
-        const placeholder = `<div id="signatureButtonContainer"></div>`;
-
-        return html.replace('<!-- SIGNATURE_PLACEHOLDER -->', placeholder);
-    };
-
-    const injectButtons = (html) => {
-        html = injectLogoButton(html);
-        html = injectSignatureButton(html);
-        return html;
-    };
-
     const [imageSrc, setImageSrc] = useState(null);
     const [croppedImage, setCroppedImage] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -313,6 +395,17 @@ export const Customization = ({ onClick }) => {
 
     const closeSignatureCropLogoPopup = () => {
         setIsSignatureCropLogoPopupOpen(false);
+    };
+
+    // Change Style Popup
+    const [isChangeStylePopupOpen, setIsChangeStylePopupOpen] = useState(false);
+
+    const openChangeStylePopup = () => {
+        setIsChangeStylePopupOpen(true);
+    };
+
+    const closeChangeStylePopup = () => {
+        setIsChangeStylePopupOpen(false);
     };
 
     // logo file change
@@ -489,6 +582,92 @@ export const Customization = ({ onClick }) => {
 
     const [page, setPage] = useState('customization');
 
+    const [formData, setFormData] = useState({});
+
+    const handleFormDataChange = (updatedData) => {
+        setFormData(updatedData);
+    };
+    const handleSaveAndPreview = () => {
+        // API call
+        console.log("Save and Preview", JSON.stringify(formData));
+        fetch('http://localhost:3001/api/customize-label', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'store-name': storeName,
+                'api-version': '2025-01',
+                'access-token': accessToken
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                shopify.toast.show("Success");
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                shopify.toast.show("Error");
+            });
+    };
+
+
+
+
+
+    const googleFonts = {
+        "Roboto": "Roboto:wght@300;400;500;600;700",
+        "Poppins": "Poppins:wght@300;400;500;600;700",
+        "Rubik": "Rubik:wght@300;400;500;600;700",
+        "EB Garamond": "EB+Garamond:wght@400;500;600;700",
+        "Open Sans": "Open+Sans:wght@300;400;500;600;700",
+        "Calibri": "Calibri", // Google Fonts me nahi hai, system font rahega
+    };
+
+    useEffect(() => {
+        // Agar font Google Fonts me hai to load karo
+        if (googleFonts[formValues.state]) {
+            const link = document.createElement("link");
+            link.href = `https://fonts.googleapis.com/css2?family=${googleFonts[formValues.state]}&display=swap`;
+            link.rel = "stylesheet";
+            document.head.appendChild(link);
+        }
+    }, [formValues.state]);
+
+    useEffect(() => {
+        if (!storeName || !accessToken) {
+            console.warn("Missing storeName or accessToken");
+            return;
+        }
+        const fetchData = async () => {
+            try {
+                const response = await fetch('http://localhost:3001/api/customize-label', {
+                    method: 'GET',
+                    headers: {
+                        'store-name': storeName,
+                        'api-version': '2025-01',
+                        'access-token': accessToken
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+
+                if (data) {
+                    console.log("Cuastomize Invoice Data : ", JSON.stringify(data.data.customize_store_labels.tax_invoice))
+                    setFormData(data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
     return (
         <Page>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -506,17 +685,21 @@ export const Customization = ({ onClick }) => {
                     </div>
                     <div style={{ display: 'flex', gap: '20px' }}>
                         <div style={{ fontSize: '14px', backgroundColor: '#74A535', borderRadius: '4px', padding: '5px 10px', color: 'white', cursor: 'pointer' }} onClick={() => {
-                            page == "customization" ? setPage('customization_label') : setPage('customization');
+
+
                             if (page == "customization_label") {
-                                
+                                handleSaveAndPreview();
+                                setPage('customization')
+                            } else {
+                                setPage('customization_label')
                             }
                         }}>
                             {page == "customization" ? "Customize Labels" : "Save & Preview"}
                         </div>
-                        <div style={{ fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px', padding: '5px 10px', color: 'black' }}>
+                        <div style={{ fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px', padding: '5px 10px', color: 'black', cursor: 'pointer' }} onClick={openChangeStylePopup}>
                             Change Style
                         </div>
-                        <div style={{ fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px', padding: '5px 10px', color: 'black' }}>
+                        <div style={{ fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px', padding: '5px 10px', color: 'black', cursor: 'pointer' }} onClick={handleResetStyle}>
                             Reset
                         </div>
                     </div>
@@ -574,18 +757,20 @@ export const Customization = ({ onClick }) => {
                         </div>
                     </div>
                 </div>
-                {page == "customization_label" && <CustomizationLabel onClick={() => setPage('customization')} />}
+                {page == "customization_label" && <CustomizationLabel onFormDataChange={handleFormDataChange} />}
                 {page == "customization" && (
                     <div>
 
                         <div style={{ border: '1px solid #ccc', borderRadius: '10px', padding: '20px', marginTop: '20px' }}>
 
-                            {htmlContent ? (
+                            {/* {htmlContent ? (
                                 <div dangerouslySetInnerHTML={{ __html: injectButtons(htmlContent) }} />
                             ) : (
                                 <p>Loading...</p>
-                            )}
+                            )} */}
+                            <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} />
                         </div>
+
                     </div>
 
                 )}
@@ -739,6 +924,66 @@ export const Customization = ({ onClick }) => {
                 )}
             </PopupDialog>
 
+            <PopupDialog isOpen={isChangeStylePopupOpen} onClose={closeChangeStylePopup} title="Change Style">
+                <div style={{ padding: '10px', display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: '1' }}>
+                        <div style={{ color: '#000', fontSize: '14px', fontWeight: 'bold' }}>Background Color</div>
+                        <div style={{ marginTop: '20px', height: '50px', border: '1px solid #000', padding: '10px', borderRadius: '5px', cursor: 'pointer' }} onClick={() => setIsBgModalOpen(true)}>
+                            <div style={{ backgroundColor: bgColor, width: '100%', height: '100%', borderRadius: '5px' }}></div>
+                        </div>
+
+                    </div>
+                    <div style={{ flex: '1' }}>
+                        <div style={{ color: '#000', fontSize: '14px', fontWeight: 'bold' }}>Text Color</div>
+
+
+                        <div style={{ marginTop: '20px', height: '50px', border: '1px solid #000', padding: '10px', borderRadius: '5px', cursor: 'pointer' }} onClick={() => setIsTextModalOpen(true)}>
+                            <div style={{ backgroundColor: textColor, width: '100%', height: '100%', borderRadius: '5px' }}></div>
+                        </div>
+
+                    </div>
+                    <div style={{ flex: '1' }}>
+                        <div style={{ color: '#000', fontSize: '14px', fontWeight: 'bold' }}>Font Style</div>
+
+                        <select
+                            name="state"
+                            value={formValues.state}
+                            onChange={handleChange}
+                            style={{
+                                width: '100%',
+                                height: '50px',
+                                marginTop: '20px',
+                                padding: '10px',
+                                border: '1px solid #ccc',
+                                borderRadius: '5px',
+                                appearance: 'none',
+                                position: 'relative',
+                            }}>
+                            {states.map((state, index) => (
+                                <option key={index} value={state}>
+                                    {state}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'end', gap: '20px', padding: '10px' }}>
+                    <div style={{ display: 'flex', backgroundColor: '#74A535', padding: '10px 20px', color: 'white', borderRadius: '5px', cursor: 'pointer' }}
+                        onClick={handleSaveStyle}>
+                        Save
+                    </div>
+                    <div style={{ display: 'flex', border: '1px solid #000', padding: '10px 20px', color: 'black', borderRadius: '5px', cursor: 'pointer' }}
+                        onClick={handleResetStyle}>
+                        Reset
+                    </div>
+                </div>
+                <div>
+                    <ColorPickerModal isOpen={isBgModalOpen} onClose={() => setIsBgModalOpen(false)} onSave={handleBgSave} />
+                    <ColorPickerModal isOpen={isTextModalOpen} onClose={() => setIsTextModalOpen(false)} onSave={handleTextSave} />
+                </div>
+            </PopupDialog>
         </Page >
     );
 }

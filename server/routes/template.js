@@ -84,6 +84,88 @@ router.post('/upload-signature', upload.single('signature'), async (req, res) =>
     }
 });
 
+router.post('/change-style', async (req, res) => {
+    try {
+        const storeName = req.headers['store-name'];
+        if (!storeName) {
+            return res.status(400).send('Store name is required.');
+        }
+
+        const { fontStyle, textColor, backgroundColor } = req.body;
+
+
+        // Check if a template with the given store name already exists
+        let template = await Template.findOne({ storeName });
+
+        if (template) {
+            // Update the existing template's signature URL
+            template.fontStyle = fontStyle;
+            template.textColor = textColor;
+            template.backgroundColor = backgroundColor;
+        } else {
+            // Create a new template with the store name and signature URL
+            template = new Template({
+                storeName,
+                fontStyle,
+                textColor,
+                backgroundColor
+            });
+        }
+
+        // Save the template to the database
+        await template.save();
+
+        res.status(200).json({
+            message: 'Style uploaded/updated successfully',
+            fontStyle: template.fontStyle,
+            textColor: template.textColor,
+            backgroundColor: template.backgroundColor
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.post('/reset-style', async (req, res) => {
+    try {
+        const storeName = req.headers['store-name'];
+        if (!storeName) {
+            return res.status(400).send('Store name is required.');
+        }
+
+
+        // Check if a template with the given store name already exists
+        let template = await Template.findOne({ storeName });
+
+        if (template) {
+            // Update the existing template's signature URL
+            template.fontStyle = "Arial";
+            template.textColor = "#000000";
+            template.backgroundColor = "#EEEEEE";
+        } else {
+            // Create a new template with the store name and signature URL
+            template = new Template({
+                storeName,
+                fontStyle: "Arial",
+                textColor: "#000000",
+                backgroundColor: "#EEEEEE"
+            });
+        }
+
+        // Save the template to the database
+        await template.save();
+
+        res.status(200).json({
+            message: 'Style uploaded/updated successfully',
+            fontStyle: template.fontStyle,
+            textColor: template.textColor,
+            backgroundColor: template.backgroundColor
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.get('/', async (req, res) => {
     try {
         const storeName = req.headers['store-name'];
@@ -100,7 +182,10 @@ router.get('/', async (req, res) => {
 
         res.status(200).json({
             logoUrl: template.logoUrl,
-            signatureUrl: template.signatureUrl
+            signatureUrl: template.signatureUrl,
+            fontStyle: template.fontStyle,
+            textColor: template.textColor,
+            backgroundColor: template.backgroundColor
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

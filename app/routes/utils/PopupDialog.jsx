@@ -32,7 +32,7 @@ const PopupDialog = ({ isOpen, onClose, title, children }) => {
             <div style={{
                 background: '#fff',
                 borderRadius: '8px',
-                width: '400px',
+                width: '500px',
                 maxWidth: '100%',
                 boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
                 overflow: 'hidden',

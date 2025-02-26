@@ -244,6 +244,80 @@ router.post("/", async (req, res) => {
     }
 });
 
+router.post("/bulk", async (req, res) => {
+    try {
+        const storeName = req.headers['store-name'];
+        const apiVersion = req.headers['api-version'];
+        const accessToken = req.headers['access-token'];
+        const customers = req.body.customers;
+
+        if (!storeName || !apiVersion || !accessToken) {
+            return res.status(400).json({ error: "Missing required headers" });
+        }
+        if (!Array.isArray(customers) || customers.length === 0) {
+            return res.status(400).json({ error: "Customers array is required" });
+        }
+
+        const results = [];
+        const errors = [];
+
+        for (const customerData of customers) {
+            const { email, first_name, last_name, phone, addresses, company_name, gst_number } = customerData;
+
+            if (!email || !first_name) {
+                errors.push({ customerData, error: "First Name and Email are required" });
+                continue;
+            }
+
+            const shopifyUrl = `https://${storeName}/admin/api/${apiVersion}/customers.json`;
+            const shopifyPayload = { customer: { email, first_name, last_name, phone, addresses } };
+
+            try {
+                const shopifyResponse = await axios.post(shopifyUrl, shopifyPayload, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Shopify-Access-Token": accessToken,
+                    },
+                });
+
+                const newCustomer = shopifyResponse.data.customer;
+                if (!newCustomer.id) {
+                    errors.push({ customerData, error: "Shopify ID is missing from the response" });
+                    continue;
+                }
+
+                newCustomer.company_name = company_name || "";
+                newCustomer.gst_number = gst_number || "";
+                newCustomer.shipping_address = newCustomer.default_address || "";
+
+                await Customer.create({
+                    shopifyId: newCustomer.id,
+                    store_name: storeName,
+                    first_name: newCustomer.first_name,
+                    last_name: newCustomer.last_name,
+                    email: newCustomer.email,
+                    phone: newCustomer.phone,
+                    addresses: newCustomer.addresses || [],
+                    default_address: newCustomer.default_address,
+                    shipping_address: newCustomer.default_address,
+                    created_at: newCustomer.created_at,
+                    company_name: newCustomer.company_name,
+                    gst_number: newCustomer.gst_number
+                });
+
+                results.push(newCustomer);
+            } catch (error) {
+                errors.push({ customerData, error: error.response?.data || error.message });
+            }
+        }
+
+        res.status(207).json({ results, errors });
+    } catch (error) {
+        console.error("🚨 Bulk Add Customers API Error:", error.response?.data || error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
+    }
+});
+
 router.put("/:customerId", async (req, res) => {
     try {
         const storeName = req.headers['store-name'];
