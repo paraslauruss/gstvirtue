@@ -5,6 +5,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
+import { Link } from "@shopify/polaris";
 
 export default function App() {
   return (

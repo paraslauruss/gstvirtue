@@ -1,5 +1,6 @@
-const express = require("express");
-const { Shopify } = require("@shopify/shopify-api");
+import express from 'express';
+import { Shopify } from '@shopify/shopify-api';
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;

@@ -10,21 +10,30 @@ if (
   delete process.env.HOST;
 }
 
-/** @type {import('@remix-run/dev').AppConfig} */
-module.exports = {
-  ignoredRouteFiles: ["**/.*"],
-  appDirectory: "app",
-  serverModuleFormat: "cjs",
-  dev: { port: process.env.HMR_SERVER_PORT || 8002 },
-  serverBuildTarget: "node-cjs",
-  server: "./server.js",
-  serverDependenciesToBundle: "all",
-  devServerBroadcastDelay: 1000,
-  future: {
-    unstable_dev: {
-      proxy: {
-        "/api/customers": "http://localhost:3001"
-      }
+/* @type {import('@remix-run/dev').AppConfig} */
+export const ignoredRouteFiles = ["**/.*"];
+export const appDirectory = "app";
+export const assetsBuildDirectory = "public/build";
+export const publicPath = "/build/";
+export const serverBuildDirectory = "build";
+export const devServerPort = 8002;
+export const serverModuleFormat = "cjs";
+export const dev = { port: process.env.HMR_SERVER_PORT || 8002 };
+export const serverBuildTarget = "node-cjs";
+export const server = "./server.js";
+export const serverDependenciesToBundle = "all";
+export const devServerBroadcastDelay = 1000;
+export const future = {
+  unstable_dev: {
+    proxy: {
+      "/api/customers": "http://localhost:3001"
     }
   }
 };
+export async function routes(defineRoutes) {
+  return defineRoutes((route) => {
+    route('invoicePreview', 'routes/invoicePreview.jsx');
+    route('invoice', 'routes/invoice.jsx');
+    route('template.movie', 'routes/template.movie.jsx');
+  });
+}

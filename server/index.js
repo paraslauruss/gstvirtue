@@ -12,7 +12,18 @@ const billRoute = require('./routes/BillRoute');
 const estimateRoute = require('./routes/EstimateRoute');
 const expenseRoute = require('./routes/ExpenseRoute');
 const smtpRoutes = require('./routes/smtp');
-
+const settingRoutes = require('./routes/setting');
+const locationsRoute = require('./routes/location');
+const prefixRunningNumbersRoute = require('./routes/prefix_running_numbers');
+const gstSettingsRoute = require('./routes/gst_settings');
+const emailSettingsRoute = require('./routes/email_settings');
+const htmlRoutes = require('./routes/htmlRoutes');
+const templateRoutes = require('./routes/template');
+const customizeLabelRoutes = require('./routes/customize_label');
+const emailFormateRoutes = require('./routes/email_formate');
+const collectionRoutes = require('./routes/collection');
+const smartCollectionRoutes = require('./routes/smart_collection');
+const path = require('path');
 
 const app = express();
 app.use(bodyParser.json());
@@ -36,15 +47,27 @@ app.use('/api/expense', expenseRoute);
 
 app.use('/api', smtpRoutes);
 // Connect to MongoDB
+app.use('/api/settings', settingRoutes);
+app.use('/api/locations', locationsRoute);
+app.use('/api/prefix-running-numbers', prefixRunningNumbersRoute);
+app.use('/api/gst-settings', gstSettingsRoute);
+app.use('/api/email-settings', emailSettingsRoute);
+app.use('/api/html', htmlRoutes);
+app.use('/api/template', templateRoutes);
+app.use('/api/customize-label', customizeLabelRoutes);
+app.use('/api/email-formate', emailFormateRoutes);
+app.use('/api/collection', collectionRoutes);
+app.use('/api/smart-collection', smartCollectionRoutes);
 
+// Connect to MongoDB
 require('dotenv').config(); // This will load the variables from the .env file
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 }).then(() => console.log('MongoDB connected'))
-.catch(err => console.log('Error connecting to MongoDB:', err));
+  .catch(err => console.log('Error connecting to MongoDB:', err));
 
 // EMAIL SENDING
 const emailUser = process.env.MAIL_USER;

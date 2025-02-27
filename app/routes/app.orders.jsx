@@ -175,8 +175,8 @@ export default function Index() {
     []
   );
 
-  const data = useLoaderData();
-  const orderList = data.orders.data.orders.edges;
+  // const data = useLoaderData();
+  // const orderList = data.orders.data.orders.edges;
   const shopify = useAppBridge();
 
   return (

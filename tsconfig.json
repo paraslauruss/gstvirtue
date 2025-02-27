@@ -13,9 +13,9 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "target": "ES2022",
     "baseUrl": ".",
-    "types": ["node"]
+    "types": ["node"],
   }
 }

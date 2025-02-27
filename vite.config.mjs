@@ -1,10 +1,10 @@
 import { vitePlugin as remix } from "@remix-run/dev";
-import { installGlobals } from "@remix-run/node";
+ import { installGlobals } from "@remix-run/node";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 installGlobals({ nativeFetch: true });
-
+ 
 // Related: https://github.com/remix-run/remix/issues/2835#issuecomment-1144102176
 // Replace the HOST env var with SHOPIFY_APP_URL so that it doesn't break the remix server. The CLI will eventually
 // stop passing in HOST, so we can remove this workaround after the next major release.
@@ -27,7 +27,7 @@ if (host === "localhost") {
     host: "localhost",
     port: 64999,
     clientPort: 64999,
-    overlay:false
+    overlay: false
   };
 } else {
   hmrConfig = {
@@ -35,7 +35,7 @@ if (host === "localhost") {
     host: host,
     port: parseInt(process.env.FRONTEND_PORT) || 8002,
     clientPort: 443,
-    overlay:false
+    overlay: false
   };
 }
 
@@ -47,9 +47,9 @@ export default defineConfig({
       // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
       allow: ["app", "node_modules"],
     },
-    optimizeDeps: {
-      include: ["react-date-range"],
-    },
+  },
+  optimizeDeps: {
+    include: ["react-date-range"],
   },
   plugins: [
     remix({
