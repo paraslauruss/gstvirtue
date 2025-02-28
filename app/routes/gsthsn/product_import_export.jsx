@@ -1,7 +1,82 @@
 import { Card, Page, Text } from "@shopify/polaris";
 import ic_info from '../../assets/images/ic_info.png';
+import Papa from 'papaparse';
+import { useState } from "react";
+import { useLoaderData } from "@remix-run/react";
+
+
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
 
 export function ProductImportExport() {
+
+    
+    const session = useLoaderData();
+    const storeName = session?.storeName;
+    const accessToken = session?.accessToken;
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handleDownload = async () => {
+        setLoading(true);
+        setError(null);
+
+        const apiUrl = 'http://localhost:3001/api/products';
+        const headers = {
+            'store-name': storeName,
+            'api-version': '2025-01',
+            'access-token': accessToken,
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                shopify.toast.show(errorData.message || 'Failed to fetch products')
+                throw new Error(errorData.message || 'Failed to fetch products');
+            }
+
+            const result = await response.json();
+            const csvData = result.map((product) => ({
+                Product_Id: product.id,
+                Product_Name: product.title,
+                HSN: product.hsn,
+                GST_Percentage: product.gst,
+                Mini_Amount: product.miniAmount,
+                Mini_GST_Percentage: product.minGst,
+                Cess_Gst_Percentage: product.cess,
+            }));
+
+            const csv = Papa.unparse(csvData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.href = url;
+            link.setAttribute('download', 'products.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+        } catch (err) {
+            setError(err.message);
+            shopify.toast.show(err.message)
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div style={{ minHeight: "100vh", padding: '50px 100px' }}>
             <Text variant="headingLg">Product Imports/Export</Text>
@@ -103,12 +178,13 @@ export function ProductImportExport() {
                                         borderRadius: '4px',
                                         cursor: 'pointer',
                                     }}
+                                    onClick={handleDownload}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
                                         <path d="M8.58966 1.414L7.86453 0.707L8.58966 0L9.31479 0.707L8.58966 1.414ZM9.6153 10.414C9.6153 10.6792 9.50724 10.9336 9.3149 11.1211C9.12255 11.3086 8.86168 11.414 8.58966 11.414C8.31764 11.414 8.05677 11.3086 7.86442 11.1211C7.67208 10.9336 7.56402 10.6792 7.56402 10.414H9.6153ZM2.73633 5.707L7.86453 0.707L9.31479 2.121L4.18658 7.121L2.73633 5.707ZM9.31479 0.707L14.443 5.707L12.9927 7.121L7.86453 2.121L9.31479 0.707ZM9.6153 1.414V10.414H7.56402V1.414H9.6153Z" fill="white" />
                                         <path d="M1.41016 12.4141V13.4141C1.41016 13.9445 1.62627 14.4532 2.01096 14.8283C2.39565 15.2033 2.9174 15.4141 3.46144 15.4141H13.7178C14.2619 15.4141 14.7836 15.2033 15.1683 14.8283C15.553 14.4532 15.7691 13.9445 15.7691 13.4141V12.4141" stroke="white" stroke-width="2" />
                                     </svg>
-                                    <div style={{ marginLeft: '10px' }}><Text>Export</Text></div>
+                                    <div style={{ marginLeft: '10px' }}><Text>{loading ? 'Exporting...' : 'Export'}</Text></div>
                                 </div>
                             </div>
 

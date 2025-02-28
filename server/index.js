@@ -75,7 +75,7 @@ const emailPass = process.env.MAIL_PASS;
 const emailHost = process.env.MAIL_HOST;
 
 const transporter = nodemailer.createTransport({
-  host: emailHost, 
+  host: emailHost,
   port: 465,
   secure: true, 
   auth: {
