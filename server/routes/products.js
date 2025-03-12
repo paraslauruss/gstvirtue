@@ -409,7 +409,6 @@ router.post('/update-products', async (req, res) => {
           if (!shopifyProduct) {
             return res.status(404).json({ error: "Product not found in Shopify" });
           }
-
           // Insert new product in MongoDB
           const newProduct = await Product.create({
             id: numericId, // Store numeric ID
@@ -541,7 +540,6 @@ router.post("/", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 
 // GET method to get single product with id

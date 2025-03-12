@@ -12,6 +12,7 @@ const billRoute = require('./routes/BillRoute');
 const estimateRoute = require('./routes/EstimateRoute');
 const expenseRoute = require('./routes/ExpenseRoute');
 const smtpRoutes = require('./routes/smtp');
+const InvoiceData = require('./routes/InvoicesData');
 const settingRoutes = require('./routes/setting');
 const locationsRoute = require('./routes/location');
 const prefixRunningNumbersRoute = require('./routes/prefix_running_numbers');
@@ -24,6 +25,8 @@ const emailFormateRoutes = require('./routes/email_formate');
 const collectionRoutes = require('./routes/collection');
 const smartCollectionRoutes = require('./routes/smart_collection');
 const path = require('path');
+const refundedOrderRoutes = require('./routes/RefundOrders');
+
 
 const app = express();
 app.use(bodyParser.json());
@@ -44,8 +47,9 @@ app.use('/api/payees', payeeRouter);
 app.use('/api/bills', billRoute);
 app.use('/api/estimate', estimateRoute);
 app.use('/api/expense', expenseRoute);
-
+app.use('/api/offlineData', InvoiceData);
 app.use('/api', smtpRoutes);
+app.use('/api', refundedOrderRoutes);
 // Connect to MongoDB
 app.use('/api/settings', settingRoutes);
 app.use('/api/locations', locationsRoute);

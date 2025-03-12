@@ -6,16 +6,9 @@ import {
   Layout,
   Text,
   Card,
-  Button,
   BlockStack,
-  Box,
-  List,
-  Link,
   InlineStack,
   Bleed,
-  LegacyCard,
-  LegacyStack,
-  Icon,
   Divider,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";

@@ -1,4 +1,5 @@
 import React, { useState,useEffect,useCallback,useRef } from "react";
+import ReactDOM from "react-dom";
 import groupimage from "../../assets/images/Group@2x.png";
 import { Backdrop,
   Card,
@@ -1418,7 +1419,6 @@ export const Estimates = () => {
                     bill.Customer.toLowerCase().includes(searchName.toLowerCase())
                   );
                 }
-            
                 // Date validation
                 if (date && endDate) {
                   filteredData = filteredData.filter(bill => {
@@ -1578,8 +1578,16 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
   const closeEmailModal = () => {
       setSelectedInvoice(null);
       setEmailActive(false);
-  };
+  };  
    
+
+  function formatDate(dateString) {
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const date = new Date(dateString);
+    const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
+    return formattedDate;
+}
+
   return (
     <div
       style={{
@@ -1599,17 +1607,15 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
             maxWidth: "1200px",
             borderRadius: "8px",
             padding: "20px",
-          }}
-        >
+          }}>
         <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               gap: "10px",
               marginBottom: "10px",
-              marginTop: "40px",
-            }}
-          >
+              marginTop: "35px",
+            }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               <img
                 src={groupimage}
@@ -1634,8 +1640,7 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                     alignItems: "center",
                     cursor: "pointer",
                   }}
-                  onClick={handleSave}
-                >
+                  onClick={handleSave} >
                   Save
                 </button>
             </div>
@@ -1655,70 +1660,64 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                 </div>
               )}
           </div>
-             
-
           {/* Estimate Details */}
           <div style={{ marginBottom: "20px" }}>
-            <Card>
+            <div style={{border:'1px solid #ccc', borderRadius:'5px', padding:'12px 12px'}}>
               <div style={{ marginBottom: "20px" }}>
                 <div style={{ width: "100%" }}>
                   <span style={{ fontWeight: "bold" }}>Customer</span>
                   <span style={{ color: "red" }}>*</span>          
                 </div>
                 <div ref={dropdownRef} style={{ marginTop: "15px" }}>
-              <TextField
-                placeholder="Search a Customer..."
-                value={isCustomerSelected ? customerName : searchQuery}
-                autoComplete="off"
-                onChange={handleSearchChange} 
-                onFocus={handleFocus}
-                prefix={
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <img src={searchIcon} style={{ height: "15px" }} />
-                  </div>
-                }
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  backgroundColor: "#fff",
-                  zIndex: 1000,
-                  left: 20,
-                  right: 20,
-                  overflowY: "auto",
-                  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-
-                {dropdownVisible && searchResults.length > 0 && (
-                  <div>
-                    {searchResults.map((option) => (
-                      <div
-                        key={option.id}
-                        onClick={() => handleOptionSelect(option)}
-                        style={{
-                          padding: "10px",
-                          cursor: "pointer",
-                          borderBottom: "1px solid #f0f0f0",
-                          display: "flex",
-                          flexDirection: "column",
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#f9f9f9")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#fff")
-                        }
-                      >
-                        <span style={{ fontSize: "14px" }}>{option.first_name} {option.last_name}</span>
+                  <TextField
+                    placeholder="Search a Customer..."
+                    value={isCustomerSelected ? customerName : searchQuery}
+                    autoComplete="off"
+                    onChange={handleSearchChange} 
+                    onFocus={handleFocus}
+                    prefix={
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <img src={searchIcon} style={{ height: "15px" }} />
                       </div>
-                    ))}
-                  </div>
-                )}
-
-
+                    } />
+                  <div
+                    style={{
+                      // position: "absolute",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      backgroundColor: "#fff",
+                      zIndex: 1000,
+                      // left: 20,
+                      // right: 20,
+                      overflowY: "auto",
+                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                      marginTop:'6px'
+                    }}>
+                    {dropdownVisible && searchResults.length > 0 && (
+                      <div>
+                        {searchResults.map((option) => (
+                          <div
+                            key={option.id}
+                            onClick={() => handleOptionSelect(option)}
+                            style={{
+                              padding: "10px",
+                              cursor: "pointer",
+                              borderBottom: "1px solid #f0f0f0",
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#f9f9f9")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#fff")
+                            }
+                          >
+                            <span style={{ fontSize: "14px" }}>{option.first_name} {option.last_name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 {showAddNew && (
                   <div
                     style={{
@@ -1855,7 +1854,8 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                 <Divider />
               </div>
             </div>
-                <div style={{ display: "flex", marginTop: "30px",flexWrap:"wrap" }}>
+
+              <div style={{ display: "flex", marginTop: "30px",flexWrap:"wrap" }}>
                     {/* prefix */}
                   <div style={{ width: "48%",marginBottom:"10px", marginRight:'20px' }}>
                     <label>
@@ -1912,8 +1912,52 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                       <h1 style={{fontSize: "15px",color: "black", marginBottom: "8px",}} >
                         Estimate Date <span style={{color:"red"}}>*</span>
                       </h1>
-                      <div
-                            style={{
+                      <div style={{
+                          width: "100%",
+                          height: "33px",
+                          border: "1px solid #ccc",
+                          borderRadius: "4px",
+                          backgroundColor: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "5px",
+                          cursor: "pointer" 
+                        }}
+                        onClick={() => setIsOpen(!isOpen)}>
+                            <span>{estimateDate ? estimateDate.toLocaleDateString() : "Select Date"}</span>
+                          </div>
+                          {/* DatePicker Component */}
+                          {isOpen &&(
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: "100%",
+                                  left: "0",
+                                  zIndex: 2,
+                                  background: "#fff",
+                                  boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                                  borderRadius: "4px",
+                                  overflow: "visible",
+                                  width: "auto",
+                                }}
+                              >
+                                <DatePicker
+                                  selected={estimateDate}
+                                  onChange={handleEstimateDate}
+                                  inline
+                                />
+                              </div>
+                            )}
+                    </label>
+                  </div>
+                      {/* expiry date */}
+                  <div style={{ width: "48%",marginBottom:"10px", position:'relative',overflow:'visible'}}>
+                    <label>
+                      <h1 style={{fontSize: "15px", color: "black",marginBottom: "8px", }} >
+                        Expiry Date <span style={{color:"red"}}>*</span>
+                      </h1>
+                      <div style={{
                               width: "100%",
                               height: "33px",
                               border: "1px solid #ccc",
@@ -1924,78 +1968,28 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                               justifyContent: "space-between",
                               padding: "5px",
                               cursor: "pointer",
-                            
-                            }}
-                            onClick={() => setIsOpen(!isOpen)}
-                          >
-                            <span>{estimateDate ? estimateDate.toLocaleDateString() : "Select Date"}</span>
-                          </div>
-                          {/* DatePicker Component */}
-                          {isOpen && (
-                            <div style={{
-                              position: "absolute",
-                              top: "50px", 
-                              left: 0,
-                              zIndex: 1000, 
-                              background: "#fff",
-                              boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                              borderRadius: "4px",
-                              overflow: "visible",
-                              width: "auto",
-                            }}>
-                              <DatePicker
-                                selected={estimateDate}
-                                onChange={handleEstimateDate}
-                                inline
-                                // portalId="root"
-                                // popperPlacement="bottom-start" 
-                                // popperContainer={document.body} 
-                              />
-                            </div>
-                          )} 
-                    </label>
-                  </div>
-                      {/* expiry date */}
-                  <div style={{ width: "48%",marginBottom:"10px", position:'relative'}}>
-                    <label>
-                      <h1 style={{fontSize: "15px", color: "black",marginBottom: "8px", }} >
-                        Expiry Date <span style={{color:"red"}}>*</span>
-                      </h1>
-                      <div
-                            style={{
-                              width: "90%",
-                              height: "33px",
-                              border: "1px solid #ccc",
-                              borderRadius: "4px",
-                              backgroundColor: "#fff",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              padding: "5px",
-                              cursor: "pointer",
-                              position: "relative",
-                            }}
+                              }}
                             onClick={() => setIsExpiryDateOpen(!isExpiryDateOpen)}>
                             <span>{expiryDate ? expiryDate.toLocaleDateString() : "Select Date"}</span>                   
                           </div>
-                          {/* DatePicker Component */}
                           {isExpiryDateOpen && (
                             <div
-                              style={{
+                               style={{
                                 position: "absolute",
                                 top: "50px",
                                 left: 0,
-                                zIndex: 2, // Ensures it's above everything
+                                zIndex: 2, 
                                 background: "#fff",
                                 boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
                                 borderRadius: "4px",
-                                width:'auto'
-                              }}
-                            >
+                                width:'auto',
+                                 overflow:'visible'
+                               }}>
                               <DatePicker
                                 selected={expiryDate}
                                 onChange={handleExpiryDate}
                                 inline 
+                                popperPlacement="bottom-start"
                               />
                             </div>
                           )} 
@@ -2062,8 +2056,8 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                                 style={{
                                   position: "absolute",
                                   top: "100%",
-                                  left: '35%',
-                                  zIndex: 2, // Ensures it's above everything
+                                  left: '0',
+                                  zIndex: 9999, // Ensures it's above everything
                                   background: "#fff",
                                   boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
                                   borderRadius: "4px",
@@ -2111,7 +2105,8 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                   </label>
                 </div>
               </div>
-            </Card>
+              </div>
+          
           </div>
 
           {/* Item Details */}
@@ -2944,7 +2939,7 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                   />
                 </div>
                 {/* start date */}
-                <div style={{ position: 'relative', display: 'inline-block', border: '1px solid #ccc', width: '180px', height: '36px' }}>
+                <div style={{ position: 'relative', display: 'inline-block', width: '180px', height: '36px' }}>
                  {/* Start Date Clickable Input Field */}
                  <div
                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
@@ -2955,10 +2950,10 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                         alignItems: "center",
                         width: "100%",
                         border: "1px solid #000",
+                        borderRadius:'4px',
                         cursor: "pointer",
                         background: "#fff",
-                    }}
-                >
+                    }}>
                   <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
                   <span>{date ? date.toLocaleDateString("en-US") : "Select Start Date"}</span>
               </div>
@@ -2974,13 +2969,14 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                 )}
                   </div>
                 {/* end date */}
-                <div style={{ position: 'relative', display: 'inline-block', border: '1px solid #ccc', width: '180px', height: '36px' }}>
+                <div style={{ position: 'relative', display: 'inline-block', width: '180px', height: '36px' }}>
                   <div onClick={() => setIsEndDatePickerOpen(!isEndDatePickerOpen)}
                       style={{ padding: "12px",height: "33px",
                                 display: "flex",
                                 alignItems: "center",
                                 width: "100%",
                                 border: "1px solid #000",
+                                borderRadius:'5px',
                                 cursor: "pointer",
                                 background: "#fff",
                         }}>
@@ -2998,13 +2994,17 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
                     )}
                   </div>
                   {/* search */}
-                <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'14px', fontFamily:'Inter'}} 
+                <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'16px', fontFamily:'Inter',
+                  fontWeight:'600'
+                }} 
                     onClick={handleSearchClick}>
                     Search
                 </button>
               </div>
               {/* clear */}
-              <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'14px', fontFamily:'Inter'}}  
+              <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'16px', fontFamily:'Inter',
+                fontWeight:'600'
+              }}  
                   onClick={handleClearClick}>
                 Clear
               </button>
@@ -3037,8 +3037,8 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
               filteredEstimate.map((estimate, index) => (
                 <tr key={index}>
                     <td style={{ padding: '12px', textAlign: 'left'}}>{estimate.Estimatenum}</td>
-                    <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.estDate}</td>
-                    <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.ExpiryDate}</td>
+                    <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(estimate.estDate)}</td>
+                    <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(estimate.ExpiryDate)}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.Customer}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.totalTax}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.total}</td>

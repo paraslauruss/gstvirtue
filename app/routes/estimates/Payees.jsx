@@ -371,166 +371,147 @@ export const Payees = () => {
           width: "100%",
           borderBottom:'1px solid #ccc',
           paddingBottom:'25px'
-        }}
-      >
+        }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
         <div style={{ position: "relative", width: "45%", height: "33px" }}>
-                      <img
-                        src={searchIcon}
-                        alt="search"
-                        style={{
-                          position: "absolute",
-                          top: "50%",
-                          left: "10px",
-                          transform: "translateY(-50%)",
-                          pointerEvents: "none",
-                          width:'16px',
-                        }}
-                      />                   
-                        <input
-                          type="text"
-                          style={{
-                            width: "100%",
-                            height: "33px",
-                            fontSize: "14px",
-                            fontFamily: "Inter",
-                            padding: "10px 10px 10px 30px", // Add left padding to make space for the icon
-                            border: "1px solid #ccc",
-                            borderRadius: "5px",
-                          }}
-                          placeholder="First Name, Last Name, Email"
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                        />
-                    </div>
-                  <button
-                    onClick={handleSearchClick}           
-                      style={{
-                      backgroundColor: "#74a535",
-                      color: "white",
-                      padding: "8px 12px",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
-                    onMouseOver={(e) => (e.target.style.backgroundColor = "#5c8e29")}
-                    onMouseOut={(e) => (e.target.style.backgroundColor = "#74a535")}        
-                  >
-                    Search
-                  </button>
-                </div>
-                <button
-                onClick={handleClearSearch}
-                  style={{
-                    backgroundColor: "#ccc",
-                    color: "black",
-                    padding: "8px 12px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    marginLeft: "10px",
-                  }}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = "#b3b3b3")}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = "#ccc")}
-                >
-                  Clear
-                </button>
-            </div>
-            <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'15px'}}>
-            <select style={{
-                width: '190px', height: '33px', padding: '4px', fontSize: '14px', fontFamily: 'Inter', backgroundColor: '#E8E8E8', border:'1px solid #ccc', borderRadius:'4px'}}>
-                      <option value=''>Result 50 per page</option>
-                      <option value='100'>Result 100 per page</option>
-              </select>
-              </div>
-        
-            {/* Table section */}
-            <table
+            <img
+              src={searchIcon}
+              alt="search"
               style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                background: "white",
+                position: "absolute",
+                top: "50%",
+                left: "10px",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+                width:'16px',
+              }} />                   
+                <input
+                  type="text"
+                  style={{
+                    width: "100%",
+                    height: "33px",
+                    fontSize: "14px",
+                    fontFamily: "Inter",
+                    padding: "10px 10px 10px 30px", // Add left padding to make space for the icon
+                    border: "1px solid #ccc",
+                    borderRadius: "5px",
+                  }}
+                  placeholder="First Name, Last Name, Email"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+          </div>
+            <button onClick={handleSearchClick}           
+                style={{
+                backgroundColor: "#74a535",
+                color: "white",
+                padding: "8px 12px",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
               }}
-            >
-              <thead>
-              <tr>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>First Name</th>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Last Name</th>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Email</th>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Company</th>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Mobile</th>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Display Name</th>
-                <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Action</th>
-              </tr>
-            </thead>
-      
-            <tbody >
-              {filteredData.map((entry, index) => (
-                <tr key={index} style={{ marginBottom: "10px" }}>
-                  <td style={{ padding: "12px" }}>{entry.firstName}</td>
-                  <td style={{ padding: "12px" }}>{entry.lastName}</td>
-                  <td style={{ padding: "12px" }}>{entry.email}</td>
-                  <td style={{ padding: "12px" }}>{entry.company}</td>
-                  <td style={{ padding: "12px" }}>{entry.mobile}</td>
-                  <td style={{ padding: "12px" }}>{entry.displayName}</td>
-        
-                  <td className="action-icons" style={{ display: "flex", padding:'12px' }}>
-                    <div>
-                      <img
-                        src={ic_delete}
-                        alt="delete"
-                        style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }}
-                        onClick={() => openPopup(1)} // Example of item ID being passed
-                      />    
-                  {showPopup && (
-                    <div
-                      style={{
-                        position: "fixed",
-                        top: "0",
-                        left: "0",
-                        width: "100%",
-                        height: "100%",
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          backgroundColor: "white",
-                          padding: "20px",
-                          borderRadius: "8px",
-                          textAlign: "center",
-                          width: "300px",
-                        }}
-                      >
-                        <img
-                          src={ic_warning}
-                          alt="warning"
-                          style={{
-                            width: "73px",
-                            height: "70px",
-                            marginBottom: "20px",
-                          }}
-                        />
-                        <h3 style={{ fontSize: "16px", alignContent: "center", fontFamily: "Inter" }}>This can't be undone</h3>
-                        <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
-                          <button
-                            style={{
-                              backgroundColor: "red",
-                              color: "white",
-                              padding: "10px 20px",
-                              borderRadius: "5px",
-                              border: "none",
-                              cursor: "pointer",
-                              fontSize: "16px",
-                            }}
-                            onClick={deleteItem}
-                          >
-                            Delete
+                onMouseOver={(e) => (e.target.style.backgroundColor = "#5c8e29")}
+                onMouseOut={(e) => (e.target.style.backgroundColor = "#74a535")} >
+                     Search
+                </button>
+              </div>
+              <button onClick={handleClearSearch}
+                style={{
+                  backgroundColor: "#ccc",
+                  color: "black",
+                  padding: "8px 12px",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  marginLeft: "10px",
+              }}
+                onMouseOver={(e) => (e.target.style.backgroundColor = "#b3b3b3")}
+                onMouseOut={(e) => (e.target.style.backgroundColor = "#ccc")}>
+                   Clear
+              </button>
+          </div>
+          <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'15px'}}>
+          <select style={{width: '190px', height: '33px', padding: '4px', fontSize: '14px', fontFamily: 'Inter', backgroundColor: '#E8E8E8', border:'1px solid #ccc', borderRadius:'4px'}}>
+                <option value=''>Result 50 per page</option>
+                <option value='100'>Result 100 per page</option>
+            </select>
+            </div>
+          {/* Table section */}
+          <table style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              background: "white",
+          }}>
+          <thead>
+            <tr>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>First Name</th>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Last Name</th>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Email</th>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Company</th>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Mobile</th>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Display Name</th>
+              <th style={{ padding: "12px", textAlign: "left", backgroundColor: "#333", color: "white", fontWeight: "bold" }}>Action</th>
+             </tr>
+          </thead>
+          <tbody >
+            {filteredData.map((entry, index) => (
+              <tr key={index} style={{ marginBottom: "10px" }}>
+                <td style={{ padding: "12px" }}>{entry.firstName}</td>
+                <td style={{ padding: "12px" }}>{entry.lastName}</td>
+                <td style={{ padding: "12px" }}>{entry.email}</td>
+                <td style={{ padding: "12px" }}>{entry.company}</td>
+                <td style={{ padding: "12px" }}>{entry.mobile}</td>
+                <td style={{ padding: "12px" }}>{entry.displayName}</td>
+                <td className="action-icons" style={{ display: "flex", padding:'12px' }}>
+                  <div>
+                    <img
+                      src={ic_delete}
+                      alt="delete"
+                      style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }}
+                      onClick={() => openPopup(1)} />    
+                      {showPopup && (
+                        <div style={{
+                            position: "fixed",
+                            top: "0",
+                            left: "0",
+                            width: "100%",
+                            height: "100%",
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                      }}>
+                          <div style={{
+                              backgroundColor: "white",
+                              padding: "20px",
+                              borderRadius: "8px",
+                              textAlign: "center",
+                              width: "300px",
+                            }}>
+                              <img
+                                  src={ic_warning}
+                                  alt="warning"
+                                  style={{
+                                    width: "73px",
+                                    height: "70px",
+                                    marginBottom: "20px",
+                                  }}
+                              />
+                          <h3 style={{ fontSize: "16px", alignContent: "center", fontFamily: "Inter" }}>This can't be undone</h3>
+                          <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
+                            <button
+                              style={{
+                                backgroundColor: "red",
+                                color: "white",
+                                padding: "10px 20px",
+                                borderRadius: "5px",
+                                border: "none",
+                                cursor: "pointer",
+                                fontSize: "16px",
+                              }} onClick={deleteItem}>
+                                    Delete
                           </button>
-                          <button
+                        <button
                             style={{
                               backgroundColor: "#C8C8C8",
                               color: "white",
@@ -539,22 +520,20 @@ export const Payees = () => {
                               border: "none",
                               cursor: "pointer",
                               fontSize: "16px",
-                            }}
-                            onClick={closePopup}
-                          >
-                            Cancel
+                            }} onClick={closePopup}>
+                              Cancel
                           </button>
                         </div>
                       </div>
                     </div>
-                  )}
+                )}
                 </div>
-                <img
-                  src={ic_edit}
-                  alt="edit"
-                  style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }}
-                  onClick={() => handleEditClick(index)}
-                />
+                  <img
+                    src={ic_edit}
+                    alt="edit"
+                    style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }}
+                    onClick={() => handleEditClick(index)}
+                  />
               </td>
             </tr>
           ))}
@@ -584,8 +563,7 @@ export const Payees = () => {
           alignItems: "center",
           justifyContent: "center",
           zIndex: 1000,
-        }}
-      >
+        }}>
         <div
           className="modal-content"
           style={{
@@ -593,36 +571,29 @@ export const Payees = () => {
             borderRadius: "5px",
             width: "50%",
             boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
-          }}
-        >
-          <div
-            style={{
+        }}>
+          <div style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               padding: "15px",
               backgroundColor: "#74A535",
-            }}
-          >
+            }}>
             <h3
               style={{
                 fontSize: "18px",
                 fontFamily: "Inter",
                 fontWeight: "500",
                 color: "#fff",
-              }}
-            >
-              Create New Payees
+              }}>
+                Create New Payees
             </h3>
-            <button
-              style={{
+            <button style={{
                 background: "none",
                 border: "none",
                 cursor: "pointer",
                 paddingRight: "10px",
-              }}
-              onClick={handleCloseModal}
-            >
+            }} onClick={handleCloseModal}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M18 6L6 18M6 6L18 18"
@@ -634,17 +605,14 @@ export const Payees = () => {
               </svg>
             </button>
           </div>
-  
-          <form
-            className="create-payee-form"
+          <form className="create-payee-form"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(2, 1fr)",
               gap: "15px",
               padding: "15px",
             }}
-            onSubmit={handleSave}
-          >
+            onSubmit={handleSave}>
             <div style={{display:'flex', flexDirection:'column'}}>
               <label style={{ fontSize: "14px", marginBottom: "5px", color: "#555" }}>First Name<span style={{color:'red'}}>*</span></label>
               <input
@@ -841,8 +809,7 @@ export const Payees = () => {
                           borderRadius: "4px",
                           backgroundColor: "#fff",
                           cursor: "pointer"
-                      }}
-                  >
+                      }}>
                       <option value="" disabled>Select a state</option>
                       {state.map((state, index) => (
                           <option key={index} value={state}>{state}</option>
@@ -867,30 +834,26 @@ export const Payees = () => {
                 }}
               />
             </div>
-            <div >
-                <div style={{ display: "flex", justifyContent: "flex-end", width: "100%", }}>
-                    <button
-                        style={{
-                            fontSize: "16px",
-                            fontFamily: "Inter",
-                            backgroundColor: "#74A535",
-                            color: "#fff",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: "10px 20px",
-                            borderRadius: "5px",
-                        }}
-                    >
-                        Save
-                    </button>
-                </div>
+          <div>
+              <div style={{ display: "flex", justifyContent: "flex-end", width: "100%"}}>
+                <button style={{
+                    fontSize: "16px",
+                    fontFamily: "Inter",
+                    backgroundColor: "#74A535",
+                    color: "#fff",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "10px 20px",
+                    borderRadius: "5px",
+                }}>
+                  Save
+                </button>
             </div>
-          </form>
-          
+            </div>
+          </form>      
         </div>
       </div>
     )}
   </div>
-  
   );
 };

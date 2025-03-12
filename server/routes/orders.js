@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
         try {
             const shopifyResponse = await axios.get(url, { headers });
             shopifyOrders = shopifyResponse.data.orders;
-            console.log("Shopify Orders:", shopifyOrders); // Add this line
+            console.log("Shopify Orders:", shopifyOrders);
         } catch (shopifyError) {
             console.error('🚨 Shopify API Error:', shopifyError.response?.data || shopifyError.message);
             return res.status(400).json({ error: 'Failed to fetch orders from Shopify', details: shopifyError.message });
@@ -44,53 +44,49 @@ router.get('/', async (req, res) => {
 
         const orderMap = new Map(existingOrders.map(o => [o.order_number, o]));
 
-        const operations = shopifyOrders.map((shopifyOrder) => {
-            return (async () => {
-                if (!shopifyOrder.order_number) {
-                    console.warn(`Skipping order with missing order_number:`, shopifyOrder);
-                    return;
-                }
+        for (const shopifyOrder of shopifyOrders) {
+            if (!shopifyOrder.order_number) {
+                console.warn(`Skipping order with missing order_number:`, shopifyOrder);
+                continue;
+            }
 
-                const existingOrder = orderMap.get(shopifyOrder.order_number);
+            const existingOrder = orderMap.get(shopifyOrder.order_number);
 
-                let shopifyOrderId = shopifyOrder.id;
+            let shopifyOrderId = shopifyOrder.id;
 
-                // Handle missing or invalid shopifyOrder.id
-                if (!shopifyOrderId) {
-                    console.warn(`Missing shopifyOrder.id for order number ${shopifyOrder.order_number}. Generating a UUID.`);
-                    shopifyOrderId = uuidv4(); // Generate a UUID
-                }
+            if (!shopifyOrderId) {
+                console.warn(`Missing shopifyOrder.id for order number ${shopifyOrder.order_number}. Generating a UUID.`);
+                shopifyOrderId = uuidv4();
+            }
 
-                const orderData = {
-                    order_number: shopifyOrder.order_number || `unknown_${Date.now()}`,
-                    invoice_number: shopifyOrder.name || `#${shopifyOrder.order_number}`,
-                    date: shopifyOrder.created_at || new Date(),
-                    customer_name: shopifyOrder.customer
-                        ? `${shopifyOrder.customer.first_name || ''} ${shopifyOrder.customer.last_name || ''}`.trim()
-                        : null,
-                    total_price: shopifyOrder.total_price || 0,
-                    order_status_url: shopifyOrder.order_status_url || '',
-                    fulfillment_status: shopifyOrder.fulfillment_status || 'Unfulfilled',
-                    email: shopifyOrder.email || 'no-email@example.com',
-                    user_id: shopifyOrder.user_id || null,
-                    store_name: storeName,
-                    orderId: shopifyOrderId, //  Use shopifyOrderId, which is now guaranteed to be non-null
-                    payment_status: shopifyOrder.financial_status || 'pending',
-                };
+            const orderData = {
+                order_number: shopifyOrder.order_number || `unknown_${Date.now()}`,
+                invoice_number: shopifyOrder.name || `#${shopifyOrder.order_number}`,
+                date: shopifyOrder.created_at || new Date(),
+                customer_name: shopifyOrder.customer
+                    ? `${shopifyOrder.customer.first_name || ''} ${shopifyOrder.customer.last_name || ''}`.trim()
+                    : null,
+                total_price: shopifyOrder.total_price || 0,
+                order_status_url: shopifyOrder.order_status_url || '',
+                fulfillment_status: shopifyOrder.fulfillment_status || 'Unfulfilled',
+                email: shopifyOrder.email || 'no-email@example.com',
+                user_id: shopifyOrder.user_id || null,
+                store_name: storeName,
+                orderId: shopifyOrderId,
+                payment_status: shopifyOrder.financial_status || 'pending',
+                line_items: shopifyOrder.line_items || []  // Store the line items directly
+            };
 
-                if (!existingOrder) {
-                    return Order.create(orderData);
-                } else {
-                    return Order.findOneAndUpdate(
-                        { order_number: shopifyOrder.order_number, store_name: storeName },
-                        { $set: orderData },
-                        { upsert: true, new: true }
-                    );
-                }
-            })();
-        });
-
-        await Promise.all(operations);
+            if (!existingOrder) {
+                await Order.create(orderData);
+            } else {
+                await Order.findOneAndUpdate(
+                    { order_number: shopifyOrder.order_number, store_name: storeName },
+                    { $set: orderData },
+                    { upsert: true, new: true }
+                );
+            }
+        }
 
         const allOrders = await Order.find({ store_name: storeName }).lean();
         res.status(200).json(allOrders);

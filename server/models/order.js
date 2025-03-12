@@ -21,7 +21,13 @@ const OrderSchema = new mongoose.Schema({
         type: String,
         required: false,
         default: 'pending'  // You can set a default value if you want
+    },
+    line_items: {  // Add the line_items field
+        type: Array, // Store the line items as an array of objects
+        default: []  // Default to an empty array
     }
-});
+},{ timestamps: true });
+
+
 const Order = mongoose.model('Order', OrderSchema);
 module.exports = Order;

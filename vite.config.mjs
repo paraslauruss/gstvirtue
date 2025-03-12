@@ -48,9 +48,6 @@ export default defineConfig({
       allow: ["app", "node_modules"],
     },
   },
-  optimizeDeps: {
-    include: ["react-date-range"],
-  },
   plugins: [
     remix({
       ignoredRouteFiles: ["**/.*"],
@@ -68,4 +65,9 @@ export default defineConfig({
   build: {
     assetsInlineLimit: 0,
   },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  }
 });

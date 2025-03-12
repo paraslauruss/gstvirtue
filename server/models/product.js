@@ -24,7 +24,7 @@ const ProductSchema = new mongoose.Schema({
     admin_graphql_api_id: { type: String },
     price: { type: String },
     variants: [{
-        id: { type: String },
+        id: { type: String, required: true },
         product_id: { type: String },
         title: { type: String },
         price: { type: String },

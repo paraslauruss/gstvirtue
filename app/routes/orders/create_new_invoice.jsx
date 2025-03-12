@@ -8,13 +8,15 @@ import {
   Text,
   TextField,
 } from "@shopify/polaris";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import searchIcon from "../../assets/images/searchIcon.png";
 import { useCallback, useEffect, useState, useRef } from "react";
 import Switch from "react-switch";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { EditDialog } from "./edit_customer_dialog";
 import { EditShippingAddressDialog } from "./edit_shipping_address_dialog";
-
+import axios from "axios";
 
 export function Dialog({ active, toggleModal, apiCallback }) {
 
@@ -545,22 +547,6 @@ export function CreateNewInvoice({ onClose }) {
     setOfflineInvoicePrefix(value);
   };
 
-  const handleOfflineInvoiceNumberChange = (value) => {
-    setOfflineInvoiceNumber(value);
-  };
-
-  const [discountLevel, setDiscountLevel] = useState("at-transaction-level");
-
-  const handleDiscountLevelChange = useCallback(
-    (value) => setDiscountLevel(value),
-    [],
-  );
-
-  const options = [
-    { label: "At transaction Level", value: "at-transaction-level" },
-    { label: "Yesterday", value: "yesterday" },
-    { label: "Last 7 days", value: "lastWeek" },
-  ];
       const handleApiCallback = async (responseData) => {
         const response = await fetch("http://localhost:3001/api/customers", {
           headers: {
@@ -587,11 +573,11 @@ export function CreateNewInvoice({ onClose }) {
     (value) => setExclusiveOfTax(value),
     [],
   );
-  const amount = [
-    { label: "Exclusive of Tax", value: "exclusive-of-tax" },
-    { label: "Yesterday", value: "yesterday" },
-    { label: "Last 7 days", value: "lastWeek" },
-  ];
+  // const amount = [
+  //   { label: "Exclusive of Tax", value: "exclusive-of-tax" },
+  //   { label: "Yesterday", value: "yesterday" },
+  //   { label: "Last 7 days", value: "lastWeek" },
+  // ];
 
   const [shippingCharge, setShippingCharge] = useState(false);
 
@@ -630,15 +616,17 @@ export function CreateNewInvoice({ onClose }) {
 
   const customers = useLoaderData();
 
-
-  const [filteredOptions, setFilteredOptions] = useState(options);
   const [selectedCustomer, setSelectedCustomer] = useState({});
+  const [isCustomerSelected, setIsCustomerSelected] = useState(false);
   const [showAddNew, setShowAddNew] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
 
   const handleSearchChange = async (value) => {
     setSearchQuery(value);
     setDropdownVisible(true);
+    setDropdownVisible(true);
+    setIsCustomerSelected(false);
+
     const response = await fetch(`http://localhost:3001/api/customers?search=${value}`, {
       headers: {
         "Content-Type": "application/json",
@@ -652,14 +640,22 @@ export function CreateNewInvoice({ onClose }) {
     console.log("Search Result: ", responseData);
     setSearchResults(responseData);
   };
-
-  const handleOptionSelect = (customer) => {
-    //alert(`You selected: ${customer.first_name}`);
-    setSelectedCustomer(customer)
-    setDropdownVisible(false);
-    setShowAddNew(false);
-    setSearchQuery("");
-  };
+    const handleOptionSelect = (customer) => {
+        //alert(`You selected: ${customer.first_name}`);
+        setSelectedCustomer(customer);
+      if (customer && customer.first_name && customer.last_name) {
+      const customerName = `${customer.first_name} ${customer.last_name}`;
+      setCustomerName(customerName);
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        Customer: customerName,
+      }));
+      setDropdownVisible(false);
+      setShowAddNew(false);
+      setSearchQuery("");
+        setIsCustomerSelected(true);
+      };
+     }
 
   const [active, setActive] = useState(false);
   const toggleModal = () => {
@@ -672,97 +668,93 @@ export function CreateNewInvoice({ onClose }) {
 
     //  FETCH TITLE FIELD
     const session = useLoaderData();
-
+    const [isToggled, setIsToggled] = useState(false);
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+    const [error, setError] = useState('');
 
-
-        // Fetch suggestions for main search bar
-        useEffect(() => {
-          const fetchProducts = async () => {
-            if (query.length >= 2) {
-                setLoading(true);
-                setError("");
+      useEffect(() => {
+            const fetchProducts = async () => {
+              if (query.length >= 2) {
+                  setLoading(true);
+                  setError(""); 
+                  try {
+                      // Fetch suggestions
+                      const suggestionResponse = await fetch("http://localhost:3001/api/products", {
+                          method: "GET",
+                          headers: {
+                              "Content-Type": "application/json",
+                              "store-name": session.storeName,
+                              "api-version": "2025-01",
+                              "access-token": session.accessToken,
+                          },
+                      });
+          
+                      if (!suggestionResponse.ok) {
+                          throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
+                      }
+          
+                      const suggestionData = await suggestionResponse.json();
+          
+                      if (!Array.isArray(suggestionData)) {
+                          throw new Error("Invalid response format: Expected an array");
+                      }
+          
+                      const filteredSuggestions = suggestionData.filter((product) =>
+                          product.title.toLowerCase().includes(query.toLowerCase())
+                      );
+          
+                      setSuggestions(filteredSuggestions);
+                      setShowDropdown(filteredSuggestions.length > 0);
+          
+                      // Find selected product
+                      const selected = filteredSuggestions.find(
+                          (product) => product.title.toLowerCase() === query.toLowerCase()
+                      );
+          
+                      if (selected) {
+                          const detailsResponse = await fetch(
+                              `http://localhost:3001/api/products/${selected.id}`,
+                              {
+                                  method: "GET",
+                                  headers: {
+                                      "Content-Type": "application/json",
+                                      "store-name": session.storeName,
+                                      "api-version": "2025-01",
+                                      "access-token": session.accessToken,
+                                  },
+                              }
+                          );
+          
+                          if (!detailsResponse.ok) {
+                              throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
+                          }
+          
+                          const productDetails = await detailsResponse.json();
+                          setSelectedProduct(productDetails);
+                      } else {
+                          setSelectedProduct(null);
+                      }
+                  } catch (err) {
+                      console.error("Error fetching products:", err);
+                      setError("Error fetching products");
+                      setShowDropdown(false);
+                      setSelectedProduct(null);
+                  } finally {
+                      setLoading(false);
+                  }
+              } else {
+                  setSuggestions([]);
+                  setShowDropdown(false);
+                  setSelectedProduct(null);
+              }
+          };            
+            fetchProducts();
+       }, [query]);
         
-                try {
-                    // Fetch suggestions
-                    const suggestionResponse = await fetch("http://localhost:3001/api/products", {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "store-name": session.storeName,
-                            "api-version": "2025-01",
-                            "access-token": session.accessToken,
-                        },
-                    });
-        
-                    if (!suggestionResponse.ok) {
-                        throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
-                    }
-        
-                    const suggestionData = await suggestionResponse.json();
-        
-                    if (!Array.isArray(suggestionData)) {
-                        throw new Error("Invalid response format: Expected an array");
-                    }
-        
-                    const filteredSuggestions = suggestionData.filter((product) =>
-                        product.title.toLowerCase().includes(query.toLowerCase())
-                    );
-        
-                    setSuggestions(filteredSuggestions);
-                    setShowDropdown(filteredSuggestions.length > 0);
-        
-                    // Find selected product
-                    const selected = filteredSuggestions.find(
-                        (product) => product.title.toLowerCase() === query.toLowerCase()
-                    );
-        
-                    if (selected) {
-                        const detailsResponse = await fetch(
-                            `http://localhost:3001/api/products/${selected.id}`,
-                            {
-                                method: "GET",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                    "store-name": session.storeName,
-                                    "api-version": "2025-01",
-                                    "access-token": session.accessToken,
-                                },
-                            }
-                        );
-        
-                        if (!detailsResponse.ok) {
-                            throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
-                        }
-        
-                        const productDetails = await detailsResponse.json();
-                        setSelectedProduct(productDetails);
-                    } else {
-                        setSelectedProduct(null);
-                    }
-                } catch (err) {
-                    console.error("Error fetching products:", err);
-                    setError("Error fetching products");
-                    setShowDropdown(false);
-                    setSelectedProduct(null);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setSuggestions([]);
-                setShowDropdown(false);
-                setSelectedProduct(null);
-            }
-        };
-        
-      
-          fetchProducts();
-        }, [query]);
         // Handle selection for main search input
         const handleSelectMain = async (title) => {
           setQuery(title); // Set the title in the input field
@@ -813,20 +805,20 @@ export function CreateNewInvoice({ onClose }) {
               });
         
               const data = await response.json();
-              console.log("API Response:", data); // Debugging step
-        
-              if (Array.isArray(data)) {
-                const filteredSuggestions = data.filter((product) =>
-                  product.title.toLowerCase().includes(value.toLowerCase())
-                );
-        
-                console.log("Filtered Suggestions:", filteredSuggestions); // Debugging step
-        
-                setInputs((prevInputs) =>
-                  prevInputs.map((input) =>
-                    input.id === id
-                      ? { ...input, suggestions: filteredSuggestions, showDropdown: filteredSuggestions.length > 0 }
-                      : input
+         console.log("API Response:", data); // Debugging step
+   
+         if (Array.isArray(data)) {
+           const filteredSuggestions = data.filter((product) =>
+             product.title.toLowerCase().includes(value.toLowerCase())
+           );
+   
+           console.log("Filtered Suggestions:", filteredSuggestions); // Debugging step
+   
+           setInputs((prevInputs) =>
+             prevInputs.map((input) =>
+               input.id === id
+                 ? { ...input, suggestions: filteredSuggestions, showDropdown: filteredSuggestions.length > 0 }
+                 : input
                   )
                 );
               }
@@ -841,7 +833,7 @@ export function CreateNewInvoice({ onClose }) {
             );
           }
         };
-    
+
         const handleSelect = (id, title, productDetails) => {
           setInputs((prevInputs) =>
             prevInputs.map((input) =>
@@ -849,61 +841,224 @@ export function CreateNewInvoice({ onClose }) {
                 selectedProduct: productDetails, 
                 hsn: productDetails.hsn || "", 
                 gst: productDetails.gst || "", 
-                cess: productDetails.cess || ""  } : input
+                cess: productDetails.cess || "" ,
+               } : input
             )
           );
         };
-        
+        const [cessAmount, setCessAmount] = useState(0);
+      const [qty, setQty] = useState(1);
+      const [rate, setRate] = useState(0);
+      const [amount, setAmount] = useState(0);
+      const [discountType, setDiscountType] = useState('select');
+      const [discountAmount, setDiscountAmount] = useState(0);
+      const [roundOff, setRoundOff] = useState(0.00);
+      const [igstAmount, setIgstAmount] = useState(0);
+      const [subtotal, setSubtotal] = useState(0);
+      const [shippingGstPercent, setShippingGstPercent] = useState(0);
+      const [shippingGstAmount, setShippingGstAmount] = useState(0);
+      
+      const calculateGstAmount = (amount, gst) => {
+        const gstAmount = (amount * gst) / 100;
+        return gstAmount;
+    };
+
+    useEffect(() => {
+        if (selectedProduct) {
+            console.log("selectedProduct:", selectedProduct);
+
+            const productPrice = parseFloat(selectedProduct.price) || 0;
+            setRate(productPrice);
+            setAmount(productPrice);
+
+            let updatedSubtotal = 0;
+
+            if (qty === 1) {
+                updatedSubtotal = productPrice;
+            } else {
+                updatedSubtotal = parseFloat(selectedProduct.apiSubtotal) || 0;
+            }
+
+            setSubtotal(updatedSubtotal);
+            console.log("Updated Subtotal:", updatedSubtotal);
+
+            const gst = parseFloat(selectedProduct.gst) || 0;
+            const cess = parseFloat(selectedProduct.cess) || 0;
+
+            const calculatedIgstAmount = calculateGstAmount(updatedSubtotal, gst);
+            const calculatedCessAmount = calculateGstAmount(updatedSubtotal, cess);
+
+            setIgstAmount(calculatedIgstAmount);
+            setCessAmount(calculatedCessAmount);
+
+            console.log("GST and cess calculations:", {
+                gst,
+                cess,
+                calculatedIgstAmount,
+                calculatedCessAmount,
+            });
+        }
+    }, [selectedProduct, qty]);
+
+    const calculateTotal = useCallback(() => {
+        let calculatedTotal = subtotal + igstAmount + cessAmount;
+
+        if (discountType === 'percent') {
+            calculatedTotal -= (subtotal * discountAmount) / 100;
+        } else if (discountType === 'flat') {
+            calculatedTotal -= discountAmount;
+        }
+
+        if (isToggled) {
+            calculatedTotal += shippingCharge + shippingGstAmount;
+        }
+
+        calculatedTotal += roundOff;
+        const total = calculatedTotal.toFixed(2);
+        return calculatedTotal.toFixed(2);
+    }, [subtotal, igstAmount, cessAmount, discountType, discountAmount, isToggled, shippingCharge, shippingGstAmount, roundOff]);
+
+    useEffect(() => {
+      setAmount(rate);
+      setTotal(calculateTotal());
+      setFormData(prevFormData => ({
+          ...prevFormData,
+          rate: rate,
+          qty: qty,
+          amount: amount,
+          subtotal: subtotal,
+          igstAmount: igstAmount,
+          cessAmount: cessAmount,
+          discountType: discountType,
+          discountAmount: discountAmount,
+          shippingCharge: shippingCharge,
+          shippingGstPercent: shippingGstPercent,
+          shippingGstAmount: shippingGstAmount,
+          roundOff: roundOff,
+          totalTax: igstAmount,
+          total: parseFloat(calculateTotal()),
+      }));
+  }, [subtotal, igstAmount, cessAmount, discountType, discountAmount, isToggled, shippingCharge, shippingGstAmount, roundOff, calculateTotal, rate, qty, amount]);
+
+  // Handle Quantity change
+  const handleQtyChange = (e) => {
+      const newQty = parseInt(e.target.value, 10);
+      setQty(isNaN(newQty) ? 1 : newQty);
+  };
+
+  // Handle Discount Type change
+  const handleDiscountTypeChange = (e) => {
+      setDiscountType(e.target.value);
+  };
+
+  // Handle Discount Amount change
+  const handleDiscountAmountChange = (e) => {
+    const newDiscountAmount = parseFloat(e.target.value);
+    setDiscountAmount(isNaN(newDiscountAmount) ? 0 : newDiscountAmount);
+  };
+
+  // Handle Shipping Charge change
+  const handleShippingChargeChange = (e) => {
+      const newShippingCharge = parseFloat(e.target.value);
+      setShippingCharge(isNaN(newShippingCharge) ? 0 : newShippingCharge);
+  };
+
+  // Handle Shipping GST Percent change
+  const handleShippingGstPercentChange = (e) => {
+      const newShippingGstPercent = parseFloat(e.target.value);
+      newShippingGstPercent(isNaN(newShippingGstPercent) ? 0 : newShippingGstPercent);
+      // Calculate shipping GST amount
+      const calculatedShippingGstAmount = calculateGstAmount(shippingCharge, newShippingGstPercent);
+      setShippingGstAmount(calculatedShippingGstAmount);
+  };
+
+  // Handle Round Off change
+  const handleRoundOffChange = (e) => {
+      const newRoundOff = parseFloat(e.target.value);
+      setRoundOff(isNaN(newRoundOff) ? 0 : newRoundOff);
+  };
+
+  //Handle IGST Change (IF IT'S NOT PART OF DYNAMIC PRODUCT FIELDS)
+    const handleIgstAmountChange = (e) => {
+      const newIgstAmount = parseFloat(e.target.value);
+      setIgstAmount(isNaN(newIgstAmount) ? 0 : newIgstAmount); //Corrected logic to actually update the state
+  };
+     
       //  SAVE THE DETAILS
+      const [formData, setFormData] = useState({});
       const [invoiceNumber, setInvoiceNumber] = useState('');
       const [customerName, setCustomerName] = useState('');
       const [invoiceDate, setInvoiceDate] = useState('');
       const [dateOfSupply, setDateOfSupply] = useState('');
+      const [totaltax, setTotalTax] = useState(0);
       const [status, setStatus] = useState('pending');
-      const [subtotal, setSubtotal] = useState('');
-      const [total, setTotal] = useState('');
-      
+      const [total, setTotal] = useState(0);
       const [showPopup, setShowPopup] = useState(false);
     
-      const handleSave = () => {
+      const apiUrl = 'http://localhost:3001/api/offlineData'; 
 
-        if (!selectedCustomer || Object.keys(selectedCustomer).length === 0) { // Check if a customer is actually selected
-          alert("Please select a customer before saving.");
-          return;
-        }
-        const invoice = {
-          invoiceNumber,
-          customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`, // Use the selected customer            invoiceDate,
-          dateOfSupply,
-          status,
-          invoiceDate,
-          subtotal,
-          total,
+      const handleSave = async () => {
+        try {
+          const invoiceData = {
+              invoiceNumber: invoiceNumber,
+              customerName: customerName,
+              invoiceDate: invoiceDate,
+              dateOfSupply: dateOfSupply,
+              totalTax: igstAmount, 
+              Status: status,  
+              total: total
+          };
+          const headers = {
+            'Content-Type': 'application/json',
+            'api-version': '2025-01',
+            'store-name': session.storeName,
+            'access-token': session.accessToken,
         };
-    
-        // Retrieve existing invoices from localStorage
-          const existingInvoices = JSON.parse(localStorage.getItem("invoiceData")) || [];
+        const response = await axios.post(apiUrl, invoiceData, { headers: headers });
 
-          if (!Array.isArray(existingInvoices)) {
-            console.error("Error: existingInvoices is not an array", existingInvoices);
-            return;
-          }
-          const updatedInvoices = [...existingInvoices, invoice];    
-          localStorage.setItem("invoiceData", JSON.stringify(updatedInvoices));
-        
-          console.log("Saved invoices:", updatedInvoices);
-        
-          // Dispatch event to notify other components
-          window.dispatchEvent(new Event("invoiceSaved"));
-          setShowPopup(true);
-          setTimeout(() => setShowPopup(false), 2000);
-  };
+        if (response.status === 201 || response.status === 200) { // Adjust status code as needed (201 is typical for successful creation)
+            console.log('Invoice saved successfully!');
 
+            // Optionally clear the form data here
+            setInvoiceNumber('');
+            setCustomerName('');
+            setInvoiceDate('');
+            setDateOfSupply('');
+            setTotalTax(0);
+            setStatus('pending');
+            setTotal(0);
+
+            setShowPopup(true);
+            setTimeout(() => {
+                setShowPopup(false);
+            }, 3000);
+
+            // Dispatch a custom event to notify the invoice list to refresh
+            window.dispatchEvent(new Event('invoiceSaved'));
+        } else {
+            console.error('Failed to save invoice:', response.status, response.data);
+            // Handle error - display an error message to the user
+        }
+    } catch (error) {
+        console.error('Error saving invoice:', error);
+        // Handle error - display an error message to the user
+    }
+    };
+
+    // invoice date
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleInvoiceDateChange = (date) => {
+      if (date) {
+        const formattedDate = date.toLocaleDateString("en-GB"); // Format: DD/MM/YYYY
+        setInvoiceDate(formattedDate);
+      }
+      setIsOpen(false); // Close datepicker on selection
+    };
     
   return (
     <>
-
-      <div >
+     <div >
         {/* {productList[0].node.title} */}
         <div
           style={{
@@ -991,7 +1146,7 @@ export function CreateNewInvoice({ onClose }) {
             <div ref={dropdownRef} style={{ marginTop: "15px" }}>
               <TextField
                 placeholder="Search a Customer..."
-                value={searchQuery}
+                value={isCustomerSelected ? customerName : searchQuery}
                 autoComplete="off"
                 onChange={handleSearchChange}
                 onFocus={handleFocus}
@@ -999,10 +1154,8 @@ export function CreateNewInvoice({ onClose }) {
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <img src={searchIcon} style={{ height: "15px" }} />
                   </div>
-                }
-              />
-              <div
-                style={{
+                }/>
+              <div style={{
                   position: "absolute",
                   border: "1px solid #ccc",
                   borderRadius: "4px",
@@ -1012,9 +1165,7 @@ export function CreateNewInvoice({ onClose }) {
                   right: 20,
                   overflowY: "auto",
                   boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-
+                }}>
                 {dropdownVisible && searchResults.length > 0 && (
                   <div>
                     {searchResults.map((option) => (
@@ -1040,8 +1191,6 @@ export function CreateNewInvoice({ onClose }) {
                     ))}
                   </div>
                 )}
-
-
                 {showAddNew && (
                   <div
                     style={{
@@ -1078,7 +1227,6 @@ export function CreateNewInvoice({ onClose }) {
                   </div>
                 )}
               </div>
-
 
             </div>
             {selectedCustomer.default_address && <div style={{ marginTop: '20px' }}>
@@ -1186,6 +1334,7 @@ export function CreateNewInvoice({ onClose }) {
               checked={editOfflineInvoiceNumber}
               onChange={handleEditOfflineInvoiceNumberChange}
             />
+            {/* prefix */}
             <div style={{ display: "flex", marginTop: "20px", gap: "20px" }}>
               <div style={{ width: "100%" }}>
                 <div>
@@ -1204,7 +1353,7 @@ export function CreateNewInvoice({ onClose }) {
                   />
                 </div>
               </div>
-
+                    {/* invoice number */}
               <div style={{ width: "100%" }}>
                 <div>
                   <span style={{ fontWeight: "bold" }}>
@@ -1227,7 +1376,7 @@ export function CreateNewInvoice({ onClose }) {
                     />
                 </div>
               </div>
-
+                {/* purchase order */}
               <div style={{ width: "100%" }}>
                 <div>
                   <span style={{ fontWeight: "bold" }}>Purchase Order</span>
@@ -1247,18 +1396,19 @@ export function CreateNewInvoice({ onClose }) {
                   />
                 </div>
               </div>
-
-              <div style={{ width: "100%" }}>
+              {/* invoice date */}
+              <div style={{ width: "100%", position: "relative",overflow:'visible' }}>
                 <div>
                   <span style={{ fontWeight: "bold" }}>Invoice Date</span>
                   <span style={{ color: "red" }}>*</span>
                 </div>
-                <div style={{ marginTop: "5px" }}>
+                <div style={{ marginTop: "5px",overflow:'visible' }}>
                   <input
                     type="text"
                     value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                    placeholder="DD/MM/YYYY" 
+                    placeholder="DD/MM/YYYY"
+                    readOnly
+                    onClick={() => setIsOpen(!isOpen)}
                     style={{
                       width: "300px",
                       height: "33px",
@@ -1266,13 +1416,33 @@ export function CreateNewInvoice({ onClose }) {
                       backgroundColor: "#F0F0F0",
                       borderRadius: "5px",
                       padding: "5px",
-                    }}
-                  />
+                      cursor: "pointer",
+                    }}/>
+                  {isOpen &&(
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "45px", 
+                        left: 0,
+                        zIndex: 9999, 
+                        backgroundColor: "#fff",
+                        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                        borderRadius: "5px",
+                        overflow:'visible'
+                      }}>
+                      <DatePicker
+                        selected={invoiceDate ? new Date(invoiceDate.split('/').reverse().join('-')) : null}
+                        onChange={handleInvoiceDateChange}
+                        inline
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
+              
             <div style={{ display: "flex", marginTop: "20px", gap: "10px" }}>
+              {/* trnasport model */}
               <div style={{ width: "100%" }}>
                 <div>
                   <span style={{ fontWeight: "bold" }}>Transport Model</span>
@@ -1292,8 +1462,8 @@ export function CreateNewInvoice({ onClose }) {
                   />
                 </div>
               </div>
-
-              <div style={{ width: "100%" }}>
+              {/* DOS */}
+              <div style={{ width: "100%",position:'relative' }}>
                 <div>
                   <span style={{ fontWeight: "bold" }}>Date of Supply</span>
                   <span style={{ color: "red" }}>*</span>
@@ -1315,6 +1485,7 @@ export function CreateNewInvoice({ onClose }) {
                     />
                   </div>
               </div>
+              {/* Status */}
               <div style={{ width: "100%" }}>
                 <div>
                   <span style={{ fontWeight: "bold" }}>Status</span>
@@ -1351,44 +1522,97 @@ export function CreateNewInvoice({ onClose }) {
           </div>
           <div style={{ marginTop: "10px" }}></div>
           <Card padding={0}>
-            <div
-              style={{
-                justifyContent: "space-between",
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: "#565656",
-                padding: "20px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ color: "white" }}>
-                  <Text variant="headingMd">Discount Level</Text>
-                </div>
-                <div style={{ marginLeft: "10px" }}>
-                  <Select
-                    label=""
-                    options={options}
-                    onChange={handleDiscountLevelChange}
-                    value={discountLevel}
-                  />
-                </div>
-              </div>
+          
+            <div  style={{
+                  backgroundColor:'#565656',
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between", // Distribute space evenly
+                  gap: "20px", // Equal gap between items
+                  flexWrap: "nowrap", 
+                  padding:'15px',
+                }}>
+                {/* Item Details */}
+                <h3
+                  style={{
+                    fontSize: "14px",
+                    color: "white",
+                    fontFamily: "Inter",
+                    margin: 0, // Remove default margin
+                  }}
+                >
+                  Item Details
+                </h3>
 
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ color: "white" }}>
-                  <Text variant="headingMd">Amount are</Text>
+                {/* Discount Levels */}
+                <div
+                  style={{
+                    display: "flex", // Ensure label and select are on the same line
+                    alignItems: "center", // Align items vertically in the center
+                  }}
+                >
+                  <h1
+                    style={{
+                      fontSize: "14px",
+                      color: "white",
+                      margin: "0", // Ensure no extra margins
+                    }}
+                  >
+                    Discount Levels:
+                  </h1>
+                  <label
+                    style={{
+                      display: "block",
+                      marginLeft: "6px",
+                    }}
+                  >
+                    <select
+                      style={{
+                        width: "250px",
+                        height: "33px",
+                        padding: "5px",
+                        border: "1px solid #ccc",
+                        borderRadius: "1px",
+                        fontSize: "14px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <option value="transction">At transaction Level</option>
+                      <option value="item">At Item Levels</option>
+                    </select>
+                  </label>
                 </div>
-                <div style={{ marginLeft: "10px" }}>
-                  <Select
-                    label=""
-                    options={amount}
-                    onChange={handleExclusiveOfTaxChange}
-                    value={exclusiveOfTax}
-                  />
+
+                {/* Amount are */}
+                <div style={{ display: "flex", alignItems: "center", }}>
+                  <h1 style={{ fontSize: "14px",color: "white", margin: "0 8px 0 0", }}>
+                    Amount are:
+                  </h1>
+                  <label>
+                    <select
+                      style={{
+                        width: "250px",
+                        height: "33px",
+                        padding: "5px",
+                        border: "1px solid #ccc",
+                        borderRadius: "1px",
+                        fontSize: "14px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <option value="in">Inclusive of Tax</option>
+                      <option value="ex">Exlusive of Tax</option>
+                      <option value="out">Out of Scope</option>
+                    </select>
+                  </label>
                 </div>
               </div>
-            </div>
+     
             <div style={{ padding: "20px" }}>
+              {/* hsn cess gst list */}
               <div style={{ display: "flex", gap: "20px" }}>
                 <div style={{ width: "30%" }}>
                   <span style={{ fontSize: "14px", color: "black" }}>
@@ -1582,6 +1806,7 @@ export function CreateNewInvoice({ onClose }) {
                     type="number"
                     // placeholder="OTY"
                     min={1}
+                    onChange={handleQtyChange} 
                     style={{
                       textAlign:'right',
                       width: "100%", // Make input take the full width of the container
@@ -1599,7 +1824,7 @@ export function CreateNewInvoice({ onClose }) {
                 <div style={{ width: "10%" }}>
                   <input
                     type="number"
-                    // placeholder="rate"
+                    value={rate}
                     style={{
                       textAlign:'right',
                       width: "100%", // Make input take the full width of the container
@@ -1616,8 +1841,9 @@ export function CreateNewInvoice({ onClose }) {
 
                 <div style={{ width: "10%" }}>
                   <input
-                    type="text"
-                    placeholder="RS 0.0"
+                     type="number"
+                     value={amount} // Display the amount
+                     readOnly
                     style={{
                       width: "100%", // Make input take the full width of the container
                       height: "33px", // Set height
@@ -1801,6 +2027,8 @@ export function CreateNewInvoice({ onClose }) {
                             MozAppearance: "textfield", // Hide number scroller in Firefox
                             WebkitAppearance: "none",
                           }}
+                          readOnly
+                          value={input.rate || ''}
                         />
                       </div>
 
@@ -1816,6 +2044,8 @@ export function CreateNewInvoice({ onClose }) {
                             backgroundColor: "#F0F0F0",
                             padding: "5px", // Optional: Adds some padding inside the input
                           }}
+                          readOnly
+                          value={input.amount || ''}
                         />
                       </div>
 
@@ -1910,21 +2140,41 @@ export function CreateNewInvoice({ onClose }) {
                       <span style={{ fontWeight: "bold" }}>Subtotal</span>
                   </div>
                       <input 
-                       type="number"
-                       value={subtotal}
-                       onChange={(e) => setSubtotal(e.target.value)}
+                       type="text"
+                       value={`Rs. ${subtotal.toFixed(2)}`}
                       style={{
                         width:'44%', 
                         height:'33px', color:'#000', 
                         backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/> 
                   </div>
-                <div
-                  style={{ display: "flex", gap: "20px", marginTop: "10px" }}
-                >
+                   {/* Conditionally Render IGST Input */}
+                    {selectedProduct && selectedProduct.gst > 0 && (
+                        <div>
+                            <label style={{
+                              fontSize: "14px",
+                              color: "#000",
+                              fontFamily:'Inter',
+                              marginRight: "10px",
+                              fontWeight:'bold'
+                            }}>IGST Amount:</label>
+                            <input
+                                style={{
+                                  width:'44%', marginTop:'10px',marginLeft:'100px',
+                                  height:'33px', color:'#000', 
+                                  backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'
+                                }}
+                                type="number"
+                                value={igstAmount}
+                                onChange={handleIgstAmountChange} // Only if IGST is a separate input
+                            />
+                        </div>
+                    )}
+
+                <div style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
                   <div style={{ width: "40%" }}>
-                    <Text variant="headingMd" fontWeight="bold">
-                      Discount Type
-                    </Text>
+                  <label style={{flex: '1', marginRight: '10px', fontSize: '13px', color: 'black'}}>
+                          Discount Type
+                    </label>
                   </div>
                   <select
                     style={{
@@ -1938,72 +2188,112 @@ export function CreateNewInvoice({ onClose }) {
                       cursor: "pointer",
                       padding:'5px 10px'
                     }}
-                  >
+                    value={discountType}
+                    onChange={handleDiscountTypeChange}>
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Flat(Rs.)</option>
                   </select>
                 </div>
-
-                <div
-                  style={{ display: "flex", gap: "20px", marginTop: "10px" }}
-                >
+                
+                <div  style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
                   <div style={{ width: "40%" }}>
-                    <Text variant="headingMd" fontWeight="bold">
-                      Discount Amount
-                    </Text>
+                      <label style={{flex: '1', marginRight: '10px',fontSize: '13px', color: 'black'}}>
+                        Discount Amount
+                      </label>
                   </div>
                    <input 
+                   type="text"  
+                   value={discountAmount === 0 ? '' : discountAmount}
+                   onChange={handleDiscountAmountChange} 
                    style={{
                     width:'44%', 
                     height:'33px', color:'#000', 
                     backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px', textAlign:'right'}}/>
                 </div>
 
-                <div
-                  style={{ display: "flex", gap: "20px", marginTop: "10px" }}
-                >
-                  <div
-                    style={{
-                      width: "40%",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text variant="headingMd" fontWeight="bold">
-                      Shipping Charge
-                    </Text>
-                    <div style={{ marginLeft: "10px", display: "flex" }}>
-                      <Switch
-                        onChange={handleShippingChargeToggle}
-                        checked={shippingCharge}
-                        uncheckedIcon={false}
-                        checkedIcon={false}
-                        height={15}
-                        width={30}
-                        onColor="#E2EBD6"
-                        offColor="#F4F4F4"
-                        onHandleColor="#74A535"
-                        boxShadow="none"
-                        activeBoxShadow="none"
-                        handleDiameter={12}
-                      />
-                    </div>
-                  </div>
-                  <input style={{
-                    width:'44%', 
-                    height:'33px', color:'#000', 
-                    backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/>
-                </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop:'20px'}}>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <label
+                            style={{
+                              fontSize: "14px",
+                              color: "#000",
+                              fontFamily:'Inter',
+                              marginRight: "10px",
+                              fontWeight:'bold'
+                            }}>
+                            Shipping Charge
+                          </label>
+                          <div
+                            onClick={() => setIsToggled(!isToggled)}
+                            style={{
+                              width: "40px",
+                              height: "20px",
+                              backgroundColor: isToggled ? "green" : "#ccc",
+                              borderRadius: "10px",
+                              position: "relative",
+                              marginRight: "10px",
+                              cursor: "pointer",
+                              transition: "background-color 0.3s ease",
+                            }} >
+                            <div
+                              style={{
+                                width: "16px",
+                                height: "16px",
+                                backgroundColor: "white",
+                                borderRadius: "50%",
+                                position: "absolute",
+                                top: "2px",
+                                left: isToggled ? "22px" : "2px",
+                                transition: "left 0.3s ease",
+                              }}
+                            ></div>
+                          </div>
 
-                <div
-                  style={{ display: "flex", gap: "20px", marginTop: "10px" }}
-                >
+                          <input 
+                           type="text"
+                           value={shippingCharge === 0 ? '' : shippingCharge}
+                           onChange={handleShippingChargeChange}
+                           style={{ width: "44%", height: "33px", marginBottom:'10px', border:'1px solid #ccc', borderRadius:'4px', marginLeft:'37px' }} />
+                        </div>
+
+                        {isToggled && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom:'10px'}}>
+                            <label>
+                                Shipping GST %
+                              <input type="text" placeholder="Shipping"
+                                value={shippingGstPercent === 0 ? '' : shippingGstPercent}
+                                onChange={handleShippingGstPercentChange}
+                                style={{ marginLeft:'110px', width: "200px", height: "33px", border:'1px solid #ccc', borderRadius:'4px' }} />
+                            </label>
+
+                            <label>
+                              Shipping Amount 
+                              <input type="text"  
+                               value={`Rs. ${shippingCharge}`}
+                              style={{ marginLeft:'106px',width: "200px", height: "33px", border:'1px solid #ccc', borderRadius:'4px' }} />
+                            </label>
+                            <label>
+                                Shipping GST Amount
+                              <input type="text"  
+                                  value={`Rs. ${shippingGstAmount.toFixed(2)}`}
+                                  readOnly
+                                  style={{marginLeft:'76px', width: "200px", height: "33px", border:'1px solid #ccc', borderRadius:'4px' }} />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+
+                <div  style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
                   <div style={{ width: "40%" }}>
                     <Text variant="headingMd" fontWeight="bold">
                       Round Off
                     </Text>
                   </div>
-                  <input style={{
+                  <input 
+                   type="text"  
+                   value={roundOff}
+                   onChange={handleRoundOffChange}                        
+                   style={{
                     width:'44%', 
                     height:'33px', color:'#000', 
                     backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px'}}/>
@@ -2013,11 +2303,11 @@ export function CreateNewInvoice({ onClose }) {
                   <div style={{ width: "40%" }}>
                       <span style={{ fontWeight: "bold" }}>Total</span>
                   </div>
-                  <input  type="number"
-                  value={total}
-                  onChange={(e) => setTotal(e.target.value)}
-                  placeholder="Rs0.0"
-                  style={{
+                  <input  
+                   type="text"  
+                   value={`Rs. ${formData.total ? formData.total.toFixed(2) : "0.00"}`}
+                   readOnly
+                    style={{
                     width:'44%', 
                     height:'33px', color:'#000',
                     backgroundColor:'#fff', border:'1px solid #ccc', borderRadius:'6px', padding:'5px', WebkitAppearance: "none",

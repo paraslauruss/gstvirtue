@@ -14,12 +14,7 @@ router.post('/', async (req, res) => {
         total,
         Status,
       } = req.body;
-  
-      // Basic validation (expand as needed)
-    //   if (!estDate || !ExpiryDate || !Customer || !totalTax || !total) {
-    //     return res.status(400).json({ message: 'Missing required fields' });
-    //   }
-  
+
       const newEstimate = new Estimate({
         Estimatenum: Estimatenum,
         estDate: estDate,

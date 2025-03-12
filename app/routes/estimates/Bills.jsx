@@ -413,86 +413,88 @@ const handleSaveChange = (e) => {
       console.log("calculateGstAmount: gstAmount =", gstAmount); // Debugging
       return gstAmount;
     };
-
       // Fetch suggestions for main search bar
       useEffect(() => {
         const fetchProducts = async () => {
-          if (query.length >= 2) {
-              setLoading(true);
-              setError(""); 
-              try {
-                  // Fetch suggestions
-                  const suggestionResponse = await fetch("http://localhost:3001/api/products", {
-                      method: "GET",
-                      headers: {
-                          "Content-Type": "application/json",
-                          "store-name": session.storeName,
-                          "api-version": "2025-01",
-                          "access-token": session.accessToken,
-                      },
-                  });
-      
-                  if (!suggestionResponse.ok) {
-                      throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
-                  }
-      
-                  const suggestionData = await suggestionResponse.json();
-      
-                  if (!Array.isArray(suggestionData)) {
-                      throw new Error("Invalid response format: Expected an array");
-                  }
-      
-                  const filteredSuggestions = suggestionData.filter((product) =>
-                      product.title.toLowerCase().includes(query.toLowerCase())
-                  );
-      
-                  setSuggestions(filteredSuggestions);
-                  setShowDropdown(filteredSuggestions.length > 0);
-      
-                  // Find selected product
-                  const selected = filteredSuggestions.find(
-                      (product) => product.title.toLowerCase() === query.toLowerCase()
-                  );
-      
-                  if (selected) {
-                      const detailsResponse = await fetch(
-                          `http://localhost:3001/api/products/${selected.id}`,
-                          {
-                              method: "GET",
-                              headers: {
-                                  "Content-Type": "application/json",
-                                  "store-name": session.storeName,
-                                  "api-version": "2025-01",
-                                  "access-token": session.accessToken,
-                              },
-                          }
-                      );
-      
-                      if (!detailsResponse.ok) {
-                          throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
-                      }
-      
-                      const productDetails = await detailsResponse.json();
-                      setSelectedProduct(productDetails);
-                  } else {
-                      setSelectedProduct(null);
-                  }
-              } catch (err) {
-                  console.error("Error fetching products:", err);
-                  setError("Error fetching products");
-                  setShowDropdown(false);
-                  setSelectedProduct(null);
-              } finally {
-                  setLoading(false);
-              }
-          } else {
-              setSuggestions([]);
-              setShowDropdown(false);
-              setSelectedProduct(null);
-          }
-      };            
+            if (query.length < 2) {
+                setSuggestions([]);
+                setShowDropdown(false);
+                setSelectedProduct(null);
+                return;
+            }
+    
+            setLoading(true);
+            setError("");
+    
+            try {
+                // Fetch suggestions
+                const suggestionResponse = await fetch("http://localhost:3001/api/products", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "store-name": session?.storeName || "",
+                        "api-version": "2025-01",
+                        "access-token": session?.accessToken || "",
+                    },
+                });
+    
+                if (!suggestionResponse.ok) {
+                    throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
+                }
+    
+                const suggestionData = await suggestionResponse.json();
+    
+                if (!Array.isArray(suggestionData)) {
+                    throw new Error("Invalid response format: Expected an array");
+                }
+    
+                const filteredSuggestions = suggestionData.filter((product) =>
+                    product?.title?.toLowerCase().includes(query.toLowerCase())
+                );
+    
+                setSuggestions(filteredSuggestions);
+                setShowDropdown(filteredSuggestions.length > 0);
+    
+                // Find selected product
+                const selected = filteredSuggestions.find(
+                    (product) => product?.title?.toLowerCase() === query.toLowerCase()
+                );
+    
+                if (selected?.id) {
+                    const detailsResponse = await fetch(
+                        `http://localhost:3001/api/products/${selected.id}`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "store-name": session?.storeName || "",
+                                "api-version": "2025-01",
+                                "access-token": session?.accessToken || "",
+                            },
+                        }
+                    );
+                    if (!detailsResponse.ok) {
+                        throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
+                    }
+                    const productDetails = await detailsResponse.json();
+                    setSelectedProduct(productDetails);
+                } else {
+                    setSelectedProduct(null);
+                }
+            } catch (err) {
+                console.error("Error fetching products:", err);
+                setError("Error fetching products");
+                setShowDropdown(false);
+                setSelectedProduct(null);
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchProducts();
-      }, [query]);
+        // Dependency array
+    }, [query, session?.storeName, session?.accessToken]);
+
+
       // Handle selection for main search input
       const handleSelectMain = async (title) => {
         setQuery(title); // Set the title in the input field
@@ -577,9 +579,7 @@ const handleSaveChange = (e) => {
         total: parseFloat(calculateTotal()),
       }));
     }, [subtotal, cgstAmount, sgstAmount, discountType, discountAmount, isToggled, shippingCharge, shippingGstAmount, roundOff]);
-    
-
-
+  
       // Handle Quantity change
       const handleQtyChange = (e) => {
         const newQty = parseInt(e.target.value, 10);
@@ -779,6 +779,14 @@ const handleSaveChange = (e) => {
             setShowDeletePopup(false);
         }
     };
+
+    // Format date
+function formatDate(dateString) {
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const date = new Date(dateString);
+    const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
+    return formattedDate;
+  }   
     
   return (
    
@@ -2007,13 +2015,13 @@ const handleSaveChange = (e) => {
                       )}
                     </div>
                     {/* search */}
-                  <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'14px', fontFamily:'Inter'}} 
+                  <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'14px', fontFamily:'Inter',fontWeight:'600'}} 
                       onClick={handleSearchClick}>
                       Search
                   </button>
                 </div>
                 {/* clear */}
-                <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'14px', fontFamily:'Inter'}}  
+                <button style={{width: '90px',height: '36px',border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535', fontSize:'14px', fontFamily:'Inter',fontWeight:'600'}}  
                     onClick={handleClearClick}>
                   Clear
                 </button>
@@ -2030,14 +2038,14 @@ const handleSaveChange = (e) => {
                    background: "white",
                    border: "none",}}>
                 <thead>
-                  <tr  style={{ backgroundColor: '#333', color: 'white', fontWeight: 'bold' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Bill Number</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Payee/Vendor</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Bill Date</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Due Date</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Total Tax</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Total</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: 'none'}}>Action</th>
+                  <tr style={{ backgroundColor: '#333', color: 'white', fontWeight: 'bold' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Bill Number</th>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Payee/Vendor</th>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Bill Date</th>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Due Date</th>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Total Tax</th>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none' }}>Total</th>
+                    <th style={{ padding: '12px', textAlign: 'left', border: 'none'}}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2046,21 +2054,125 @@ const handleSaveChange = (e) => {
                   <tr key={index}>
                     <td style={{ padding: '12px', textAlign: 'left'}}>{bill.billNumber}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{bill.payeeVendor}</td>
-                    <td style={{ padding: '12px', textAlign: 'left' }}>{bill.billDate}</td>
-                    <td style={{ padding: '12px', textAlign: 'left' }}>{bill.dueDate}</td>
+                    <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(bill.billDate)}</td>
+                    <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(bill.dueDate)}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{bill.totalTax}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{bill.total}</td>
+                    {/* action */}
                     <td style={{ padding: '12px', textAlign: 'left', cursor: 'pointer' }}>
-                   
-                        {/* EDIT */}
+                      {/* EDIT */}
+                      <div style={{ position: "relative", display: "inline-block" }}>
+                            <img 
+                              src={ic_edit} 
+                              style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                              alt="Swap"
+                              onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                              onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                              onClick={() => handleEditClick(index)}
+                            />
+                          <div style={{
+                              position: "absolute",
+                              bottom: "120%", // Position tooltip above the image
+                              left: "50%",
+                              transform: "translateX(-50%)",
+                              backgroundColor: "#333", // Light black background
+                              color: "#fff",
+                              padding: "5px 10px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              border: "1px solid #555", // Border for tooltip
+                              whiteSpace: "nowrap",
+                              visibility: "hidden",
+                              opacity: 1,
+                              transition: "opacity 0.2s",
+                              zIndex: 1000
+                          }}>
+                            Edit Expense
+                          </div>
+                      </div>
+                      {/* DELTE  */}
+                      <div style={{ position: "relative", display: "inline-block" }}>
+                            <img 
+                              src={ic_info} 
+                              style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                              alt="Swap"
+                              onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                              onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                              onClick={() => handleDeleteClick(index)}
+                            />
+                          <div style={{
+                              position: "absolute",
+                              bottom: "120%", // Position tooltip above the image
+                              left: "50%",
+                              transform: "translateX(-50%)",
+                              backgroundColor: "#333", // Light black background
+                              color: "#fff",
+                              padding: "5px 10px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              border: "1px solid #555", // Border for tooltip
+                              whiteSpace: "nowrap",
+                              visibility: "hidden",
+                              opacity: 1,
+                              transition: "opacity 0.2s",
+                              zIndex: 1000
+                          }}>
+                            Delete Expense
+                          </div>
+                      </div>
+                      {showDeletePopup && (
+                    <div 
+                        style={{
+                        position: "fixed", 
+                        top: 0, left: 0, width: "100%", height: "100%",
+                        backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        zIndex: 1000
+                        }}>
+                        <div 
+                        style={{
+                            backgroundColor: "white",
+                            width: "400px", // Increased width
+                            height: "200px", // Increased height
+                            padding: "20px",
+                            borderRadius: "12px",
+                            textAlign: "center",
+                            border:'1px solid #ccc',
+                        }}>
+                        <div>
+                          <img src={ic_warning} alt="information"
+                            style={{
+                                width:'73px',
+                                height:'70px',
+                                marginBottom:'20px'
+                            }}/>
+                            <div style={{ fontSize: "16px", alignContent:'center', fontFamily:'Inter'  }}>
+                              <span>This can't be undone.</span>
+                            </div>
+                        </div>                
+                        <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop:'20px' }}>
+                          <button 
+                            style={{ backgroundColor: "red", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
+                            onClick={handleConfirmDelete} >
+                            Delete
+                          </button>
+                            <button 
+                              style={{ backgroundColor: "#C8C8C8", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
+                              onClick={() => setShowDeletePopup(false)}>
+                                  Cancel
+                            </button>
+                        </div>
+                      </div>
+                    </div>
+                        )}                   
+                        {/*Print  */}
                         <div style={{ position: "relative", display: "inline-block" }}>
                               <img 
-                                src={ic_edit} 
+                                src={ic_print} 
                                 style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
                                 alt="Swap"
                                 onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
                                 onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
-                                onClick={() => handleEditClick(index)}
                               />
                             <div style={{
                                 position: "absolute",
@@ -2079,18 +2191,17 @@ const handleSaveChange = (e) => {
                                 transition: "opacity 0.2s",
                                 zIndex: 1000
                             }}>
-                              Edit Expense
+                              Print Expense
                             </div>
                         </div>
-                        {/* DELTE  */}
+                        {/* Donwlaod */}
                         <div style={{ position: "relative", display: "inline-block" }}>
                               <img 
-                                src={ic_info} 
+                                src={ic_download} 
                                 style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
                                 alt="Swap"
                                 onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
                                 onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
-                                onClick={() => handleDeleteClick(index)}
                               />
                             <div style={{
                                 position: "absolute",
@@ -2109,117 +2220,9 @@ const handleSaveChange = (e) => {
                                 transition: "opacity 0.2s",
                                 zIndex: 1000
                             }}>
-                              Delete Expense
+                              Download Expense
                             </div>
                         </div>
-                        {showDeletePopup && (
-                      <div 
-                          style={{
-                          position: "fixed", 
-                          top: 0, left: 0, width: "100%", height: "100%",
-                          backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          zIndex: 1000
-                          }}
-                      >
-                          <div 
-                          style={{
-                              backgroundColor: "white",
-                              width: "400px", // Increased width
-                              height: "200px", // Increased height
-                              padding: "20px",
-                              borderRadius: "12px",
-                              textAlign: "center",
-                              border:'1px solid #ccc',
-                          }}
-                          >
-                          <div>
-                               <img src={ic_warning} alt="information"
-                                  style={{
-                                      width:'73px',
-                                      height:'70px',
-                                      marginBottom:'20px'
-                                  }}
-                               />
-                                <div style={{ fontSize: "16px", alignContent:'center', fontFamily:'Inter'  }}>
-                                  <span>This can't be undone.</span>
-                                </div>
-                          </div>                
-                              <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop:'20px' }}>
-                                  <button 
-                                  style={{ backgroundColor: "red", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
-                                  onClick={handleConfirmDelete} >
-                                    Delete
-                                  </button>
-
-                                  <button 
-                                  style={{ backgroundColor: "#C8C8C8", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
-                                  onClick={() => setShowDeletePopup(false)}>
-                                      Cancel
-                                  </button>
-                              </div>
-                              </div>
-                          </div>
-                          )}                   
-                          {/*Print  */}
-                          <div style={{ position: "relative", display: "inline-block" }}>
-                                <img 
-                                  src={ic_print} 
-                                  style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
-                                  alt="Swap"
-                                  onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
-                                  onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
-                                />
-                              <div style={{
-                                  position: "absolute",
-                                  bottom: "120%", // Position tooltip above the image
-                                  left: "50%",
-                                  transform: "translateX(-50%)",
-                                  backgroundColor: "#333", // Light black background
-                                  color: "#fff",
-                                  padding: "5px 10px",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  border: "1px solid #555", // Border for tooltip
-                                  whiteSpace: "nowrap",
-                                  visibility: "hidden",
-                                  opacity: 1,
-                                  transition: "opacity 0.2s",
-                                  zIndex: 1000
-                              }}>
-                                Print Expense
-                              </div>
-                          </div>
-                          {/* Donwlaod */}
-                          <div style={{ position: "relative", display: "inline-block" }}>
-                                <img 
-                                  src={ic_download} 
-                                  style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
-                                  alt="Swap"
-                                  onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
-                                  onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
-                                />
-                              <div style={{
-                                  position: "absolute",
-                                  bottom: "120%", // Position tooltip above the image
-                                  left: "50%",
-                                  transform: "translateX(-50%)",
-                                  backgroundColor: "#333", // Light black background
-                                  color: "#fff",
-                                  padding: "5px 10px",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  border: "1px solid #555", // Border for tooltip
-                                  whiteSpace: "nowrap",
-                                  visibility: "hidden",
-                                  opacity: 1,
-                                  transition: "opacity 0.2s",
-                                  zIndex: 1000
-                              }}>
-                                Download Expense
-                              </div>
-                          </div>
-                    
                     </td>
                   </tr>
                 ))
@@ -2241,7 +2244,6 @@ const handleSaveChange = (e) => {
           </div>
         )}
       </div>
-    
   );
 };
 

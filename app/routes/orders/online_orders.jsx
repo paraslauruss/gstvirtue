@@ -38,6 +38,7 @@ export function OnlineOrders() {
         }
     }, [shopify]);
 
+
     const getCurrentDate = () => {
         const today = new Date();
         const year = today.getFullYear();
@@ -128,6 +129,7 @@ export function OnlineOrders() {
         [],
     );
 
+
     const [active, setActive] = useState(false);
 
     const toggleModal = useCallback(() => setActive((active) => !active), []);
@@ -138,27 +140,7 @@ export function OnlineOrders() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
-    // Fetch order data on component mount from backend API
-    // useEffect(() => {
-    //     fetch("http://localhost:3001/api/orders", {
-    //         method:'GET',
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //             "store-name": session.storeName,
-    //             "api-version": "2025-01",
-    //             "access-token": session.accessToken
-    //         },
-    //     })
-    //         .then((response) => response.json())
-    //         .then((data) => {
-    //             setOrderList(data);
-    //             setLoading(false);
-    //         })
-    //         .catch((error) => {
-    //             console.error("Error fetching orders:", error);
-    //             setLoading(false);
-    //         });
-    // }, []);
+    
     useEffect(() => {
         const fetchOrders = async () => {
             try {
@@ -282,7 +264,6 @@ export function OnlineOrders() {
         console.log("Filtered Orders:", filtered);
         setFilteredOrders(filtered);
     };
-    
 
     // Function to clear filters
     const handleClear = () => {
@@ -341,10 +322,7 @@ export function OnlineOrders() {
                         </div>
 
                         <Text>Easily print shipping labels and packing slips directly from your order list. streamline your packing process ans ensure accuracy in just a few clicks.</Text>
-
-
-                        <div
-                            style={{
+                        <div  style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -356,8 +334,7 @@ export function OnlineOrders() {
                                 borderRadius: '4px',
                                 cursor: 'pointer',
                             }}
-                            onClick={() => alert('Button clicked!')}
-                        >
+                            onClick={() => alert('Button clicked!')}>
                             <Text as="p" tone="subdued">Learn More</Text>
                         </div>
                     </Card>
@@ -379,11 +356,9 @@ export function OnlineOrders() {
                                     borderRadius: '4px',
                                     cursor: 'pointer',
                                 }}
-                                onClick={() => alert('Button clicked!')}
-                            >
+                                onClick={() => alert('Button clicked!')}>
                                 <Text as="p" tone="subdued">Bulk Order Update</Text>
                             </div>
-
                             <div
                                 style={{
                                     display: 'inline-flex',
@@ -398,8 +373,7 @@ export function OnlineOrders() {
                                     borderRadius: '4px',
                                     cursor: 'pointer',
                                 }}
-                                onClick={() => alert('Button clicked!')}
-                            >
+                                onClick={() => alert('Button clicked!')}>
                                 <Text as="p" tone="subdued">Reset Invoice Number</Text>
                             </div>
 
@@ -410,8 +384,7 @@ export function OnlineOrders() {
                                     justifyContent: 'center',
                                     marginLeft: '10px',
                                     height: '100%',
-                                }}
-                            >
+                                }} >
                                 <img src={ic_refresh_line} alt="Refresh" style={{ height: '24px' }} />
                             </div>
                         </div>

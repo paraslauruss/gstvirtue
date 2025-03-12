@@ -10,10 +10,14 @@ import searchIcon from '../../assets/images/searchIcon.png';
 import ic_date from '../../assets/images/ic_date.png';
 import ic_download from '../../assets/images/ic_download.png';
 import ic_edit from '../../assets/images/ic_edit.png';
-import ic_print from '../../assets/images/ic_print.png';
 import ic_email from '../../assets/images/ic_email.png';
+import ic_info from '../../assets/images/ic_delete.png';
+import ic_print from '../../assets/images/ic_print.png';
+import NoData from '../../assets/images/Group 138.png'
 import ic_warning from '../../assets/images/ic_warning.jpg';
-import ic_delete from '../../assets/images/ic_delete.png';
+import ic_back from '../../assets/images/ic_back.webp';
+import ic_nodata from '../../assets/images/Group 138.png';
+import ic_downloadZIp from '../../assets/images/Vector.png'
 import { useCallback, useState, useRef , useEffect} from "react";
 import { CreateNewInvoice } from "./create_new_invoice";
 // import { Modal, TitleBar, useAppBridge } from "@shopify/app-bridge-react";
@@ -22,6 +26,9 @@ import { CreateNewInvoice } from "./create_new_invoice";
  import "react-datepicker/dist/react-datepicker.css";
  import "../report/DatePickerDialog.css";
  import moment from 'moment';
+ import axios from 'axios';
+import { useLoaderData } from "@remix-run/react";
+
 
 export function Dialog({ active, toggleModal }) {
 
@@ -392,17 +399,12 @@ export function Dialog({ active, toggleModal }) {
 }
 
 export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice }) {
-
-    // const defaultEditorContent = '<p>Hi <strong>Customer_Name</strong>,</p><p><br></p><h2><strong>Thank you for your purchase!</strong></h2><p>We\'re 
-    // getting your order ready to be shipped. We will notify you when it has been sent.</p><p><br></p><p><br></p><p>Kindly 
-    // Download your invoice of your Order <strong>invoice_number.</strong></p>';
-
     const defaultEditorContent = `
            <div style="font-family: 'Inter', sans-serif; width: 100%; margin: 0 auto; background: #ffffff; padding: 20px;">
                 <!-- Header Section -->
                 <div style="text-align: center; padding-bottom: 10px;">
                     <a href="https://admin.shopify.com/store/gst-paras/apps/gst-virtue/app" 
-                    style="color: #0073e6; text-decoration: none; font-size: 18px; font-weight: bold;">
+                    style="color: #74A535; text-decoration: none; font-size: 18px; font-weight: bold;">
                     VirtueGst
                     </a>
                 </div>
@@ -410,41 +412,28 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
                 <hr style="border: none; border-top: 3px solid #003366; width: 100%;" />
 
                 <!-- Body Section -->
-                <p style="font-size: 14px; text-align: center;">Hi <strong>Customer_Name</strong>,</p>
+                <p style="font-size: 16px; text-align: center;">Hi <strong>{customerName}</strong>,</p>
 
                 <h2 style="color: #333333; text-align: center;">Thank you for your purchase!</h2>
                 <p style="color: #555555; font-size: 14px; text-align: center;">
                     We're getting your order ready to be shipped. We will notify you when it has been sent.
                 </p>
 
-                <p style="font-size: 14px; text-align: center;">
-                    Kindly download your invoice for your order <strong>#invoice_number</strong>
+                <p style="font-size: 16px; text-align: center;">
+                    Kindly download your invoice for your order <strong>{invoiceNumber}</strong>
                 </p>
 
                 <!-- Button Section (Left-Aligned) -->
                 <div style="margin: 20px 0; text-align: left;">
                     <a href="YOUR_INVOICE_LINK" 
-                    style="background: #2937f0; color: #ffffff; padding: 12px 20px; text-decoration: none; 
+                    style="background: #74A535; color: #ffffff; padding: 12px 20px; text-decoration: none; 
                             font-weight: bold; border-radius: 5px; display: inline-block;">
                     Download Invoice
                     </a>
                 </div>
-
-                <!-- Footer Section -->
-                <hr style="border: none; border-top: 3px solid #666; width: 100%;" />
-                <div style="text-align: center; font-size: 12px; background-color:#B8B8B8; color:#fff;">
-                    © by 
-                    <a href="https://admin.shopify.com/store/gst-paras/apps/gst-virtue/app" 
-                    style="color: #0073e6;">VirtueGst</a>, 
-                    Powered by 
-                    <a href="https://admin.shopify.com/store/gst-paras/apps/gst-virtue/app" 
-                    style="color: #0073e6;">VirtueGst</a>
-                </div>
-
                 </div>
       `;
     const [editorContent, setEditorContent] = useState(defaultEditorContent);
-
     const [emailSubject, setEmailSubject] = useState('');
     const [emailTo, setEmailTo] = useState('');
     const [emailStatus, setEmailStatus] = useState(''); 
@@ -452,18 +441,28 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
     useEffect(() => {
         if (selectedInvoice) {
              // Construct the full email content, replacing the placeholders
-            const customerName = selectedInvoice.customerName || 'N/A';
-            const invoiceNumber = selectedInvoice.invoiceNumber || 'N/A';
-
+             const customerName = selectedInvoice.Customer || selectedInvoice.customerName || 'N/A';
+             const invoiceNumber = selectedInvoice.invoiceNumber || 'N/A';
+             const customerEmail = selectedInvoice.customerEmail || '';  //  Still might need to be explicit
+             // Default invoice link
+             const invoiceLink = selectedInvoice.invoiceLink || '#';
+ 
             //Replace the Values In editor content
-            let updatedEditorContent = defaultEditorContent.replace('Customer_Name', customerName);
-            updatedEditorContent = updatedEditorContent.replace('invoice_number', invoiceNumber);
+            let updatedEditorContent = defaultEditorContent
+            .replace('{customerName}', customerName)
+            .replace('{invoiceNumber}', invoiceNumber);
+           
+            console.log("selectedInvoice:", selectedInvoice);
+            console.log("customerName:", customerName);
+            console.log("invoiceNumber:", invoiceNumber);
 
-            setEditorContent(updatedEditorContent); // Set updated content in editor
+            setEditorContent(updatedEditorContent);
+            setEmailTo(customerEmail);
+            setEmailSubject(`Copy of Invoice Number ${invoiceNumber}`);
         } else {
-            setEditorContent(defaultEditorContent);//Setting default editor content
-            setEmailSubject('');
-            setEmailTo('');
+            setEditorContent(defaultEditorContent);
+              setEmailSubject('');
+              setEmailTo('');
         }
     }, [selectedInvoice]);
 
@@ -491,7 +490,7 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
             subject: emailSubject,
             content: editorContent,
         };
- console.log('email', emailData);
+        console.log('email', emailData);
         try {
             const response = await fetch('http://localhost:3001/send-email', { // Replace with your backend URL
                 method: 'POST',
@@ -506,8 +505,7 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
             if (response.ok) {
                 setEmailStatus('Email sent successfully!');
                 console.log('Email sent:', data);
-                // Optionally close the modal after successful sending
-                // toggleModal();
+                toggleModal();
             } else {
                 setEmailStatus(`Error sending email: ${data.message}`);
                 console.error('Error sending email:', data);
@@ -517,9 +515,6 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
             console.error('Error sending email:', error);
         }
     };
-
-  
-
     return (
         <div>
             {/* Backdrop */}
@@ -644,8 +639,6 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
 
 
 export function OfflineOrders() {
-
-    const [textEditor, setTextEditor] = useState('');
     const [createInvoice, setCreateInvoice] = useState(false);
     const [active, setActive] = useState(false);
     const toggleModal = useCallback(() => setActive((prev) => !prev), []);
@@ -655,72 +648,72 @@ export function OfflineOrders() {
     const [content, setContent] = useState('');
   
     const editorRef = useRef(null);
-  
-    const handleEditorChange = (content, editor) => {
-      setContent(content);
-      console.log('Editor Content:', content); // Use this to debug or save the content
-    };
-  
-    const handleChange = (value) => {
-      setContent(value);
-    };
-  
+    
     if (typeof window === 'undefined') {
       return <div>Loading editor...</div>; // Fallback for SSR
     }
     // OFFLINE DATA 
     const [invoiceData, setInvoiceData] = useState([]);
-    const [selectedInvoice, setSelectedInvoice] = useState(null);
-
-    // SEARCH FUNCTIONALITY
-    const [searchTerm, setSearchTerm] = useState('');
+     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [invoices, setInvoices] = useState([]);
+
+    const session = useLoaderData();
 
     useEffect(() => {
-        const fetchAndMigrateInvoices = async () => { // Renamed for clarity
-          try {
-            const storedInvoices = JSON.parse(localStorage.getItem("invoiceData")) || [];
-    
-            if (!Array.isArray(storedInvoices)) {
-              console.error("Error: invoiceData is not an array", storedInvoices);
-              setInvoiceData([]);
-              setSearchResults([]); // Also clear search results
-              return; 
-            }
-            const updatedInvoices = storedInvoices.map(invoice => {
-              if (!invoice.customerName && invoice.hasOwnProperty('invoiceNumber')) {
-                const customerName = "Customer N/A"; // Or try to derive the name some other way
-                return { ...invoice, customerName: customerName };    
-              }
-              return invoice; // Return the original invoice if customerName already exists
-            });
-             localStorage.setItem("invoiceData", JSON.stringify(updatedInvoices));
-            setInvoiceData(updatedInvoices); 
-            setSearchResults(updatedInvoices); 
-    
-          } catch (error) {
-            console.error("Error retrieving/migrating invoice data:", error);
-            setInvoiceData([]);
-            setSearchResults([]); // Also clear search results
-          }
-        };
-    
-        fetchAndMigrateInvoices(); // Call the function
-    
-        const handleInvoiceSaved = () => {
-          fetchAndMigrateInvoices(); 
-        };
-    
-        window.addEventListener("invoiceSaved", handleInvoiceSaved);
-    
-        return () => {
-          window.removeEventListener("invoiceSaved", handleInvoiceSaved);
-        };
-      }, []);
+        const fetchInvoices = async () => {
+            try {
+                // Define headers
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'api-version': '2025-01',
+                    'store-name': session.storeName,
+                    'access-token': session.accessToken,
+                };
 
-      const handleSearchTermChange = (event) => {
-        setSearchTerm(event.target.value);
-      };
+                const response = await axios.get('http://localhost:3001/api/offlineData', { headers: headers });
+                const data = response.data; // Store the response data
+                console.log("Fetched data:", data); // Very important for debugging
+
+                setInvoices(data);          // Set all invoices
+                setSearchResults(data); 
+            } catch (error) {
+                console.error("Error fetching invoices:", error);
+                setInvoices([]);
+                setSearchResults([]);
+            }
+        };
+        fetchInvoices();
+        const handleInvoiceSaved = () => {
+            console.log("Invoice saved event received. Refreshing data...");
+            fetchInvoices(); // Refresh invoices when a new one is saved
+        };
+        window.addEventListener("invoiceSaved", handleInvoiceSaved);
+        return () => {
+            window.removeEventListener("invoiceSaved", handleInvoiceSaved);
+        };
+    }, []);
+
+    const handleSearchTermChange = (event) => {
+        const term = event.target.value;
+        setSearchTerm(term);
+
+        // Filter the invoices array based on the search term
+        const filteredInvoices = invoices.filter(invoice => {
+            const searchTermLower = term.toLowerCase();
+            const invoiceNumberLower = (invoice.invoiceNumber || '').toLowerCase();
+            const customerNameLower = (invoice.customerName || '').toLowerCase();
+
+            // Check if the search term is found in any of the relevant fields
+            return (
+                invoiceNumberLower.includes(searchTermLower) ||
+                customerNameLower.includes(searchTermLower)
+                // Add more fields as needed
+            );
+        });
+
+        setSearchResults(filteredInvoices);
+    };
 
       const handleSearch = () => {
         const startDateTimestamp = startDate ? startDate.getTime() : null;
@@ -757,40 +750,69 @@ export function OfflineOrders() {
         setSearchTerm('');
         setSearchResults(invoiceData);
     };
-
-    
     //   DELTE THE ENTRY
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState(null);
     const handleDeleteClick = (invoice) => {
         setInvoiceToDelete(invoice);
         setShowDeletePopup(true);
-      };
+    };
+    // Fetch updated invoice data from backend
+    const fetchInvoices = async () => {
+        try {
+            const response = await fetch("http://localhost:3001/api/offlineData"); // Replace with actual API endpoint
+            if (!response.ok) {
+                throw new Error("Failed to fetch invoices");
+            }
+            const data = await response.json();
+            setInvoiceData(data);
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+        }
+    };
+    useEffect(() => {
+        fetchInvoices();
+    }, []);
 
-      const handleConfirmDelete = () => {
-        if (!invoiceToDelete) return;
-      
-        const storedInvoices = JSON.parse(localStorage.getItem("invoiceData")) || [];
-        const updatedInvoices = storedInvoices.filter(inv => inv.invoiceNumber !== invoiceToDelete.invoiceNumber);
-      
-        localStorage.setItem("invoiceData", JSON.stringify(updatedInvoices));
-        setInvoiceData(updatedInvoices);  // Update UI
-        setShowDeletePopup(false);  // Close popup
-      };
+    const handleConfirmDelete = async () => {
+        if (!invoiceToDelete) return; 
+        console.log("Deleting invoice with ID:", invoiceToDelete); //debugging
 
+        try {
+            const response = await fetch(`http://localhost:3001/api/offlineData/${invoiceToDelete._id}`, {
+                method: "DELETE",
+                headers: {
+                     "Content-Type": "application/json",
+                     "api-version":"2025-01",
+                     'store-name': session.storeName,
+                     'access-token': session.accessToken,
+                 },
+            });
+            
+            if (!response.ok) {
+                throw new Error("Failed to delete invoice");
+            }
+            setInvoiceData((prevData) => prevData.filter(inv => inv._id !== invoiceToDelete._id));
+            
+            setShowDeletePopup(false);
+            fetchInvoices();
+        } catch (error) {
+            console.error("Error deleting invoice:", error);
+        }
+    };
+       
     //   EMAIL FUNCTION
     // Function to open the email modal with a selected invoice
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
     const openEmailModal = (invoice) => {
         setSelectedInvoice(invoice);
         setEmailActive(true);
     };
-
     // Function to close the email modal
     const closeEmailModal = () => {
         setSelectedInvoice(null);
         setEmailActive(false);
     };
-
     // DATE PICKER
     const [startDate , setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
@@ -806,7 +828,125 @@ export function OfflineOrders() {
         setEndDate(date);
         setIsEndDatePickerOpen(false);
     };
-    
+    // download icon
+    const handleDownload = (order, invoiceNumber) => {
+        if (typeof window !== 'undefined') {
+            import('html2pdf.js').then((html2pdf) => {
+                fetch('/invoice1.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        let updatedHtml = html;
+
+                        updatedHtml = updatedHtml.replace('{{invoiceNo}}', invoiceNumber);
+                        updatedHtml = updatedHtml.replace('{{orderID}}', order.node.name);
+                        updatedHtml = updatedHtml.replace('{{invoiceDate}}', getCurrentDate());
+                        updatedHtml = updatedHtml.replace('{{paymentGatewayNames}}', order.node.paymentGatewayNames);
+                        updatedHtml = updatedHtml.replace('{{builedToName}}', order.node.billingAddress.name);
+                        updatedHtml = updatedHtml.replace('{{builedToAddress}}', [
+                            order.node.billingAddress.address1,
+                            order.node.billingAddress.address2,
+                            order.node.billingAddress.city,
+                            order.node.billingAddress.zip,
+                            order.node.billingAddress.province,
+                            order.node.billingAddress.country
+                        ].filter(Boolean) // Filter out any null, undefined, or empty values
+                            .join(', '));
+                        updatedHtml = updatedHtml.replace('{{builedToPhone}}', order.node.billingAddress.phone);
+
+                        updatedHtml = updatedHtml.replace('{{shipToName}}', order.node.shippingAddress.name);
+                        updatedHtml = updatedHtml.replace('{{shipToAddress}}', [
+                            order.node.shippingAddress.address1,
+                            order.node.shippingAddress.address2,
+                            order.node.shippingAddress.city,
+                            order.node.shippingAddress.zip,
+                            order.node.shippingAddress.province,
+                            order.node.shippingAddress.country
+                        ].filter(Boolean) // Filter out any null, undefined, or empty values
+                            .join(', '));
+                        updatedHtml = updatedHtml.replace('{{shipToPhone}}', order.node.shippingAddress.phone);
+
+                        let itemsHtml = '';
+                        order.node.lineItems.edges.forEach(item => {
+                            itemsHtml += `
+                                <div class="text-small" style="display: flex; padding: 10px 0px;">
+                                    <p style="width: 30%;">${item.node.name}</p>
+                                    <p style="width: 5%;">${item.node.quantity}</p>
+                                    <div style="width: 10%;">
+                    <p style="text-decoration: line-through; color: #96ADCB;">RS. ${(item.node.product.compareAtPriceRange.minVariantCompareAtPrice.amount)}</p>
+                    <p>RS. ${(item.node.product.priceRangeV2.maxVariantPrice.amount)}</p>
+                </div>
+
+                <p style="width: 20%;">RS. ${(item.node.taxLines[0].priceSet.shopMoney.amount)}</p>
+                <p style="width: 5%;">5%</p>
+                <p style="width: 5%;">5%</p>
+                <p style="width: 10%;">RS. 44.90</p>
+                <p style="width: 15%;">RS. ${(parseFloat(item.node.product.priceRangeV2.maxVariantPrice.amount) + parseFloat(item.node.taxLines[0].priceSet.shopMoney.amount)).toFixed(2)}</p>
+                                </div>`;
+                        });
+
+                        updatedHtml = updatedHtml.replace('{{orderItems}}', itemsHtml);
+                        const element = document.createElement('div');
+                        element.innerHTML = updatedHtml;
+
+                        const options = {
+                            filename: 'invoice.pdf',
+                            margin: 20,
+                            html2canvas: { scale: 2 },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                        };
+
+                        html2pdf.default().from(element).set(options).save();
+                    })
+                    .catch(error => {
+                        console.error('Error loading HTML file:', error);
+                    });
+            });
+        }
+
+    };
+    //zip icon 
+    const [showBlankPage, setShowBlankPage] = useState(false);
+    if (showBlankPage) {
+        return (
+          <div style={{
+            display: "flex",
+            flexDirection: "column", /* Changed to column */
+            boxSizing: "border-box",
+            width: "1000px",
+            height: "100vh",
+            marginLeft: "100px",
+            marginTop: "20px",
+            backgroundColor: "#fff",
+            padding: "20px",
+            gap: "8px",
+        }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button style={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #ccc",
+                    padding: "8px 12px",
+                    borderRadius: "5px",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                  }} 
+                onClick={() => setShowBlankPage(false)}>
+                    <img src={ic_back} alt="go-back" style={{width:'25px',height:'25px',backgroundColor:'transparent'}}/>
+                </button>
+                <h2 style={{ color: "#000", fontSize: "16px",fontFamily:'Inter',fontWeight:'600' }}>Download Invoice (Zip)</h2>
+            </div>
+            <div style={{marginBottom:'30px',marginTop:'20px', border:'1px solid #ccc',borderRadius:'8px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'auto'}}>
+                  <img src={ic_nodata} alt="no-data" style={{marginTop:'50px'}}/>
+                  <p style={{fontSize:'16px', fontFamily:'Inter', fontWeight:'bold',marginBottom:'30px'}}>No Files Found</p>
+            </div>
+
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'auto'}}>
+                <p>© 2025 VirtueGst. All Rights Reserved.</p>
+            </div>
+          </div>
+        );
+      };
 
     return (
       <>
@@ -815,6 +955,7 @@ export function OfflineOrders() {
                  active={emailActive}
                  toggleModal={closeEmailModal}
                  selectedInvoice={selectedInvoice}
+                 fetchInvoices={fetchInvoices}
             />        
             <div>
                 {createInvoice ? (<CreateNewInvoice onClose={onCloseHandle}/>) : (<div>
@@ -911,24 +1052,25 @@ export function OfflineOrders() {
                                           />
                                     </div>
                                   )}
-                            </div>  
-                            
-                                            
-                                    <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: '#74A535',
-                                            color: '#ffffff',
-                                            padding: '5px',
-                                            width: '100px',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            marginLeft: '16px'
-                                        }}
-                                        onClick={handleSearch}
-                                    ><Text>Search</Text></div>
-
+                            </div>   
+                                      
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#74A535',
+                                    color: '#ffffff',
+                                    padding: '5px',
+                                    width: '100px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    marginLeft: '16px'
+                                    }}
+                                    onClick={handleSearch}>
+                                    <Text>
+                                        Search
+                                    </Text>
+                                </div>
                                 </div>
                                 <div
                                     style={{
@@ -944,8 +1086,7 @@ export function OfflineOrders() {
                                         borderRadius: '4px',
                                         cursor: 'pointer',
                                     }}
-                                    onClick={handleClear}
-                                >
+                                    onClick={handleClear} >
                                     <Text as="p" tone="subdued">Clear</Text>
                                 </div>
                             </div>
@@ -956,29 +1097,37 @@ export function OfflineOrders() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                     <Text variant="headingMd" fontWeight="regular">Actions on 0 selected</Text>
-                                    <div
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: '#ffffff',
-                                            color: '#000000',
-                                            padding: '5px',
-                                            marginLeft: '20px',
-                                            border: '1px solid #828282',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                        }}
-                                        onClick={() => toggleModal()}
-                                    >
+                                    <div style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: '#ffffff',
+                                        color: '#000000',
+                                        padding: '5px',
+                                        marginLeft: '20px',
+                                        border: '1px solid #828282',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => toggleModal()}>
                                         <Text as="p" tone="subdued">Bulk Download</Text>
                                     </div>
-                                    <div style={{ backgroundColor: '#74A535', padding: '5px 20px', marginLeft: '20px', borderRadius: '4px', cursor:'pointer' }}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="21" viewBox="0 0 18 21" fill="none">
-                                            <path d="M13.1143 21C13.7281 21 14.3167 20.7511 14.7507 20.308C15.1847 19.865 15.4286 19.2641 15.4286 18.6375V17.8563H16.4571C16.8663 17.8563 17.2588 17.6904 17.5481 17.395C17.8375 17.0996 18 16.699 18 16.2813V11.8125C18 11.3948 17.8375 10.9942 17.5481 10.6988C17.2588 10.4034 16.8663 10.2375 16.4571 10.2375H6.17143C5.76224 10.2375 5.36981 10.4034 5.08046 10.6988C4.79112 10.9942 4.62857 11.3948 4.62857 11.8125V16.2813C4.62857 16.699 4.79112 17.0996 5.08046 17.395C5.36981 17.6904 5.76224 17.8563 6.17143 17.8563H13.8857V18.6375C13.8857 18.8464 13.8044 19.0467 13.6598 19.1943C13.5151 19.342 13.3189 19.425 13.1143 19.425H2.31429C2.10969 19.425 1.91347 19.342 1.7688 19.1943C1.62413 19.0467 1.54286 18.8464 1.54286 18.6375V8.1375H5.65714C5.96123 8.1375 6.26234 8.07632 6.54326 7.95746C6.82417 7.83861 7.07939 7.6644 7.29432 7.4448C7.50925 7.2252 7.67967 6.96451 7.79586 6.67763C7.91204 6.39076 7.9717 6.08332 7.97143 5.7729L7.9704 1.575H13.1153C13.3199 1.575 13.5161 1.65797 13.6608 1.80565C13.8055 1.95334 13.8867 2.15364 13.8867 2.3625V10.2249H15.4296V2.3625C15.4296 2.05216 15.3697 1.74487 15.2533 1.45817C15.137 1.17147 14.9664 0.910981 14.7514 0.691589C14.5364 0.472197 14.2811 0.298198 14.0002 0.179533C13.7193 0.0608685 13.4183 -0.000137694 13.1143 2.33354e-07H7.83566C7.5315 -2.54051e-06 7.23032 0.0612015 6.94934 0.180112C6.66837 0.299023 6.41311 0.473308 6.19817 0.693L0.678857 6.3315C0.463648 6.55092 0.29292 6.81149 0.176436 7.09832C0.059952 7.38515 -2.71716e-06 7.6926 0 8.0031V18.6375C0 19.2641 0.243826 19.865 0.677839 20.308C1.11185 20.7511 1.7005 21 2.31429 21H13.1143ZM6.42754 2.68695L6.4296 5.77395C6.42974 5.87745 6.40988 5.97997 6.37117 6.07564C6.33247 6.1713 6.27567 6.25824 6.20402 6.33148C6.13237 6.40471 6.04728 6.46281 5.95362 6.50245C5.85996 6.5421 5.75956 6.5625 5.65817 6.5625H2.63314L6.42754 2.68695ZM14.1603 11.8251C14.4552 11.8251 14.7141 11.8864 14.9369 12.0089C15.1611 12.1279 15.3333 12.2993 15.4533 12.5233C15.5781 12.7438 15.6405 12.9976 15.6405 13.2846C15.6405 13.5681 15.576 13.818 15.4471 14.0343C15.3177 14.2511 15.1298 14.4254 14.9061 14.5362C14.6736 14.6538 14.4062 14.713 14.1038 14.7137H13.4455C13.4249 14.7137 13.4143 14.7241 13.4136 14.7451V16.1731C13.4141 16.1989 13.4053 16.2239 13.3889 16.2435C13.3697 16.2602 13.3452 16.2692 13.32 16.2687H12.3377C12.3125 16.2692 12.288 16.2602 12.2688 16.2435C12.2526 16.2242 12.2439 16.1996 12.2441 16.1742V11.9196C12.2439 11.8942 12.2526 11.8696 12.2688 11.8503C12.288 11.8336 12.3125 11.8246 12.3377 11.8251H14.1603ZM10.6354 16.2435C10.6189 16.2244 10.6098 16.1997 10.6097 16.1742V11.9196C10.6095 11.8942 10.6182 11.8696 10.6344 11.8503C10.6536 11.8336 10.6781 11.8246 10.7033 11.8251H11.6856C11.7108 11.8246 11.7353 11.8336 11.7545 11.8503C11.7707 11.8696 11.7794 11.8942 11.7792 11.9196V16.1742C11.7794 16.1996 11.7707 16.2242 11.7545 16.2435C11.7353 16.2602 11.7108 16.2692 11.6856 16.2687H10.7033C10.6784 16.269 10.6543 16.26 10.6354 16.2435ZM7.11771 16.2687C7.09249 16.2692 7.06797 16.2602 7.0488 16.2435C7.03264 16.2242 7.02387 16.1996 7.02412 16.1742V15.2534C7.02387 15.211 7.0393 15.1701 7.06732 15.1389L8.8776 12.8856C8.88583 12.8765 8.88789 12.8677 8.88377 12.8593C8.87966 12.8509 8.87143 12.8467 8.85909 12.8467H7.11771C7.09249 12.8473 7.06797 12.8383 7.0488 12.8216C7.03264 12.8023 7.02387 12.7776 7.02412 12.7523V11.9196C7.02387 11.8942 7.03264 11.8696 7.0488 11.8503C7.06797 11.8336 7.09249 11.8246 7.11771 11.8251H10.1088C10.134 11.8246 10.1585 11.8336 10.1777 11.8503C10.1939 11.8696 10.2027 11.8942 10.2024 11.9196V12.8342C10.2032 12.8563 10.1997 12.8783 10.1921 12.899C10.1845 12.9198 10.173 12.9387 10.1582 12.9549L8.33657 15.2093C8.32834 15.2177 8.32629 15.2261 8.3304 15.2345C8.33451 15.2429 8.34274 15.2471 8.35509 15.2471H10.1088C10.134 15.2465 10.1585 15.2555 10.1777 15.2723C10.1939 15.2915 10.2027 15.3162 10.2024 15.3415V16.1742C10.2027 16.1996 10.1939 16.2242 10.1777 16.2435C10.1585 16.2602 10.134 16.2692 10.1088 16.2687H7.11771Z" fill="white" />
-                                        </svg>
-                                    </div>
-                                </div>
+                                    {/* zip icon */}
+                                    <div>
+                                    {/* Button that leads to the new blank page */}
+                                    <button style={{
+                                        backgroundColor: "#74A535",
+                                        border: "none",
+                                        padding: "8px 10px",
+                                        borderRadius: "3px",
+                                        cursor: "pointer",
+                                        width: "50px",
+                                        marginLeft:'15px    '
+                                    }} onClick={() => setShowBlankPage(true)}>
+                                        <img src={ic_downloadZIp} alt="Download Zip" style={{ width: "20px", height: "20px" }} />
+                                    </button>
+                                 </div>
+                             </div>
                                 <div
                                     style={{
                                         display: 'flex',
@@ -990,8 +1139,7 @@ export function OfflineOrders() {
                                         borderRadius: '4px',
                                         cursor: 'pointer',
                                     }}
-                                    onClick={() => alert('Button clicked!')}
-                                >
+                                    onClick={() => alert('Button clicked!')}>
                                     <Text as="p" tone="subdued">Result per page 50</Text>
                                     <div style={{ marginLeft: '10px', paddingTop: '5px' }}>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="9" height="16" viewBox="0 0 9 16" fill="none">
@@ -1005,10 +1153,10 @@ export function OfflineOrders() {
                                 <div style={{ color: 'white', width: '10%' }}>
                                     <Text>Invoice No.</Text>
                                 </div>
-                                <div style={{ color: 'white', width: '10%' }}>
+                                <div style={{ color: 'white', width: '15%' }}>
                                     <Text>Customer</Text>
                                 </div>
-                                <div style={{ color: 'white', width: '10%' }}>
+                                <div style={{ color: 'white', width: '15%' }}>
                                     <Text>Invoice Date</Text>
                                 </div>
                                 <div style={{ color: 'white', width: '10%' }}>
@@ -1020,116 +1168,264 @@ export function OfflineOrders() {
                                 <div style={{ color: 'white', width: '10%' }}>
                                     <Text>Status</Text>
                                 </div>
-                                <div style={{ color: 'white', width: '10%' }}>
+                                <div style={{ color: 'white', width: '20%' }}>
                                     <Text>Action</Text>
                                 </div>
                             </div>
-                            <div>
-                            <div style={{ display: 'flex', flexDirection: 'column', padding: '10px' }}>
-                            {Array.isArray(searchResults) && searchResults.length > 0 ? (
-                searchResults.map((invoice, index) => (
-                    <div key={index} style={{ display: 'flex', padding: '4px', alignItems: 'center' }}>
-                        <div style={{ color: 'black', width: '10%' }}>
-                            <span>{invoice.invoiceNumber}</span>
-                        </div>
-                        <div style={{ color: 'black', width: '10%' }}>
-                            <span>{invoice.customerName || "N/A"}</span>
-                        </div>
-                        <div style={{ color: 'black', width: '10%' }}>
-                            <span>{invoice.invoiceDate}</span>
-                        </div>
-                        <div style={{ color: 'black', width: '10%' }}>
-                            <span>{invoice.subtotal}</span>
-                        </div>
-                        <div style={{ color: 'black', width: '10%' }}>
-                            <span>{invoice.total}</span>
-                        </div>
-                        <div style={{ color: 'black', width: '65px' }}>
-                            <div style={{
-                                display: 'flex', padding: '5px 10px', backgroundColor: '#EDF7DF', color: "#74A535", justifyContent: 'center', borderRadius: '20px'
-                            }}>
-                                <span>{invoice.status}</span>
-                            </div>
-                                    </div>
-                                    <div style={{ width: '30%', paddingLeft:'50px' }}>
-                                        <img src={ic_download} style={{ height: '16px', cursor: 'pointer' }} alt="Download" />
-                                        <img 
-                                            src={ic_edit} 
-                                            style={{ height: '16px', marginLeft: '15px', cursor: 'pointer' }} 
-                                            onClick={() => {
-                                            setSelectedInvoice(invoice); // Set invoice for editing
-                                            setCreateInvoice(true); // Navigate to CreateNewInvoice
-                                            }} 
-                                        />
-                                        <img src={ic_delete} style={{ height: '16px', marginLeft: '15px', cursor:'pointer' }}  onClick={() => handleDeleteClick(invoice)} />
-                                        {showDeletePopup && (
-                                            <div 
-                                                style={{
-                                                position: "fixed", 
-                                                top: 0, left: 0, width: "100%", height: "100%",
-                                                backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                zIndex: 1000
-                                                }}
-                                            >
-                                                <div 
-                                                style={{
-                                                    backgroundColor: "white",
-                                                    width: "400px", // Increased width
-                                                    height: "200px", // Increased height
-                                                    padding: "20px",
-                                                    borderRadius: "12px",
-                                                    textAlign: "center",
-                                                    border:'1px solid #ccc',
-                                                }}
-                                                >
-                                                <div>
-                                                     <img src={ic_warning} alt="information"
-                                                        style={{
-                                                            width:'73px',
-                                                            height:'70px',
-                                                            marginBottom:'20px'
-                                                        }}
-                                                     />
-                                                      <div style={{ fontSize: "16px", alignContent:'center', fontFamily:'Inter'  }}>
-                                                        <span>This can't be undone.</span>
-                                                      </div>
-                                                </div>
-                                                
-                                                <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop:'20px' }}>
-                                                    <button 
-                                                    style={{ backgroundColor: "red", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
-                                                    onClick={handleConfirmDelete} >
-                                                       Delete
-                                                    </button>
 
-                                                    <button 
-                                                    style={{ backgroundColor: "#C8C8C8", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
-                                                    onClick={() => setShowDeletePopup(false)}>
-                                                        Cancel
-                                                    </button>
+                            <div>
+                                <div style={{ display: 'flex', flexDirection: 'column', padding: '10px' }}>
+                                    {searchResults.length > 0 ? (
+                                        searchResults.map((invoice, index) => (
+                                            <div key={index} style={{ display: 'flex', padding: '8px', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: '4px', marginBottom: '5px' }}>
+                                                <div style={{ width: '10%', padding: '4px' }}>
+                                                    <span>{invoice.invoiceNumber || "N/A"}</span>
                                                 </div>
+                                                <div style={{ width: '15%', padding: '4px' }}>
+                                                    <span>{invoice.customerName || "N/A"}</span>
+                                                </div>
+                                                <div style={{ width: '15%', padding: '4px' }}>
+                                                    <span>{invoice.invoiceDate || "N/A"}</span>
+                                                </div>
+                                                <div style={{ width: '10%', padding: '4px' }}>
+                                                    <span>{invoice.totalTax !== undefined ? invoice.totalTax : invoice.igstAmount || "N/A"}</span>
+                                                </div>
+                                                <div style={{ width: '10%', padding: '4px' }}>
+                                                    <span>{invoice.total || "N/A"}</span>
+                                                </div>
+                                                <div style={{ width: '10%', padding: '4px' }}>
+                                                    <span style={{ color:'#000' }}>
+                                                        {invoice.Status || "N/A"}
+                                                    </span>
+                                                </div>
+                                                {/* action buttons */}
+                                                <div style={{ width: '20%', padding: '4px', display: 'flex', gap: '10px' }}>
+
+                                                <div style={{ position: "relative", display: "inline-block" }}>
+                                                        <img 
+                                                            src={ic_download} 
+                                                            style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                                                            alt="Swap"
+                                                            onClick={() => handleDownload(order, (index + 1).toString().padStart(3, '0'))}
+                                                            onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                                                            onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                                                        />
+                                                        <div style={{
+                                                            position: "absolute",
+                                                            bottom: "120%", // Position tooltip above the image
+                                                            left: "50%",
+                                                            transform: "translateX(-50%)",
+                                                            backgroundColor: "#333", // Light black background
+                                                            color: "#fff",
+                                                            padding: "5px 10px",
+                                                            borderRadius: "4px",
+                                                            fontSize: "12px",
+                                                            border: "1px solid #555", // Border for tooltip
+                                                            whiteSpace: "nowrap",
+                                                            visibility: "hidden",
+                                                            opacity: 1,
+                                                            transition: "opacity 0.2s",
+                                                            zIndex: 1000
+                                                        }}>
+                                                            Download Invoice
+                                                        </div>
+                                                    </div>
+                                                {/* Update */}
+                                                    <div style={{ position: "relative", display: "inline-block" }}>
+                                                        <img 
+                                                            src={ic_edit} 
+                                                            style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                                                            alt="Swap"
+                                                            onClick={() => setCreateInvoice(!createInvoice)}
+                                                            onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                                                            onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                                                        />
+                                                        <div style={{
+                                                            position: "absolute",
+                                                            bottom: "120%", // Position tooltip above the image
+                                                            left: "50%",
+                                                            transform: "translateX(-50%)",
+                                                            backgroundColor: "#333", // Light black background
+                                                            color: "#fff",
+                                                            padding: "5px 10px",
+                                                            borderRadius: "4px",
+                                                            fontSize: "12px",
+                                                            border: "1px solid #555", // Border for tooltip
+                                                            whiteSpace: "nowrap",
+                                                            visibility: "hidden",
+                                                            opacity: 1,
+                                                            transition: "opacity 0.2s",
+                                                            zIndex: 1000
+                                                        }}>
+                                                            Edit Invoice
+                                                        </div>
+                                                    </div>
+                                                    {/* delete order  */}
+                                              <div style={{ position: "relative", display: "inline-block" }}>
+                                                    <img 
+                                                    src={ic_info} 
+                                                    style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                                                    alt="Swap"
+                                                    onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                                                    onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                                                    onClick={() => handleDeleteClick(invoice)}
+                                                    />
+                                                    <div style={{
+                                                        position: "absolute",
+                                                        bottom: "120%", // Position tooltip above the image
+                                                        left: "50%",
+                                                        transform: "translateX(-50%)",
+                                                        backgroundColor: "#333", // Light black background
+                                                        color: "#fff",
+                                                        padding: "5px 10px",
+                                                        borderRadius: "4px",
+                                                        fontSize: "12px",
+                                                        border: "1px solid #555", // Border for tooltip
+                                                        whiteSpace: "nowrap",
+                                                        visibility: "hidden",
+                                                        opacity: 1,
+                                                        transition: "opacity 0.2s",
+                                                        zIndex: 1000
+                                                    }}>
+                                                        Delete Invoice
+                                                    </div>
+                                                </div>
+                                                   {showDeletePopup && (
+                                                <div  style={{
+                                                    position: "fixed", 
+                                                    top: 0, left: 0, width: "100%", height: "100%",
+                                                    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                    zIndex: 1000
+                                                    }}>
+                                                    <div  style={{
+                                                        backgroundColor: "white",
+                                                        width: "400px", // Increased width
+                                                        height: "200px", // Increased height
+                                                        padding: "20px",
+                                                        borderRadius: "12px",
+                                                        textAlign: "center",
+                                                        border:'1px solid #ccc',
+                                                    }}>
+                                                    <div>
+                                                        <img src={ic_warning} alt="information"
+                                                            style={{
+                                                                width:'73px',
+                                                                height:'70px',
+                                                                marginBottom:'20px'
+                                                            }}/>
+                                                        <div style={{ fontSize: "16px", alignContent:'center', fontFamily:'Inter'  }}>
+                                                            <span>This can't be undone.</span>
+                                                        </div>
+                                                    </div>                
+                                                        <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop:'20px' }}>
+                                                            <button 
+                                                            style={{ backgroundColor: "red", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
+                                                            onClick={handleConfirmDelete} >
+                                                            Delete
+                                                            </button>
+
+                                                            <button 
+                                                            style={{ backgroundColor: "#C8C8C8", color: "white", padding: "10px 20px", borderRadius: "5px", border: "none", cursor: "pointer", fontSize: "16px" }} 
+                                                            onClick={() => setShowDeletePopup(false)}>
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                        </div>
+                                                    </div>
+                                                    )} 
+                                                    {/* Invoice print */}
+                                                     <div style={{ position: "relative", display: "inline-block" }}>
+                                                        <img 
+                                                            src={ic_print} 
+                                                            style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                                                            alt="Swap"
+                                                            onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                                                            onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                                                        />
+                                                        <div style={{
+                                                            position: "absolute",
+                                                            bottom: "120%", // Position tooltip above the image
+                                                            left: "50%",
+                                                            transform: "translateX(-50%)",
+                                                            backgroundColor: "#333", // Light black background
+                                                            color: "#fff",
+                                                            padding: "5px 10px",
+                                                            borderRadius: "4px",
+                                                            fontSize: "12px",
+                                                            border: "1px solid #555", // Border for tooltip
+                                                            whiteSpace: "nowrap",
+                                                            visibility: "hidden",
+                                                            opacity: 1,
+                                                            transition: "opacity 0.2s",
+                                                            zIndex: 1000
+                                                        }}>
+                                                        Print Invoice
+                                                        </div>
+                                                    </div>
+                                                    {/* MAIL */}
+                                                    <div style={{ position: "relative", display: "inline-block" }}>
+                                                        <img 
+                                                            src={ic_email} 
+                                                            style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
+                                                            alt="Swap"
+                                                            onClick={() => openEmailModal(invoice)}
+                                                            onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
+                                                            onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
+                                                        />
+                                                        <div style={{
+                                                            position: "absolute",
+                                                            bottom: "120%", // Position tooltip above the image
+                                                            left: "50%",
+                                                            transform: "translateX(-50%)",
+                                                            backgroundColor: "#333", // Light black background
+                                                            color: "#fff",
+                                                            padding: "5px 10px",
+                                                            borderRadius: "4px",
+                                                            fontSize: "12px",
+                                                            border: "1px solid #555", // Border for tooltip
+                                                            whiteSpace: "nowrap",
+                                                            visibility: "hidden",
+                                                            opacity: 1,
+                                                            transition: "opacity 0.2s",
+                                                            zIndex: 1000
+                                                        }}>
+                                                        Email Invoice
+                                                        </div>
+                                                    </div>                           
                                                 </div>
                                             </div>
-                                            )}
-                                        
-                                        <img src={ic_print} style={{ height: '16px', marginLeft: '15px' }} />
-                                        <img src={ic_email} 
-                                            style={{ height: '16px', marginLeft: '15px', cursor: 'pointer' }} 
-                                            onClick={() => openEmailModal(invoice)}/>                                        
+                                    ))
+                                ): (<div style={{
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center', 
+                                    height: '60vh', // Adjust to ensure vertical centering
+                                    flexDirection: 'column',
+                                    textAlign: 'center'
+                                    }}>
+                                    <img src={NoData} alt="no-data" style={{ marginBottom: '20px', width: '150px' }} />
+                                        <p style={{
+                                            fontSize: '20px',
+                                            fontFamily: 'Inter',
+                                            fontWeight: '500',
+                                            color: '#000'
+                                        }}>No Data Found</p>
+                                        <p style={{
+                                            fontSize: '14px',
+                                            fontFamily: 'Inter',
+                                            color: '#000',
+                                            maxWidth: '400px' // Keeps text readable and centered
+                                        }}>
+                                            You can find orders by changing your search or filtering options.
+                                        </p>
                                     </div>
+                                        )}
+                                    </div>       
                                 </div>
-                                ))
-                            ) : (
-                                <div style={{ color: 'gray', padding: '10px' }}>No invoices available.</div>
-                            )}
-                            </div>
-                               
-                            </div>
                             <Divider />
                             <div style={{ display: 'flex', justifyContent: 'end', marginTop: '20px' }}>
-                                <div
-                                    style={{
+                                <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         backgroundColor: '#ffffff',
@@ -1139,9 +1435,7 @@ export function OfflineOrders() {
                                         border: '1px solid #828282',
                                         borderRadius: '4px',
                                         cursor: 'pointer',
-                                    }}
-                                    onClick={() => alert('Button clicked!')}
-                                >
+                                    }} onClick={() => alert('Button clicked!')}>
                                     <Text as="p" tone="subdued">Result per page 50</Text>
                                     <div style={{ marginLeft: '10px', paddingTop: '5px' }}>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="9" height="16" viewBox="0 0 9 16" fill="none">

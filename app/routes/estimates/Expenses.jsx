@@ -271,12 +271,8 @@ export const Expenses = () => {
   const [startDate, setStartDate] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const handleDateChange = (date) => {
-    setFormData(prevFormData => ({
-      ...prevFormData,
-      startDate: date ? date.toISOString() : "", // Store in ISO format
-    }));
+    setFormData({ ...formData, startDate: date });
     setIsOpen(false);
-    
   };
 
   // AMOUNT CALCULATIONS
@@ -522,7 +518,13 @@ export const Expenses = () => {
         }
         setFilteredExpenses(filteredData) // Update the filteredData
     };
-  
+     //date format
+  function formatDate(dateString) {
+      const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+      const date = new Date(dateString);
+      const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
+      return formattedDate;
+  }   
 
   return (
     <div style={{
@@ -568,8 +570,9 @@ export const Expenses = () => {
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <Card>
-              <div style={{ display: "flex", marginBottom: "20px" }}>
+          
+          <div style={{border:'1px solid #ccc', borderRadius:'5px',padding:'12px 12px'}}>
+          <div style={{ display: "flex", marginBottom: "20px" }}>
                 {/* PAYESS */}
               <div style={{ width: "100%", position: "relative" }}>
                     <label>
@@ -639,11 +642,9 @@ export const Expenses = () => {
                       <label>
                         <h1 style={{ fontSize: "15px", color: "black", marginBottom: "8px" }}>
                           Expense Date
-                          <span style={{color:'red'}}>*
-                      </span>
+                          <span style={{color:'red'}}>*</span>
                         </h1>
-                        <div
-                            style={{
+                        <div style={{
                               width: "90%",
                               height: "33px",
                               border: "1px solid #ccc",
@@ -655,26 +656,24 @@ export const Expenses = () => {
                               padding: "5px",
                               cursor: "pointer",
                               position: "relative",
-                            }}
-                            onClick={() => setIsOpen(!isOpen)}
-                          >
+                          }}
+                            onClick={() => setIsOpen(!isOpen)}>
                             <span>{formData.startDate ? new Date(formData.startDate).toLocaleDateString() : "Select Date"}</span>
                           </div>
                           {/* DatePicker Component */}
                           {isOpen && (
                             <div
                               style={{
-                                position: "fixed",
-                                top: "30%",
-                                left: '35%',
+                                position: "absolute",
+                                top: "100%",
+                                left: '0',
                                 zIndex: 2, // Ensures it's above everything
                                 background: "#fff",
                                 boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
                                 borderRadius: "4px",
                                 overflow: "visible", 
                                 width:'auto'
-                              }}
-                            >
+                              }}>
                               <DatePicker
                                 selected={formData.startDate ? new Date(formData.startDate) :  null}
                                 onChange={handleDateChange}
@@ -762,7 +761,8 @@ export const Expenses = () => {
                   </label>
                 </div>
               </div>
-            </Card>
+          </div>
+           
           </div>               
                 {/* Item Details */}
           <div style={{
@@ -1472,7 +1472,7 @@ export const Expenses = () => {
                   </div>
 
                 {/* start date */}
-                <div style={{ position: 'relative', display: 'inline-block', border: '1px solid #ccc', width: '180px', height: '36px' }}>
+                <div style={{ position: 'relative', display: 'inline-block', width: '180px', height: '36px' }}>
                    {/* Start Date Clickable Input Field */}
                    <div
                       onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
@@ -1485,6 +1485,7 @@ export const Expenses = () => {
                           border: "1px solid #000",
                           cursor: "pointer",
                           background: "#fff",
+                          borderRadius:'5px'
                       }}
                   >
                 <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
@@ -1502,7 +1503,7 @@ export const Expenses = () => {
               )}
                 </div>
                 {/* End date */}
-                <div style={{ position: 'relative', display: 'inline-block', border: '1px solid #ccc', width: '180px', height: '36px' }}>
+                <div style={{ position: 'relative', display: 'inline-block', width: '180px', height: '36px' }}>
                 <div onClick={() => setIsEndDatePickerOpen(!isEndDatePickerOpen)}
                     style={{ padding: "12px",height: "33px",
                               display: "flex",
@@ -1511,6 +1512,7 @@ export const Expenses = () => {
                               border: "1px solid #000",
                               cursor: "pointer",
                               background: "#fff",
+                              borderRadius:'5px'
                       }}>
                       <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
                       <span>{endDate ? endDate.toLocaleDateString("en-US") : "Select End Date"}</span>
@@ -1526,13 +1528,13 @@ export const Expenses = () => {
                   )}
                 </div>
 
-                <button style={{cursor:'pointer', width: '100px', height: '36px', border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535' }} 
+                <button style={{cursor:'pointer', width: '100px', height: '36px', border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535',fontWeight:'600' }} 
                   onClick={handleSearchClick} 
                 >
                   Search
                 </button>
               </div>
-              <button style={{cursor:'pointer',width: '100px', height: '36px', border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535' }}
+              <button style={{cursor:'pointer',width: '100px', height: '36px', border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535',fontWeight:'600' }}
                onClick={handleClearClick}
               >
                 Clear
@@ -1562,7 +1564,7 @@ export const Expenses = () => {
                 filteredExpenses.map((expense, index) => (
                   <tr key={index}>
                     <td style={{ padding: '12px', textAlign: 'left'}}>{expense.payees}</td>
-                    <td style={{ padding: '12px', textAlign: 'left' }}>{expense.expenseDate}</td>
+                    <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(expense.expenseDate)}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{expense.paymentMethod}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{expense.RefNumber}</td>
                     <td style={{ padding: '12px', textAlign: 'left' }}>{expense.totalTax}</td>
