@@ -25,18 +25,15 @@ router.get('/', async (req, res) => {
         };
 
         let shopifyOrders = [];
-        let allOrders = [];  // Initialize here
-
         try {
             const shopifyResponse = await axios.get(url, { headers });
             shopifyOrders = shopifyResponse.data.orders;
-            console.log("Shopify Orders:", shopifyOrders);
         } catch (shopifyError) {
             return res.status(400).json({ error: 'Failed to fetch orders from Shopify', details: shopifyError.message });
         }
 
         if (!shopifyOrders.length) {
-            allOrders = await Order.find({ store_name: storeName }).lean();
+            const allOrders = await Order.find({ store_name: storeName }).lean();
             return res.status(200).json(allOrders);
         }
 
@@ -45,6 +42,7 @@ router.get('/', async (req, res) => {
         if (customerIds.length > 0) {
             const customers = await Customer.find({ shopifyId: { $in: customerIds } }).lean();
             customerDataMap = new Map(customers.map(customer => [customer.customer_id, customer]));
+
         }
 
         const existingOrders = await Order.find({
@@ -55,22 +53,16 @@ router.get('/', async (req, res) => {
         const orderMap = new Map(existingOrders.map(o => [o.order_number, o]));
 
         for (const shopifyOrder of shopifyOrders) {
-            if (!shopifyOrder.order_number) {
-                console.warn(`Skipping order with missing order_number:`, shopifyOrder);
-                continue;
-            }
+            if (!shopifyOrder.order_number) continue;
 
             const existingOrder = orderMap.get(shopifyOrder.order_number);
+            const shopifyOrderId = shopifyOrder.id || uuidv4();
 
-            let shopifyOrderId = shopifyOrder.id;
-
-            if (!shopifyOrderId) {
-                console.warn(`Missing shopifyOrder.id for order number ${shopifyOrder.order_number}. Generating a UUID.`);
-                shopifyOrderId = uuidv4();
-            }
-
+            const customerId = shopifyOrder.customer?.id;
+            const customerData = customerDataMap.get(customerId) || {};
+            console.log("Customer Data : ", customerData);
             const orderData = {
-                order_number: shopifyOrder.order_number || `unknown_${Date.now()}`,
+                order_number: shopifyOrder.order_number,
                 invoice_number: shopifyOrder.name || `#${shopifyOrder.order_number}`,
                 date: shopifyOrder.created_at || new Date(),
                 customer_name: shopifyOrder.customer
@@ -83,8 +75,18 @@ router.get('/', async (req, res) => {
                 user_id: shopifyOrder.user_id || null,
                 store_name: storeName,
                 orderId: shopifyOrderId,
+                note: shopifyOrder.note,
+                current_subtotal_price: shopifyOrder.current_subtotal_price,
+                processed_at: shopifyOrder.processed_at,
                 payment_status: shopifyOrder.financial_status || 'pending',
-                line_items: shopifyOrder.line_items || []  // Store the line items directly
+                payment_gateway_names: shopifyOrder.payment_gateway_names || [],
+                line_items: shopifyOrder.line_items || [],
+                billing_address: shopifyOrder.billing_address,
+                shipping_address: shopifyOrder.shipping_address,
+                customer: {
+                    ...shopifyOrder.customer,
+                    ...customerData,  // Merge MongoDB customer data
+                },
             };
 
             if (!existingOrder) {
@@ -92,14 +94,65 @@ router.get('/', async (req, res) => {
             } else {
                 await Order.findOneAndUpdate(
                     { order_number: shopifyOrder.order_number, store_name: storeName },
-                    { $set: orderData },
+                    { $set: existingOrder },
                     { upsert: true, new: true }
                 );
             }
         }
 
-        // Fetching all orders after processing
-        allOrders = await Order.find({ store_name: storeName }).lean();
+        // Fetch all orders from the database
+        let allOrders = await Order.find({ store_name: storeName }).lean();
+
+        allOrders.forEach(order => {
+            console.log("All Order Details : ", order);
+        });
+
+        const productIdsToFetch = new Set();
+        allOrders.forEach(order => {
+            order.line_items.forEach(item => {
+                if (!item.hsn || !item.gst || !item.cess || !item.miniAmount || !item.minGst) {
+                    if (item.product_id) {
+                        productIdsToFetch.add(item.product_id);
+                    }
+                }
+            });
+        });
+
+        let productDataMap = new Map();
+        if (productIdsToFetch.size > 0) {
+            const products = await Product.find({ shopify_id: { $in: Array.from(productIdsToFetch) } }).lean();
+            productDataMap = new Map(products.map(p => [p.shopify_id, p]));
+        }
+
+        allOrders = await Promise.all(allOrders.map(async (order) => {
+            const updatedLineItems = await Promise.all(order.line_items.map(async (item) => {
+                const productData = productDataMap.get(`${item.product_id}`) || {};
+
+                const updatedItem = {
+                    ...item,
+                    hsn: item.hsn || productData.hsn || null,
+                    gst: item.gst || productData.gst || null,
+                    cess: item.cess || productData.cess || null,
+                    miniAmount: item.miniAmount || productData.miniAmount || null,
+                    minGst: item.minGst || productData.minGst || null
+                };
+
+                if (!item.hsn || !item.gst || !item.cess || !item.miniAmount || !item.minGst) {
+                    await Order.updateOne(
+                        { _id: order._id, "line_items.product_id": item.product_id },
+                        { $set: { "line_items.$": updatedItem } }
+                    );
+                }
+
+                return updatedItem;
+            }));
+
+            return {
+                ...order,
+                line_items: updatedLineItems
+            };
+        }));
+
         res.status(200).json(allOrders);
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error', details: error.message });

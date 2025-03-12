@@ -23,11 +23,50 @@ const OrderSchema = new mongoose.Schema({
     payment_status: {
         type: String,
         required: false,
-        default: 'pending'  // You can set a default value if you want
+        default: 'pending'
     },
-    line_items: {  // Add the line_items field
-        type: Array, // Store the line items as an array of objects
-        default: []  // Default to an empty array
+    payment_gateway_names: { type: [String], default: [] },
+    line_items: {
+        type: Array,
+        default: []
+    },
+    billing_address: {
+        first_name: { type: String },
+        address1: { type: String },
+        phone: { type: String, default: null },
+        city: { type: String },
+        zip: { type: String },
+        province: { type: String },
+        country: { type: String },
+        last_name: { type: String },
+        address2: { type: String, default: null },
+        company: { type: String, default: null },
+        latitude: { type: Number, default: null },
+        longitude: { type: Number, default: null },
+        name: { type: String },
+        country_code: { type: String },
+        province_code: { type: String }
+    },
+    shipping_address: {
+        first_name: { type: String },
+        address1: { type: String },
+        phone: { type: String, default: null },
+        city: { type: String },
+        zip: { type: String },
+        province: { type: String },
+        country: { type: String },
+        last_name: { type: String },
+        address2: { type: String, default: null },
+        company: { type: String, default: null },
+        latitude: { type: Number, default: null },
+        longitude: { type: Number, default: null },
+        name: { type: String },
+        country_code: { type: String },
+        province_code: { type: String }
+    },
+    customer: {
+        type: mongoose.Schema.Types.Mixed,  // Customer object with any structure
+        default: {}
     }
 },{ timestamps: true });
 
