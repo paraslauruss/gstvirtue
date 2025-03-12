@@ -11,7 +11,7 @@ router.get('/collection', async (req, res) => {
   const accessToken = req.headers['access-token'];
 
   try {
-    // Call Shopify API
+    // **Shopify API Call**
     const response = await axios.get(`https://${storeName}/admin/api/2025-01/collections/${collectionId}/products.json`, {
       headers: {
         'Content-Type': 'application/json',
@@ -22,10 +22,15 @@ router.get('/collection', async (req, res) => {
     const shopifyProducts = response.data.products;
     const shopifyProductIds = shopifyProducts.map(product => product.id);
 
-    const existingProducts = await Product.find({ store_name: storeName, id: { $in: shopifyProductIds } });
+    // **MongoDB se pehle se existing products fetch karo**
+    const existingProducts = await Product.find({
+      store_name: storeName,
+      shopify_id: { $in: shopifyProductIds } // ✅ Shopify ID ke base pe check karna
+    }).lean();
 
+    // **Product merging logic**
     const mergedProducts = shopifyProducts.map(shopifyProduct => {
-      const existingProduct = existingProducts.find(product => `${product.id}` === `${shopifyProduct.id}`);
+      const existingProduct = existingProducts.find(product => `${product.shopify_id}` === `${shopifyProduct.id}`);
       if (existingProduct) {
         return {
           ...shopifyProduct,
@@ -35,41 +40,50 @@ router.get('/collection', async (req, res) => {
           miniAmount: existingProduct.miniAmount,
           minGst: existingProduct.minGst,
           Amount: existingProduct.Amount,
-          ...existingProduct._doc // Merge MongoDB fields
+          ...existingProduct // ✅ MongoDB ka data merge kar do
         };
       } else {
         return shopifyProduct;
       }
     });
 
-    for (const product of mergedProducts) {
-      const existingProduct = existingProducts.find(p => p.id === product.id);
-      if (!existingProduct) {
-        const newProduct = new Product({
-          id: product.id,
-          store_name: storeName,
-          title: product.title,
-          body_html: product.body_html,
-          vendor: product.vendor,
-          product_type: product.product_type,
-          created_at: product.created_at,
-          handle: product.handle,
-          updated_at: product.updated_at,
-          published_at: product.published_at,
-          template_suffix: product.template_suffix,
-          published_scope: product.published_scope,
-          tags: product.tags,
-          status: product.status,
-          admin_graphql_api_id: product.admin_graphql_api_id,
-          variants: product.variants,
-          options: product.options,
-          images: product.images,
-          image: product.image,
-        });
-        await newProduct.save();
-      }
+    // **Sirf naye products ko hi MongoDB me add karo**
+    const newProducts = shopifyProducts.filter(product =>
+      !existingProducts.some(existing => `${existing.shopify_id}` === `${product.id}`)
+    );
+
+    // **New products ko insert/update karo**
+    for (const product of newProducts) {
+      await Product.findOneAndUpdate(
+        { id: product.id, store_name: storeName },  // ✅ Shopify `id` ka use karein
+        {
+          $setOnInsert: {
+            id: product.id,  // ✅ Shopify ID
+            store_name: storeName,
+            title: product.title,
+            body_html: product.body_html,
+            vendor: product.vendor,
+            product_type: product.product_type,
+            created_at: product.created_at,
+            handle: product.handle,
+            updated_at: product.updated_at,
+            published_at: product.published_at,
+            template_suffix: product.template_suffix,
+            published_scope: product.published_scope,
+            tags: product.tags,
+            status: product.status,
+            admin_graphql_api_id: product.admin_graphql_api_id,
+            variants: product.variants,
+            options: product.options,
+            images: product.images,
+            image: product.image
+          }
+        },
+        { upsert: true, new: true }
+      );
     }
-    // Return the response from Shopify API
+
+    // **Final Response**
     return res.json(mergedProducts);
 
   } catch (error) {
@@ -231,160 +245,168 @@ router.get('/', async (req, res) => {
       'X-Shopify-Access-Token': accessToken,
     };
 
-      let shopifyProducts = [];
-      try {
-          const shopifyResponse = await axios.get(url, { headers });
-          shopifyProducts = shopifyResponse.data.products;
-      } catch (shopifyError) {
-          console.error('🚨 Shopify API Error:', shopifyError.response?.data || shopifyError.message);
-          return res.status(400).json({ error: 'Failed to fetch products from Shopify', details: shopifyError.message });
-      }
+    let shopifyProducts = [];
+    try {
+      const shopifyResponse = await axios.get(url, { headers });
+      shopifyProducts = shopifyResponse.data.products;
+    } catch (shopifyError) {
+      console.error('🚨 Shopify API Error:', shopifyError.response?.data || shopifyError.message);
+      return res.status(400).json({ error: 'Failed to fetch products from Shopify', details: shopifyError.message });
+    }
 
-      if (!shopifyProducts || shopifyProducts.length === 0) {
-          const allProducts = await Product.find({ store_name: storeName }).lean();
-
-          // **Modification: Fetch price from the first variant**
-          const productsWithPrice = allProducts.map(product => {
-              let productPrice = null; // Initialize to null
-
-              if (product?.variants?.length > 0) { // Short and safe check
-                  productPrice = product.variants[0].price;
-              }
-
-              return {
-                  ...product,
-                  price: productPrice // Add 'price' field to the product object
-              };
-          });
-
-          return res.status(200).json(productsWithPrice);
-      }
-
-      const existingProducts = await Product.find({
-          handle: { $in: shopifyProducts.map(p => p.handle) },
-          store_name: storeName
-      }).lean();
-
-      const productMap = new Map(existingProducts.map(p => [p.handle, p]));
-
-      const operations = shopifyProducts.map((shopifyProduct) => {
-          return (async () => {
-              if (!shopifyProduct || !shopifyProduct.title || !shopifyProduct.handle) { // Check if shopifyProduct exists
-                  console.warn(`Skipping product with missing title/handle or is null/undefined:`, shopifyProduct);
-                  return;
-              }
-
-              let productPrice = null; // Initialize to null
-
-             if (shopifyProduct?.variants?.length > 0) { // Short and safe check
-                  productPrice = shopifyProduct.variants[0].price;
-              }
-
-              const productData = {
-                  shopify_id: shopifyProduct.id, // Avoids conflict with MongoDB _id
-                  store_name: storeName,
-                  title: shopifyProduct.title,
-                  body_html: shopifyProduct.body_html,
-                  vendor: shopifyProduct.vendor,
-                  product_type: shopifyProduct.product_type,
-                  created_at: shopifyProduct.created_at,
-                  handle: shopifyProduct.handle,
-                  updated_at: shopifyProduct.updated_at,
-                  published_at: shopifyProduct.published_at,
-                  template_suffix: shopifyProduct.template_suffix,
-                  published_scope: shopifyProduct.published_scope,
-                  tags: shopifyProduct.tags,
-                  status: shopifyProduct.status,
-                  admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
-                  variants: shopifyProduct.variants,
-                  options: shopifyProduct.options,
-                  images: shopifyProduct.images,
-                  image: shopifyProduct.image,
-                  price: productPrice  // Add price here
-              };
-
-              if (!existingProducts) {
-                  return Product.create(productData);
-              } else {
-                  return Product.findOneAndUpdate(
-                      { handle: shopifyProduct.handle, store_name: storeName },
-                      { $set: productData },
-                      { upsert: true, new: true }
-                  );
-              }
-          })();
-      });
-
-      await Promise.all(operations);
-
+    if (!shopifyProducts || shopifyProducts.length === 0) {
       const allProducts = await Product.find({ store_name: storeName }).lean();
 
       // **Modification: Fetch price from the first variant**
       const productsWithPrice = allProducts.map(product => {
-          let productPrice = null; // Initialize to null
+        let productPrice = null; // Initialize to null
 
-          if (product?.variants?.length > 0) { // Short and safe check
-              productPrice = product.variants[0].price;
-          }
+        if (product?.variants?.length > 0) { // Short and safe check
+          productPrice = product.variants[0].price;
+        }
 
-          return {
-              ...product,
-              price: productPrice // Add 'price' field to the product object
-          };
+        return {
+          ...product,
+          price: productPrice // Add 'price' field to the product object
+        };
       });
 
-      res.status(200).json(productsWithPrice);
-
-  } catch (error) {
-      console.error('🚨 API Error:', error);
-      res.status(500).json({ error: 'Internal Server Error', details: error.message });
-  }
-});
-
-router.post('/update-products', async (req, res) => {
-  try {
-    const storeName = req.headers["store-name"];
-    const apiVersion = req.headers["api-version"];
-    const accessToken = req.headers["access-token"];
-    const productsToUpdate = req.body.products;
-
-    // Validate required headers
-    if (!storeName || !apiVersion || !accessToken) {
-      return res.status(400).json({ error: "Missing required headers" });
+      return res.status(200).json(productsWithPrice);
     }
 
-    // Validate the request body
-    if (!Array.isArray(productsToUpdate) || productsToUpdate.length === 0) {
-      return res.status(400).json({ error: "Products array is required" });
+    const existingProducts = await Product.find({
+      handle: { $in: shopifyProducts.map(p => p.handle) },
+      store_name: storeName
+    }).lean();
+
+    const productMap = new Map(existingProducts.map(p => [p.handle, p]));
+
+    const operations = shopifyProducts.map((shopifyProduct) => {
+      return (async () => {
+        if (!shopifyProduct || !shopifyProduct.title || !shopifyProduct.handle) { // Check if shopifyProduct exists
+          console.warn(`Skipping product with missing title/handle or is null/undefined:`, shopifyProduct);
+          return;
+        }
+
+        let productPrice = null; // Initialize to null
+
+        if (shopifyProduct?.variants?.length > 0) { // Short and safe check
+          productPrice = shopifyProduct.variants[0].price;
+        }
+
+        const productData = {
+          shopify_id: shopifyProduct.id, // Avoids conflict with MongoDB _id
+          store_name: storeName,
+          title: shopifyProduct.title,
+          body_html: shopifyProduct.body_html,
+          vendor: shopifyProduct.vendor,
+          product_type: shopifyProduct.product_type,
+          created_at: shopifyProduct.created_at,
+          handle: shopifyProduct.handle,
+          updated_at: shopifyProduct.updated_at,
+          published_at: shopifyProduct.published_at,
+          template_suffix: shopifyProduct.template_suffix,
+          published_scope: shopifyProduct.published_scope,
+          tags: shopifyProduct.tags,
+          status: shopifyProduct.status,
+          admin_graphql_api_id: shopifyProduct.admin_graphql_api_id,
+          variants: shopifyProduct.variants,
+          options: shopifyProduct.options,
+          images: shopifyProduct.images,
+          image: shopifyProduct.image,
+          price: productPrice  // Add price here
+        };
+
+        if (!existingProducts) {
+          return Product.create(productData);
+        } else {
+          return Product.findOneAndUpdate(
+            { handle: shopifyProduct.handle, store_name: storeName },
+            { $set: productData },
+            { upsert: true, new: true }
+          );
+        }
+      })();
+    });
+
+    await Promise.all(operations);
+
+    const allProducts = await Product.find({ store_name: storeName }).lean();
+
+    // **Modification: Fetch price from the first variant**
+    const productsWithPrice = allProducts.map(product => {
+      let productPrice = null; // Initialize to null
+
+      if (product?.variants?.length > 0) { // Short and safe check
+        productPrice = product.variants[0].price;
+      }
+
+      return {
+        ...product,
+        price: productPrice // Add 'price' field to the product object
+      };
+    });
+
+    res.status(200).json(productsWithPrice);
+
+  } catch (error) {
+    console.error('🚨 API Error:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+const axios = require('axios');
+
+router.get('/missing-gst-hsn', async (req, res) => {
+  try {
+    const storeName = req.headers['store-name'];
+    const apiVersion = req.headers['api-version'];
+    const accessToken = req.headers['access-token'];
+
+    if (!storeName || !apiVersion || !accessToken) {
+      return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
+    }
+
+    // Filter products where gst or hsn_code is 0, null, or an empty string
+    const products = await Product.find({
+      store_name: storeName,
+      $or: [
+        { gst: { $in: [0, "0", null, ""] } },
+        { hsn: { $in: [0, "0", null, ""] } }
+      ]
+    }).lean();
+
+    // If no matching products are found, return an empty array
+    if (!products || products.length === 0) {
+      return res.status(200).json([]);
     }
 
     const updatedProducts = [];
     const newProducts = [];
 
-    for (const productData of productsToUpdate) {
-      let { id, gst, hsn, cess, miniAmount, minGst } = productData;
+    // Iterate over each product and process it
+    for (const product of products) {
+      const { id, gst, hsn, cess, miniAmount, minGst } = product;
 
       // Validate and extract the numeric product ID
       if (!id) {
         return res.status(400).json({ error: "Product ID is required" });
       }
-      const numericId = id.replace("gid://shopify/Product/", ""); // Extracts the numeric ID
+      const numericId = id.replace("gid://shopify/Product/", "");
 
       // Check if product exists in MongoDB
-      let product = await Product.findOne({ id: numericId });
+      let existingProduct = await Product.findOne({ id: numericId });
 
-      if (product) {
+      if (existingProduct) {
         // Update only the specified fields if they exist
         let updateFields = {
-          gst: gst !== undefined ? gst.toString() : product.gst,
-          hsn: hsn !== undefined ? hsn : product.hsn,
-          cess: !isNaN(parseFloat(cess)) ? parseFloat(cess) : product.cess,
-          miniAmount: !isNaN(parseFloat(miniAmount)) ? parseFloat(miniAmount) : product.miniAmount,
-          minGst: !isNaN(parseFloat(minGst)) ? parseFloat(minGst) : product.minGst,
-          updatedAt: new Date(), // Update timestamp
+          gst: gst !== undefined ? gst.toString() : existingProduct.gst,
+          hsn: hsn !== undefined ? hsn : existingProduct.hsn,
+          cess: !isNaN(parseFloat(cess)) ? parseFloat(cess) : existingProduct.cess,
+          miniAmount: !isNaN(parseFloat(miniAmount)) ? parseFloat(miniAmount) : existingProduct.miniAmount,
+          minGst: !isNaN(parseFloat(minGst)) ? parseFloat(minGst) : existingProduct.minGst,
+          updatedAt: new Date(),
         };
 
-        // Use findOneAndUpdate for reliability
         let updatedProduct = await Product.findOneAndUpdate(
           { id: numericId },
           { $set: updateFields },
@@ -409,9 +431,10 @@ router.post('/update-products', async (req, res) => {
           if (!shopifyProduct) {
             return res.status(404).json({ error: "Product not found in Shopify" });
           }
+
           // Insert new product in MongoDB
           const newProduct = await Product.create({
-            id: numericId, // Store numeric ID
+            id: numericId,
             title: shopifyProduct.title,
             gst: gst ? gst.toString() : "",
             hsn: hsn || "",
@@ -438,9 +461,60 @@ router.post('/update-products', async (req, res) => {
       updatedProducts,
       newProducts,
     });
+
   } catch (error) {
-    console.error("Unexpected Error:", error.message);
+    console.error("Server Error:", error.message);
     return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+router.put('/update-multiple', async (req, res) => {
+  try {
+    const { products } = req.body;
+    const storeName = req.headers['store-name'];
+
+    if (!storeName) {
+      return res.status(400).json({ error: 'Missing required header: store-name' });
+    }
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'Invalid or empty products array' });
+    }
+
+    const bulkOperations = products.map(product => {
+      const { handle, miniAmount, minGst, gst, hsn, cess } = product;
+
+      if (!handle) {
+        return null;
+      }
+
+      const updateFields = {};
+      if (miniAmount !== undefined) updateFields['miniAmount'] = miniAmount;
+      if (minGst !== undefined) updateFields['minGst'] = minGst;
+      if (gst !== undefined) updateFields['gst'] = gst;
+      if (hsn !== undefined) updateFields['hsn'] = hsn;
+      if (cess !== undefined) updateFields['cess'] = cess;
+
+      return {
+        updateOne: {
+          filter: { handle, store_name: storeName },
+          update: { $set: updateFields },
+          upsert: true
+        }
+      };
+    }).filter(op => op !== null);
+
+    if (bulkOperations.length === 0) {
+      return res.status(400).json({ error: 'No valid products to update' });
+    }
+
+    await Product.bulkWrite(bulkOperations);
+
+    res.status(200).json({ message: 'Products updated successfully' });
+  } catch (error) {
+    console.error('🚨 Update API Error:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 

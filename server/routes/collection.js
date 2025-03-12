@@ -65,6 +65,91 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.put('/collections/update', async (req, res) => {
+    const storeName = req.headers['store-name'];
+    const accessToken = req.headers['access-token'];
+    const collections = req.body.collections;
+
+    try {
+        const updatedCollections = [];
+
+        for (const collectionData of collections) {
+            const { id, mini_amount, mini_gst, gst, hsn_code, cess } = collectionData;
+
+            // Call Shopify API to get the collection details
+            const response = await axios.get(`https://${storeName}/admin/api/2025-01/custom_collections/${id}.json`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Shopify-Access-Token': accessToken
+                }
+            });
+
+            const collection = response.data.custom_collection;
+
+            // Update the collection in MongoDB with custom fields
+            await Collection.updateOne(
+                { store_name: storeName, id: collection.id },
+                {
+                    $set: {
+                        handle: collection.handle,
+                        title: collection.title,
+                        updated_at: collection.updated_at,
+                        body_html: collection.body_html,
+                        published_at: collection.published_at,
+                        sort_order: collection.sort_order,
+                        template_suffix: collection.template_suffix,
+                        published_scope: collection.published_scope,
+                        admin_graphql_api_id: collection.admin_graphql_api_id,
+                        mini_amount: mini_amount,
+                        mini_gst: mini_gst,
+                        gst: gst,
+                        hsn_code: hsn_code,
+                        cess: cess,
+                    }
+                },
+                { upsert: true }
+            );
+
+            // Fetch products associated with the collection
+            const productsResponse = await axios.get(`https://${storeName}/admin/api/2025-01/products.json?collection_id=${id}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Shopify-Access-Token': accessToken
+                }
+            });
+
+            const products = productsResponse.data.products;
+
+            for (const product of products) {
+                await Product.updateOne(
+                    { store_name: storeName, handle: product.handle },
+                    {
+                        $set: {
+                            gst: gst,
+                            hsn: hsn_code,
+                            miniAmount: mini_amount,
+                            minGst: mini_gst,
+                            cess: cess,
+                        }
+                    },
+                    { upsert: true } // yahan upsert ko true kar diya hai taki product exist na kare to naya create ho jaye
+                );
+            }
+
+            const updatedCollection = await Collection.findOne({ store_name: storeName, id: collection.id });
+            updatedCollections.push(updatedCollection);
+        }
+
+        return res.json(updatedCollections);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            error: error.message
+        });
+    }
+});
+
 router.put('/:id', async (req, res) => {
     const storeName = req.headers['store-name'];
     const accessToken = req.headers['access-token'];
@@ -120,7 +205,7 @@ router.put('/:id', async (req, res) => {
 
         for (const product of products) {
             await Product.updateOne(
-                { store_name: storeName, id: product.id },
+                { store_name: storeName, handle: product.handle },
                 {
                     $set: {
                         gst: gst,

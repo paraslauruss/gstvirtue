@@ -33,16 +33,17 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-    // origin: "https://lyrics-dining-activation-impose.trycloudflare.com",  // Aapke frontend ka URL
-    methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type,store-name,api-version,access-token"
-  }));app.use(express.json());
+  origin: "https://joseph-beings-tft-citizens.trycloudflare.com",  // Aapke frontend ka URL
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,store-name,api-version,access-token"
+})); app.use(express.json());
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Use the product routes
 app.use('/api/products', productRoute);
 app.use('/api/customers', customerRoute);
 app.use('/api/all-products', productRoutes);
-app.use('/api/orders',orderRoutes );
+app.use('/api/orders', orderRoutes);
 app.use('/api/payees', payeeRouter);
 app.use('/api/bills', billRoute);
 app.use('/api/estimate', estimateRoute);
@@ -81,46 +82,46 @@ const emailHost = process.env.MAIL_HOST;
 const transporter = nodemailer.createTransport({
   host: emailHost,
   port: 465,
-  secure: true, 
+  secure: true,
   auth: {
-      user: emailUser,
-      pass: emailPass,
+    user: emailUser,
+    pass: emailPass,
   },
 });
 // Verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
-      console.log(error);
+    console.log(error);
   } else {
-      console.log("Server is ready to take our messages");
+    console.log("Server is ready to take our messages");
   }
 });
 app.post('/send-email', async (req, res) => {
   try {
-      const { to, subject, content } = req.body;
+    const { to, subject, content } = req.body;
 
-      // Input validation (very basic example)
-      if (!to || !subject || !content) {
-          return res.status(400).json({ message: 'Missing required fields.' });
-      }
+    // Input validation (very basic example)
+    if (!to || !subject || !content) {
+      return res.status(400).json({ message: 'Missing required fields.' });
+    }
 
-      // Email options
-      const mailOptions = {
-          from: emailUser,
-          to: to,
-          subject: subject,
-          html: content, // Use `html` for rich text
-      };
+    // Email options
+    const mailOptions = {
+      from: emailUser,
+      to: to,
+      subject: subject,
+      html: content, // Use `html` for rich text
+    };
 
-      // Send the email
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Message sent: %s', info.messageId);
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s', info.messageId);
 
-      res.status(200).json({ message: 'Email sent successfully!', info: info });
+    res.status(200).json({ message: 'Email sent successfully!', info: info });
 
   } catch (error) {
-      console.error('Error sending email:', error);
-      res.status(500).json({ message: 'Failed to send email.', error: error.message });
+    console.error('Error sending email:', error);
+    res.status(500).json({ message: 'Failed to send email.', error: error.message });
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ic_screenshot from "../../assets/images/ic_screenshot.png";
 import ic_classic from "../../assets/images/ic_classic.png";
 import ic_modern from "../../assets/images/ic_modern.png";
@@ -6,6 +6,16 @@ import ic_minimal from "../../assets/images/ic_minimal.png";
 import ic_informative from "../../assets/images/ic_informative.png";
 import ic_demo from "../../assets/images/ic_demo.png";
 import { Customization } from "./customization";
+import { useLoaderData } from "@remix-run/react";
+
+export const loader = async ({ request }) => {
+  const { admin, session } = await authenticate.admin(request);
+
+  return {
+    accessToken: session.accessToken,
+    storeName: session.shop
+  };
+};
 
 export const Invoice = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -18,7 +28,70 @@ export const Invoice = () => {
     setPreviewVisible(false);
   };
 
+  const session = useLoaderData();
+  const storeName = session?.storeName;
+  const accessToken = session?.accessToken;
+
   const [page, setPage] = useState('invoice');
+
+  const templates = [
+    { name: "Standard Template", imgSrc: ic_screenshot },
+    { name: "Classic Template", imgSrc: ic_classic },
+    { name: "Modern Template", imgSrc: ic_modern },
+    { name: "Informative Template", imgSrc: ic_informative },
+    { name: "Minimal Template", imgSrc: ic_minimal },
+  ];
+  const [filteredTemplates, setFilteredTemplate] = useState([]);
+
+  const [templateData, setTemplateData] = useState(null);
+
+  const fetchTempateData = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/api/template/", {
+        method: 'GET',
+        headers: {
+          "Content-Type": "application/json",
+          "store-name": storeName,
+          "api-version": "2025-01",
+          "access-token": accessToken
+        },
+      });
+      const data = await response.json();
+      setTemplateData(data);
+      setFilteredTemplate(templates.filter(template => template.name !== `${data?.template_type} Template`));
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  useEffect(() => {
+
+
+    fetchTempateData(); // Call the async function inside the effect
+  }, [storeName]);
+
+  const handlePublish = async (templateName) => {
+    try {
+      const response = await fetch("http://localhost:3001/api/template/template-type", {
+        method: 'PUT',
+        headers: {
+          "Content-Type": "application/json",
+          "store-name": session.storeName,
+          "api-version": "2025-01",
+          "access-token": session.accessToken
+        },
+        body: JSON.stringify({ template_type: templateName.replace(' Template', '') })
+      });
+
+      shopify.toast.show('Template type updated successfully');
+      fetchTempateData();
+      // console.log('Template type updated successfully:', response.data);
+      // setTemplateType(templateName.replace(' Template', '')); // Update local state with new template type
+    } catch (error) {
+      shopify.toast.show('Error updating template type:', error);
+      console.error('Error updating template type:', error);
+    }
+  };
 
   return (
     <>
@@ -130,7 +203,7 @@ export const Invoice = () => {
                       marginBottom: "0",
                     }}
                   >
-                    Standard Template
+                    {templateData?.template_type} Template
                   </span>
 
                   <div style={{ display: "flex", gap: "12px" }}>
@@ -193,12 +266,7 @@ export const Invoice = () => {
                   Other Templates
                 </h3>
 
-                {[
-                  { name: "Classic Template", imgSrc: ic_classic },
-                  { name: "Modern Template", imgSrc: ic_modern },
-                  { name: "Informative Template", imgSrc: ic_informative },
-                  { name: "Minimal Template", imgSrc: ic_minimal },
-                ].map((template, index) => (
+                {filteredTemplates.map((template, index) => (
                   <div
                     key={index}
                     style={{
@@ -263,6 +331,7 @@ export const Invoice = () => {
                             width: "95px",
                             height: "34px",
                           }}
+                          onClick={() => handlePublish(template.name)}
                         >
                           Publish
                         </button>

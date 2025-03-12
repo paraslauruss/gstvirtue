@@ -13,6 +13,10 @@ import { CustomizationLabel } from "./customization_label";
 import { useLoaderData } from "@remix-run/react";
 import ColorPickerModal from "../components/ColorPickerModal";
 import { Standard } from "./invoice/standard";
+import { Classic } from "./invoice/classic";
+import { Modern } from "./invoice/modern";
+import { Minimal } from "./invoice/minimal";
+import { Informatinve } from "./invoice/Informative";
 
 export const loader = async ({ request }) => {
     const { admin, session } = await authenticate.admin(request);
@@ -56,6 +60,7 @@ export const Customization = ({ onClick }) => {
 
     const [isBgModalOpen, setIsBgModalOpen] = useState(false);
     const [bgColor, setBgColor] = useState("#ccc");
+    const [templateType, setTemplateType] = useState("Standard");
 
     const handleBgSave = (bg, text) => {
         setBgColor(bg);
@@ -129,6 +134,10 @@ export const Customization = ({ onClick }) => {
 
                     if (data.backgroundColor != null) {
                         setBgColor(`${data.backgroundColor}`);
+                    }
+
+                    if (data.template_type != null) {
+                        setTemplateType(`${data.template_type}`);
                     }
 
                 } else {
@@ -244,6 +253,7 @@ export const Customization = ({ onClick }) => {
                 alt="Logo"
                 id="logoImage"
                 onClick={openPopup}
+                onError={() => setLogoUrl(null)}
                 style={{ cursor: 'pointer', width: "250px", height: "125px", marginTop: "10px" }}
             />
         ) : (
@@ -668,6 +678,35 @@ export const Customization = ({ onClick }) => {
         fetchData();
     }, []);
 
+    const [storeData, setStoreData] = useState(null);
+    useEffect(() => {
+        const fetchStoreData = async () => {
+
+            try {
+                const response = await fetch(`http://localhost:3001/api/settings/${storeName}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setStoreData(data);
+                    // shopify.toast.show("Store data fetched successfully:");
+                    console.log("Store data:", data);
+                } else {
+                    // Handle the error appropriately, e.g., show an error message
+                    // shopify.toast.show("Error fetching store data:");
+                    console.error("Error fetching store data:", response.status, await response.text());
+                }
+            } catch (error) {
+                // shopify.toast.show("Error fetching store data:");
+                console.error("Error fetching store data:", error);
+                // Handle the error appropriately
+            } finally {
+                setLoading(false); // Set loading to false after fetching, regardless of success or failure
+
+            }
+        };
+
+        fetchStoreData(); // Call the async function inside the effect
+    }, [storeName]);
+
     return (
         <Page>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -761,15 +800,13 @@ export const Customization = ({ onClick }) => {
                 {page == "customization" && (
                     <div>
 
-                        <div style={{ border: '1px solid #ccc', borderRadius: '10px', padding: '20px', marginTop: '20px' }}>
-
-                            {/* {htmlContent ? (
-                                <div dangerouslySetInnerHTML={{ __html: injectButtons(htmlContent) }} />
-                            ) : (
-                                <p>Loading...</p>
-                            )} */}
-                            <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} />
-                        </div>
+                        {storeData && <div style={{ border: '1px solid #ccc', borderRadius: '10px', padding: '20px', marginTop: '20px' }}>
+                            {templateType === "Standard" && <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
+                            {templateType === "Classic" && <Classic bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
+                            {templateType === "Modern" && <Modern bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
+                            {templateType === "Minimal" && <Minimal bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
+                            {templateType === "Informatinve" && <Informatinve bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
+                        </div>}
 
                     </div>
 

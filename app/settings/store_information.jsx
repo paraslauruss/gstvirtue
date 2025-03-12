@@ -12,6 +12,16 @@ import ic_info from '../assets/images/ic_info.png'
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLoaderData } from "@remix-run/react";
 
+
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
+
 export function StoreInformation() {
 
 

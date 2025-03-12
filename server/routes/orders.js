@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const axios = require('axios');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid'); // Import UUID generator
+const Product = require('../models/product');
+const Customer = require('../models/customer');
 
 router.get('/', async (req, res) => {
     try {
@@ -28,13 +30,20 @@ router.get('/', async (req, res) => {
             shopifyOrders = shopifyResponse.data.orders;
             console.log("Shopify Orders:", shopifyOrders);
         } catch (shopifyError) {
-            console.error('🚨 Shopify API Error:', shopifyError.response?.data || shopifyError.message);
             return res.status(400).json({ error: 'Failed to fetch orders from Shopify', details: shopifyError.message });
         }
 
-        if (!shopifyOrders || shopifyOrders.length === 0) {
+        if (!shopifyOrders.length) {
             const allOrders = await Order.find({ store_name: storeName }).lean();
             return res.status(200).json(allOrders);
+        }
+
+        const customerIds = Array.from(new Set(shopifyOrders.map(order => order.customer?.id).filter(Boolean)));
+        let customerDataMap = new Map();
+        if (customerIds.length > 0) {
+            const customers = await Customer.find({ shopifyId: { $in: customerIds } }).lean();
+            customerDataMap = new Map(customers.map(customer => [customer.customer_id, customer]));
+
         }
 
         const existingOrders = await Order.find({
@@ -88,13 +97,12 @@ router.get('/', async (req, res) => {
             }
         }
 
-        const allOrders = await Order.find({ store_name: storeName }).lean();
         res.status(200).json(allOrders);
-
     } catch (error) {
-        console.error(' API Error:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
+
+
 
 module.exports = router;

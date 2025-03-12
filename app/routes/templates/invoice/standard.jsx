@@ -1,6 +1,11 @@
+import { useEffect } from "react";
+import numberToWords from 'number-to-words';
 
+export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, formData, orderData, storeData }) => {
 
-export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, formData }) => {
+    useEffect(() => {
+        console.log('orderData changed:', orderData);
+    }, [orderData]);
 
     const styles = {
         table: {
@@ -64,8 +69,50 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
     const hideShowGeneratedFrom = formData?.footer_labels?.hide_show_generated_from;
     const hideShowPageNo = formData?.footer_labels?.hide_show_page_no;
 
+    const calculateTaxValues = (item) => {
+        const taxRate = item.tax_lines?.length > 0 ? item.tax_lines[0].rate * 100 : 0;
+        const taxableAmount = ((item.price / (1 + ((parseFloat(item.gst) || 0) + (parseFloat(item.cess) || 0)) / 100)) * item.current_quantity).toFixed(2);
+        const gstAmount = (item.price * ((parseFloat(item.gst) || 0) / 100)).toFixed(2);
+        const igstAmount = gstAmount; // Assuming IGST for inter-state sales
+        const cgstRate = (parseFloat(item.gst) || 0) / 2;
+        const cgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2);
+        const sgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2); // SGST = 50% of GST
+        const cessAmount = ((item.cess / 100) * taxableAmount).toFixed(2);
+        const totalAmount = (item.price * item.current_quantity).toFixed(2); // Total amount after tax
+
+        return {
+            taxRate,
+            taxableAmount,
+            gstAmount,
+            cgstAmount,
+            sgstAmount,
+            cessAmount,
+            totalAmount
+        };
+    };
+
+    function formatDate(dateString) {
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        const formattedDate = new Date(dateString).toLocaleDateString('en-GB', options);
+        return formattedDate;
+    }
+
+    // Calculate the total sum of the total amounts and quantities
+    const { totalAmountSum, totalQuantitySum, totalTaxableAmountSum } = (orderData?.line_items || []).reduce((acc, item) => {
+        const { totalAmount, taxableAmount } = calculateTaxValues(item);
+        acc.totalAmountSum += parseFloat(totalAmount);
+        acc.totalQuantitySum += parseFloat(item.quantity);
+        acc.totalTaxableAmountSum += parseFloat(taxableAmount);
+        return acc;
+    }, { totalAmountSum: 0, totalQuantitySum: 0, totalTaxableAmountSum: 0 });
+
+    const roundedTotal = Math.round(totalAmountSum);
+    const roundOff = (roundedTotal - totalAmountSum).toFixed(2);
+
+    const totalAmountInWords = numberToWords.toWords(roundedTotal);
+
     return (
-        <div>
+        <div id="invoice">
             <div style={{ fontFamily: fontFamily, color: textColor, margin: '10px', outline: '1px solid #000', outlineOffset: '-1px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 10px' }}>
                     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: '1' }}>
@@ -74,13 +121,13 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                         </div>
 
                         <div style={{ fontSize: '12px', fontWeight: '500' }}>
-                            {formData.customize_store_labels ? formData.customize_store_labels.export_invoice ? formData.customize_store_labels.is_gstin ? `${formData.customize_store_labels.gstin} : 22ABCDE1234F1Z9` : "" : "" : ""}
+                            {formData.customize_store_labels ? formData.customize_store_labels.export_invoice ? formData.customize_store_labels.is_gstin ? `${formData.customize_store_labels.gstin} : ${storeData?.gst_number}` : "" : "" : ""}
                         </div>
                         <div style={{ fontSize: '12px', fontWeight: '500' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_iec_code ? formData.customize_store_labels ? `${formData.customize_store_labels.iec_code} : 1234567890` || "" : "" : ""}
+                            {formData.customize_store_labels && formData.customize_store_labels.is_iec_code ? formData.customize_store_labels ? `${formData.customize_store_labels.iec_code} : ${storeData?.iec_code}` || "" : "" : ""}
                         </div>
                         <div style={{ fontSize: '12px', fontWeight: '500' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_cin ? formData.customize_store_labels ? `${formData.customize_store_labels.cin} : U12345MH2020PLC678901` || "" : "" : ""}
+                            {formData.customize_store_labels && formData.customize_store_labels.is_cin ? formData.customize_store_labels ? `${formData.customize_store_labels.cin} : ${storeData?.cin_number}` || "" : "" : ""}
                         </div>
                     </div>
                     <div style={{ width: '100%', flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -91,19 +138,23 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                             <strong>{formData.customize_store_labels ? formData.customize_store_labels.original || "" : ""}</strong>
                         </div>
                         <div style={{ fontSize: '12px', fontWeight: '500', justifyContent: 'end', display: 'flex' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_pan_no ? formData.customize_store_labels ? `${formData.customize_store_labels.pan_no} : ABCDE1234F` || "" : "" : ""}
+                            {formData.customize_store_labels && formData.customize_store_labels.is_pan_no ? formData.customize_store_labels ? `${formData.customize_store_labels.pan_no} : ${storeData?.pan_number}` || "" : "" : ""}
                         </div>
                         <div style={{ fontSize: '12px', fontWeight: '500', justifyContent: 'end', display: 'flex' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_fssai_lic_no ? formData.customize_store_labels ? `${formData.customize_store_labels.fssai_lic_no} : 10012021000000` || "" : "" : ""}
+                            {formData.customize_store_labels && formData.customize_store_labels.is_fssai_lic_no ? formData.customize_store_labels ? `${formData.customize_store_labels.fssai_lic_no} : ${storeData?.fssai_lic_number}` || "" : "" : ""}
                         </div>
                     </div>
 
                 </div>
+
                 <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', fontWeight: '600', padding: '0px 10px' }}>
 
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', fontWeight: '600', padding: '0px 10px', }}>
                     {formData.store_information ? formData.store_information.branch_name || "" : ""}
+                    <div>
+                        {storeData?.brand_name}
+                    </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', fontWeight: '600', padding: '0px 10px', }}>
                     {formData.store_information ? formData.store_information.company_legal_name || "" : ""}
@@ -166,20 +217,20 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
 
                 <table style={{ ...styles.table, marginTop: '20px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
                     <tr>
-                        <td style={styles.td} colspan="1">{formData.customize_store_labels ? `${formData.customize_store_labels.invoice_no} : ${formData.customize_store_labels.is_invoice_no ? "INV/20003" : ""}` || "" : ""}  <strong></strong></td>
-                        <td style={styles.td} colspan="2">{formData.customize_store_labels ? formData.customize_store_labels.order_no || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_order_no ? "#1005" : ""}</strong></td>
+                        <td style={styles.td} colspan="1">{formData.customize_store_labels ? `${formData.customize_store_labels.invoice_no} : ${formData.customize_store_labels.is_invoice_no ? orderData?.invoice_number : ""}` || "" : ""}</td>
+                        <td style={styles.td} colspan="2">{formData.customize_store_labels ? formData.customize_store_labels.order_no || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_order_no ? orderData?.order_number : ""}</strong></td>
                         <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.transport_mode || "" : ""} : {formData.customize_store_labels && formData.customize_store_labels.is_transport_mode ? "-" : ""}</td>
                     </tr>
                     <tr>
-                        <td style={styles.td} colspan="1">{formData.customize_store_labels ? formData.customize_store_labels.invoice_date || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_invoice_date ? "20-01-2025" : ""}</strong></td>
-                        <td style={styles.td} colspan="2">{formData.customize_store_labels ? formData.customize_store_labels.order_date || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_order_date ? "20-01-2025" : ""}</strong></td>
-                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.date_of_supply || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_date_of_supply ? "20-01-2025" : ""}</strong></td>
+                        <td style={styles.td} colspan="1">{formData.customize_store_labels ? formData.customize_store_labels.invoice_date || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_invoice_date ? new Date().toLocaleDateString('en-GB') : ""}</strong></td>
+                        <td style={styles.td} colspan="2">{formData.customize_store_labels ? formData.customize_store_labels.order_date || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_order_date ? formatDate(orderData?.date) : ""}</strong></td>
+                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.date_of_supply || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_date_of_supply ? formatDate(orderData?.processed_at) : ""}</strong></td>
                     </tr>
                     <tr>
-                        <td style={styles.td}>State: <strong>Gujarat</strong></td>
+                        <td style={styles.td}>State: <strong>{orderData?.shipping_address?.province}</strong></td>
                         <td style={styles.td}>Code</td>
-                        <td style={styles.td}><strong>24</strong></td>
-                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.place_of_supply || "" : ""} : {formData.customize_store_labels && formData.customize_store_labels.place_of_supply ? "-" : ""}</td>
+                        <td style={styles.td}><strong>{orderData?.shipping_address?.province_code}</strong></td>
+                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.place_of_supply || "" : ""} : {formData.customize_store_labels && formData.customize_store_labels.place_of_supply ? orderData?.shipping_address?.city : ""}</td>
                     </tr>
                 </table>
 
@@ -189,40 +240,36 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                         {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <th style={{ border: '1px solid black', textAlign: 'center', padding: '5px 10px', backgroundColor: bgColor, }} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.ship_to_party || "" : ""}</th> : null}
                     </tr>
                     <tr>
-                        <td style={styles.td} colspan="4">-</td>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan="4">-</td> : null}
+                        <td style={styles.td} colspan="4">{orderData?.billing_address?.address1}</td>
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan="4">{orderData?.shipping_address?.address1}</td> : null}
                     </tr>
                     <tr>
-                        <td style={styles.td} colspan="4">-</td>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan="4">-</td> : null}
-                    </tr>
-                    <tr>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? "2" : "4"}>{formData.billing_shipping_labels ? formData.billing_shipping_labels.billing_phone || "" : ""}: -</td> : null}
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? "2" : "4"}>{formData.billing_shipping_labels ? formData.billing_shipping_labels.billing_phone || "" : ""}: {orderData?.billing_address?.phone}</td> : null}
 
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? "2" : "4"}>E : -</td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? "2" : "4"}>{formData.billing_shipping_labels ? formData.billing_shipping_labels.shipping_phone || "" : ""}: -</td> : null : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? "2" : "4"}>E : -</td> : null : null}
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? "2" : "4"}>E : {orderData?.billing_address?.email}</td> : null}
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? "2" : "4"}>{formData.billing_shipping_labels ? formData.billing_shipping_labels.shipping_phone || orderData?.shipping_address?.phone : ""}: -</td> : null : null}
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? "2" : "4"}>E : {orderData?.shipping_address?.email}</td> : null : null}
                     </tr>
                     <tr>
                         {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_gstin ? <td style={styles.td} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.billing_gstin || "" : ""}: -</td> : null}
                         {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_gstin ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.shipping_gstin || "" : ""}: -</td> : null : null}
                     </tr>
                     <tr>
-                        <td style={styles.td}>State: - </td>
+                        <td style={styles.td}>State: {orderData?.billing_address?.province}</td>
                         <td style={styles.td}>Code</td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}>Country</td>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>State: - </td> : null}
+                        <td style={styles.td}>{orderData?.billing_address?.province_code}</td>
+                        <td style={styles.td}>Country: {orderData?.billing_address?.country}</td>
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>State: {orderData?.shipping_address?.province}</td> : null}
                         {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>Code</td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}></td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>Country</td> : null}
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}> {orderData?.shipping_address?.province_code} </td> : null}
+                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>Country: {orderData?.shipping_address?.country}</td> : null}
                     </tr>
                 </table >
 
                 <table style={{ ...styles.table, marginTop: '20px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
                     <tr>
                         <th style={styles.th}>#</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.item_sku || "" : ""}</th>
+                        <th style={{ ...styles.th, width: '200px' }}>{formData.product_items_labels ? formData.product_items_labels.item_sku || "" : ""}</th>
                         <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.qty || "" : ""}</th>
                         <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.rate_per_item || "" : ""}(₹)</th>
                         {formData.product_items_labels?.hide_show_product_hsn && <th style={styles.th}>{formData.product_items_labels?.discount_item || ""}(₹)</th>}
@@ -231,48 +278,76 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                             <th style={styles.th}>{formData.product_items_labels?.hsn || ""}</th>
                         )}
                         <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.gst || "" : ""} (%)</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.gst || "" : ""} (₹)</th>
+                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.cgst || "" : ""} (₹)</th>
+                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.sgst || "" : ""} (₹)</th>
                         <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.cess || "" : ""} (%)(₹)</th>
                         <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.total || "" : ""} (₹)</th>
                     </tr>
-                    <tr>
-                        <td style={styles.td}>1</td>
-                        <td style={styles.td}>
-                            {formData.product_items_labels?.hide_show_product_title ? "Eye & Lip Primer - BLNK-LB-01-04-YP-EP05" : ""}
-                            {formData.product_items_labels?.hide_show_product_title && formData.product_items_labels?.hide_show_product_sku ? " - " : ""}
-                            {formData.product_items_labels?.hide_show_product_sku ? "SKU" : ""}
-                        </td>
-                        <td style={styles.td}>1</td>
-                        <td style={styles.td}>27.00</td>
-                        <td style={styles.td}>0.00</td>
-                        <td style={styles.td}>19.85</td>
-                        {formData.product_items_labels?.hide_show_product_hsn && (
+                    {orderData?.line_items.length > 0 ? orderData?.line_items.map((item, index) => {
+                        const taxRate = item.tax_lines?.length > 0 ? item.tax_lines[0].rate * 100 : 0; // Extract GST rate dynamically
+
+                        // const gstCessTotal = item.gst + item.cess;
+                        // const taxableAdd = gstCessTotal / 100;
+                        // const taxableAmount = gstCessTotal;
+                        const taxableAmount = ((item.price / (1 + ((parseFloat(item.gst) || 0) + (parseFloat(item.cess) || 0)) / 100)) * item.current_quantity).toFixed(2);
+                        const gstAmount = (item.price * ((parseFloat(item.gst) || 0) / 100)).toFixed(2);
+                        const igstAmount = gstAmount; // Assuming IGST for inter-state sales
+
+                        const cgstRate = (parseFloat(item.gst) || 0) / 2;
+                        const cgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2);
+                        const sgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2); // SGST = 50% of GST
+
+
+                        const cessAmount = ((item.cess / 100) * taxableAmount).toFixed(2);
+                        const totalAmount = (item.price * item.current_quantity).toFixed(2); // Total amount after tax
+
+
+                        return (<tr key={index}>
+                            <td style={styles.td}>{index + 1}</td>
+                            <td style={{ ...styles.td, width: '200px' }}>
+                                {formData.product_items_labels?.hide_show_product_title ? `${item.name || ''}` : ""}
+                                {(formData.product_items_labels?.hide_show_product_title && item.name && formData.product_items_labels?.hide_show_product_sku && item.sku) ? " - " : ""}
+                                {formData.product_items_labels?.hide_show_product_sku ? `${item.sku || ''}` : ""}
+                            </td>
+                            <td style={styles.td}>{`${item.quantity || ''}`}</td>
+                            <td style={styles.td}>{`${item.price || ''}`}</td>
+                            <td style={styles.td}>{`${item.total_discount || ''}`}</td>
+                            <td style={styles.td}>{taxableAmount}</td>
+                            {formData.product_items_labels?.hide_show_product_hsn && (
+                                <td style={styles.td}>{item.hsn}</td>
+                            )}
+                            <td style={styles.td}>{item.gst}</td>
+                            <td style={styles.td}>{cgstAmount}</td>
+                            <td style={styles.td}>{`${sgstAmount}`}</td>
+                            <td style={styles.td}>{`${item.cess}% (${cessAmount})`}</td>
+                            <td style={styles.td}>{totalAmount}</td>
+                        </tr>)
+                    }
+                    )
+
+                        : <tr>
+                            <td style={styles.td}>1</td>
+                            <td style={{ ...styles.td, width: '200px' }}>
+                                {formData.product_items_labels?.hide_show_product_title ? "Eye & Lip Primer - BLNK-LB-01-04-YP-EP05" : ""}
+                                {formData.product_items_labels?.hide_show_product_title && formData.product_items_labels?.hide_show_product_sku ? " - " : ""}
+                                {formData.product_items_labels?.hide_show_product_sku ? "SKU" : ""}
+                            </td>
+                            <td style={styles.td}>1</td>
+                            <td style={styles.td}>27.00</td>
+                            <td style={styles.td}>0.00</td>
+                            <td style={styles.td}>19.85</td>
+                            {formData.product_items_labels?.hide_show_product_hsn && (
+                                <td style={styles.td}>18</td>
+                            )}
                             <td style={styles.td}>18</td>
-                        )}
-                        <td style={styles.td}>18</td>
-                        <td style={styles.td}>3.57</td>
-                        <td style={styles.td}>(18) 3.57</td>
-                        <td style={styles.td}>27.00</td>
-                    </tr>
-                    <tr>
-                        <td style={styles.td}>.</td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        {formData.product_items_labels?.hide_show_product_hsn && (
-                            <td style={styles.td}></td>
-                        )}
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                    </tr>
+                            <td style={styles.td}>3.57</td>
+                            <td style={styles.td}>(18) 3.57</td>
+                            <td style={styles.td}>27.00</td>
+                        </tr>}
 
                     <tr>
                         <th style={styles.th} colSpan={formData.product_items_labels?.hide_show_product_hsn ? 2 : 1}>{formData.product_items_labels ? formData.product_items_labels.total || "" : ""}</th>
-                        <td style={styles.td}>1</td>
+                        <td style={styles.td}>{totalQuantitySum}</td>
                         <td style={styles.td}></td>
                         <td style={styles.td}></td>
                         <td style={styles.td}></td>
@@ -284,24 +359,26 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                         }
                         <td style={styles.td}></td>
                         <td style={styles.td}></td>
-                        <td style={styles.td}>270</td>
+                        <td style={styles.td}></td>
+                        {/* Total Price / (1 + (GST% + CESS%) / 100) */}
+                        <td style={styles.td}><strong>{totalAmountSum.toFixed(2)}</strong></td>
                     </tr>
                 </table>
                 <div style={{ display: 'flex' }}>
                     <table style={{ marginRight: '-1', marginTop: '-1px', outline: '1px solid #000', outlineOffset: '-1px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
-                        {isPaymentMode ? <tr><td style={styles.td}><strong>{paymentMode ? paymentMode : ''}</strong> : manual</td></tr> : null}
-                        {isOrderNote ? <tr><td style={styles.td}><strong>{orderNote ? orderNote : ''}</strong> : Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum....</td></tr> : null}
+                        {isPaymentMode ? <tr><td style={styles.td}><strong>{paymentMode ? paymentMode : ''}</strong> : {orderData?.payment_gateway_names && orderData?.payment_gateway_names.length > 0 ? orderData?.payment_gateway_names[0] : ''}</td></tr> : null}
+                        {isOrderNote || orderData?.note ? <tr><td style={styles.td}><strong>{orderNote ? orderNote : ''}</strong> : {orderData?.note}</td></tr> : null}
                         {isTermAndConditions ? <tr><td style={styles.td}><strong>{termAndConditions ? termAndConditions : ''}</strong><br></br>{terms_and_conditions}</td></tr> : null}
-                        {isTotalInvoiceAmountInWords ? <tr><td style={styles.td}><strong>{totalInvoiceAmountInWords ? totalInvoiceAmountInWords : ''}</strong><br></br>Four Thousand Rupees Only</td></tr> : null}
+                        {isTotalInvoiceAmountInWords ? <tr><td style={styles.td}><strong>{totalInvoiceAmountInWords ? totalInvoiceAmountInWords : ''}</strong><br></br>{totalAmountInWords}</td></tr> : null}
                     </table>
                     <table style={{ marginLeft: '-1px', marginTop: '-1px', outline: '1px solid #000', outlineOffset: '-1px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
                         <tr>
                             <td style={styles.td} colSpan={2}>Total Amount before Tax(₹)</td>
-                            <td style={styles.td} colSpan={2}>3,632.86</td>
+                            <td style={styles.td} colSpan={2}>{totalTaxableAmountSum.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td style={styles.td} colSpan={2}>Total Tax Amount(₹)</td>
-                            <td style={styles.td} colSpan={2}>367.14</td>
+                            <td style={styles.td} colSpan={2}>{(totalAmountSum - totalTaxableAmountSum).toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td style={styles.td}>Discount %</td>
@@ -314,32 +391,20 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                             <td style={styles.td} colSpan={2}>-</td>
                         </tr>
                         <tr>
-                            <td style={styles.td}>Shipping GST %</td>
-                            <td style={styles.td}>-</td>
-                            <td style={styles.td}>Amount(₹)</td>
-                            <td style={styles.td}>-</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td}>Shipping CESS %</td>
-                            <td style={styles.td}>-</td>
-                            <td style={styles.td}>Amount(₹)</td>
-                            <td style={styles.td}>-</td>
-                        </tr>
-                        <tr>
                             <td style={styles.td} colSpan={2}>Total Amount After Tax(₹)</td>
-                            <td style={styles.td} colSpan={2}>4,000.00</td>
+                            <td style={styles.td} colSpan={2}>{totalAmountSum.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td style={styles.td} colSpan={2}>Round Off</td>
-                            <td style={styles.td} colSpan={2}>-</td>
+                            <td style={styles.td} colSpan={2}>{roundOff}</td>
                         </tr>
                         <tr>
                             <td style={styles.td} colSpan={2}><strong>Total(₹)</strong></td>
-                            <td style={styles.td} colSpan={2}><strong>4,000.00</strong></td>
+                            <td style={styles.td} colSpan={2}><strong>{roundedTotal.toFixed(2)}</strong></td>
                         </tr>
                     </table>
-
                 </div>
+
                 <div style={{ justifyContent: 'center', alignItems: 'center', display: 'flex', marginRight: '-1', marginTop: '-1px', outline: '1px solid #000', outlineOffset: '-1px', fontSize: '12px', width: '100%', padding: '5px 10px' }}>
                     <div style={{ flex: '1', alignItems: 'center' }}>
                         <div style={{ color: 'black', }}><strong>{eAndOE && eAndOE}</strong></div>
@@ -401,7 +466,6 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
                         <div style={{ display: 'flex', color: 'black', justifyContent: 'end' }}>This is a computer generated invoice and does not require a signature</div>
 
                     </div>
-
 
                 </div>
 

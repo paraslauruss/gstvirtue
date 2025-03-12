@@ -21,6 +21,9 @@ const templateSchema = new mongoose.Schema({
     backgroundColor: {
         type: String
     },
+    template_type: {
+        type: String
+    },
     createdAt: {
         type: Date,
         default: Date.now

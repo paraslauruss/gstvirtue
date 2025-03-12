@@ -166,6 +166,39 @@ router.post('/reset-style', async (req, res) => {
     }
 });
 
+router.put('/template-type', async (req, res) => {
+    try {
+        const storeName = req.headers['store-name'];
+        const { template_type } = req.body;
+
+        if (!storeName) {
+            return res.status(400).send('Store name is required.');
+        }
+
+        if (!template_type) {
+            return res.status(400).send('Template type is required.');
+        }
+
+        // Find the template by store name and update the template_type
+        const template = await Template.findOneAndUpdate(
+            { storeName },
+            { template_type },
+            { new: true, runValidators: true }
+        );
+
+        if (!template) {
+            return res.status(404).send('Template not found.');
+        }
+
+        res.status(200).json({
+            message: 'Template type updated successfully.',
+            template
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.get('/', async (req, res) => {
     try {
         const storeName = req.headers['store-name'];
@@ -185,7 +218,8 @@ router.get('/', async (req, res) => {
             signatureUrl: template.signatureUrl,
             fontStyle: template.fontStyle,
             textColor: template.textColor,
-            backgroundColor: template.backgroundColor
+            backgroundColor: template.backgroundColor,
+            template_type: template.template_type || 'standard'
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

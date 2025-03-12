@@ -206,7 +206,7 @@ export function Collection() {
 
     const handleUpdate = async (order) => {
 
-        const apiUrl = 'http://localhost:3001/api/products/update-products';
+        const apiUrl = 'http://localhost:3001/api/products/update-multiple';
         const headers = {
             'store-name': storeName,
             'api-version': '2025-01',
@@ -216,7 +216,7 @@ export function Collection() {
 
         const updatedProducts = collectionProduct.map((product) => {
             return {
-                id: product.id,
+                handle: product.handle,
                 gst: product.gst,
                 hsn: product.hsn,
                 miniAmount: product.miniAmount,
@@ -225,13 +225,15 @@ export function Collection() {
             };
         });
 
+        console.log("Collection Update APIs : ", updatedProducts);
+
         const data = {
             products: updatedProducts
         };
 
         try {
             const response = await fetch(apiUrl, {
-                method: 'POST',
+                method: 'PUT',
                 headers: headers,
                 body: JSON.stringify(data)
             });
@@ -381,7 +383,7 @@ export function Collection() {
                         </div>
 
                         <div style={{ width: '100%', height: '1px', backgroundColor: '#E2E2E2', marginTop: '20px', marginBottom: '20px', }}></div>
-                        {<div>
+                        <div>
                             <div style={{ fontSize: '18px', fontWeight: '600', }}>
                                 GST/HSN For Collections
                             </div>
@@ -493,8 +495,7 @@ export function Collection() {
                                     <div style={{ backgroundColor: '#CCC', height: '1px', marginTop: '5px', marginBottom: '5px' }}></div>
                                 </>
                             ))}
-                        </div>}
-
+                        </div>
 
                     </div>
                     <div style={{ marginTop: '20px' }}></div>
