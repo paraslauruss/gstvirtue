@@ -25,6 +25,8 @@ router.get('/', async (req, res) => {
         };
 
         let shopifyOrders = [];
+        let allOrders = [];  // Initialize here
+
         try {
             const shopifyResponse = await axios.get(url, { headers });
             shopifyOrders = shopifyResponse.data.orders;
@@ -34,7 +36,7 @@ router.get('/', async (req, res) => {
         }
 
         if (!shopifyOrders.length) {
-            const allOrders = await Order.find({ store_name: storeName }).lean();
+            allOrders = await Order.find({ store_name: storeName }).lean();
             return res.status(200).json(allOrders);
         }
 
@@ -43,7 +45,6 @@ router.get('/', async (req, res) => {
         if (customerIds.length > 0) {
             const customers = await Customer.find({ shopifyId: { $in: customerIds } }).lean();
             customerDataMap = new Map(customers.map(customer => [customer.customer_id, customer]));
-
         }
 
         const existingOrders = await Order.find({
@@ -97,6 +98,8 @@ router.get('/', async (req, res) => {
             }
         }
 
+        // Fetching all orders after processing
+        allOrders = await Order.find({ store_name: storeName }).lean();
         res.status(200).json(allOrders);
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
