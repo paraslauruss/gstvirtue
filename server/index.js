@@ -33,10 +33,11 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  // origin: "https://equally-protective-facts-workshop.trycloudflare.com",  // Aapke frontend ka URL
+  origin: "https://robots-boxed-numerous-sandra.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
-})); app.use(express.json());
+}));
+app.use(express.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Use the product routes

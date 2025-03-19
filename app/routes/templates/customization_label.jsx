@@ -56,6 +56,7 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
         hsn: "",
         gst: "",
         cgst: "",
+        igst: "",
         sgst: "",
         cess: "",
         total: "",
@@ -236,6 +237,7 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
                         gst: data.data.product_items_labels.gst || "",
                         cgst: data.data.product_items_labels.cgst || "",
                         sgst: data.data.product_items_labels.sgst || "",
+                        igst: data.data.product_items_labels.igst || "",
                         cess: data.data.product_items_labels.cess || "",
                         total: data.data.product_items_labels.total || "",
                         payment_mode: data.data.others_labels.payment_mode || "",
@@ -356,6 +358,7 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
                 cgst_igst: productItemLabel,
                 cgst: formValues.cgst,
                 sgst: formValues.sgst,
+                igst: formValues.igst,
                 cess: formValues.cess,
                 total: formValues.total
             },
@@ -1313,25 +1316,81 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
                             />
                         </div>
 
-                        <div style={{ display: 'flex', width: '100%', marginTop: '20px' }}>
-                            <div style={{ display: 'flex', marginTop: '10px' }}>
-                                <div style={{ marginRight: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px', }}>
+                        <div style={{ display: 'flex', marginTop: '20px', }}>
+                            <div style={{ display: 'flex', width: '100%', marginRight: '20px', }}>
+                                <div style={{ display: 'flex', marginTop: '10px' }}>
+                                    <div style={{ marginRight: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px', }}>
+                                                <label style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    cursor: 'pointer'
+                                                }}>
+                                                    <input
+                                                        type="radio"
+                                                        value="cgst-sgst"
+                                                        checked={productItemLabel === 'cgst-sgst'}
+                                                        style={{
+                                                            display: 'none', // Hide default radio button
+                                                        }}
+                                                        onChange={handlePosChange}
+                                                    />
+                                                    <span
+                                                        style={{
+                                                            width: '18px',  // Outer circle size
+                                                            height: '18px',  // Outer circle size
+                                                            border: '2px solid #74A535',  // Border color
+                                                            borderRadius: '50%',
+                                                            display: 'inline-block',
+                                                            position: 'relative',
+                                                            backgroundColor: '#fff', // Set the outer background to white
+                                                            transition: 'background-color 0.3s, border-color 0.3s',
+                                                        }}
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                width: '10px',  // Inner circle size (smaller than outer to create margin effect)
+                                                                height: '10px',  // Inner circle size
+                                                                borderRadius: '50%',
+                                                                backgroundColor: productItemLabel === 'cgst-sgst' ? '#74A535' : '#fff', // Change inner circle background color based on selection
+                                                                position: 'absolute',
+                                                                top: '50%',
+                                                                left: '50%',
+                                                                transform: 'translate(-50%, -50%)', // Center the inner circle
+                                                                transition: 'background-color 0.3s',
+                                                            }}
+                                                        ></span>
+                                                    </span>
+                                                    <div style={{ marginLeft: "5px" }}>
+                                                        <Text variant="headingXs" fontWeight="regular" style={{ margin: 0 }}>
+                                                            CGST | SGST
+                                                        </Text>
+                                                    </div>
+
+                                                </label>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginLeft: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
                                             <label style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                cursor: 'pointer'
+                                                cursor: 'pointer',
                                             }}>
                                                 <input
                                                     type="radio"
-                                                    value="cgst-sgst"
-                                                    checked={productItemLabel === 'cgst-sgst'}
                                                     style={{
                                                         display: 'none', // Hide default radio button
                                                     }}
+                                                    value="igst"
+                                                    checked={productItemLabel === 'igst'}
                                                     onChange={handlePosChange}
                                                 />
+
                                                 <span
                                                     style={{
                                                         width: '18px',  // Outer circle size
@@ -1349,7 +1408,7 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
                                                             width: '10px',  // Inner circle size (smaller than outer to create margin effect)
                                                             height: '10px',  // Inner circle size
                                                             borderRadius: '50%',
-                                                            backgroundColor: productItemLabel === 'cgst-sgst' ? '#74A535' : '#fff', // Change inner circle background color based on selection
+                                                            backgroundColor: productItemLabel === 'igst' ? '#74A535' : '#fff', // Change inner circle background color based on selection
                                                             position: 'absolute',
                                                             top: '50%',
                                                             left: '50%',
@@ -1358,92 +1417,60 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
                                                         }}
                                                     ></span>
                                                 </span>
+
                                                 <div style={{ marginLeft: "5px" }}>
                                                     <Text variant="headingXs" fontWeight="regular" style={{ margin: 0 }}>
-                                                        CGST | SGST
+                                                        IGST
                                                     </Text>
                                                 </div>
+
                                             </label>
 
+
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div style={{ marginLeft: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-                                        <label style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            cursor: 'pointer',
-                                        }}>
-                                            <input
-                                                type="radio"
-                                                style={{
-                                                    display: 'none', // Hide default radio button
-                                                }}
-                                                value="igst"
-                                                checked={productItemLabel === 'igst'}
-                                                onChange={handlePosChange}
-                                            />
-                                            <span
-                                                style={{
-                                                    width: '18px',  // Outer circle size
-                                                    height: '18px',  // Outer circle size
-                                                    border: '2px solid #74A535',  // Border color
-                                                    borderRadius: '50%',
-                                                    display: 'inline-block',
-                                                    position: 'relative',
-                                                    backgroundColor: '#fff', // Set the outer background to white
-                                                    transition: 'background-color 0.3s, border-color 0.3s',
-                                                }}
-                                            >
-                                                <span
-                                                    style={{
-                                                        width: '10px',  // Inner circle size (smaller than outer to create margin effect)
-                                                        height: '10px',  // Inner circle size
-                                                        borderRadius: '50%',
-                                                        backgroundColor: productItemLabel === 'igst' ? '#74A535' : '#fff', // Change inner circle background color based on selection
-                                                        position: 'absolute',
-                                                        top: '50%',
-                                                        left: '50%',
-                                                        transform: 'translate(-50%, -50%)', // Center the inner circle
-                                                        transition: 'background-color 0.3s',
-                                                    }}
-                                                ></span>
-                                            </span>
-                                            <div style={{ marginLeft: "5px" }}>
-                                                <Text variant="headingXs" fontWeight="regular" style={{ margin: 0 }}>
-                                                    IGST
-                                                </Text>
-                                            </div>
-                                        </label>
 
 
                                     </div>
-                                </div>
 
+
+                                </div>
 
                             </div>
+                            {productItemLabel === 'igst' && (
+                                <input
+                                    type="text"
+                                    name="igst"
+                                    value={formValues.igst}
+                                    onChange={handleChange}
+                                    placeholder="IGST"
+                                    style={{ width: '100%', display: 'flex', width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                />
+                            )}
+
+
                         </div>
 
-                        <div style={{ display: 'flex', width: '100%', marginTop: '20px' }}>
-                            <input
-                                type="text"
-                                name="cgst"
-                                value={formValues.cgst}
-                                onChange={handleChange}
-                                placeholder="CGST"
-                                style={{ marginRight: '20px', width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
-                            />
-                            <input
-                                type="text"
-                                name="sgst"
-                                value={formValues.sgst}
-                                onChange={handleChange}
-                                placeholder="SGST"
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
-                            />
-                        </div>
+
+                        {productItemLabel === 'cgst-sgst' && (
+                            <div style={{ display: 'flex', width: '100%', marginTop: '20px' }}>
+                                <input
+                                    type="text"
+                                    name="cgst"
+                                    value={formValues.cgst}
+                                    onChange={handleChange}
+                                    placeholder="CGST"
+                                    style={{ marginRight: '20px', width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                />
+                                <input
+                                    type="text"
+                                    name="sgst"
+                                    value={formValues.sgst}
+                                    onChange={handleChange}
+                                    placeholder="SGST"
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                />
+                            </div>
+                        )}
 
                         <div style={{ display: 'flex', width: '100%', marginTop: '20px' }}>
                             <input

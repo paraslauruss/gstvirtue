@@ -26,6 +26,10 @@ import { Modern } from "../templates/invoice/modern";
 import { Minimal } from "../templates/invoice/minimal";
 import { Informatinve } from "../templates/invoice/informative";
 import { Classic } from "../templates/invoice/classic";
+import htmlToPdfmake from "html-to-pdfmake";
+import html2canvas from "html2canvas";
+import ReactDOMServer from "react-dom/server";
+import { jsPDF } from "jspdf";
 
 export const loader = async ({ request }) => {
     const { admin, session } = await authenticate.admin(request);
@@ -101,19 +105,88 @@ export function OnlineOrders() {
         fetchData();
     }, []);
 
-    const handleDownload = async () => {
-        if (typeof window !== 'undefined') {
-            const html2pdf = (await import('html2pdf.js')).default;
-
-            const element = document.getElementById('invoice');
-            const opt = {
-                margin: 10,
-                filename: 'invoice-standard.pdf',
-                jsPDF: { orientation: 'portrait' }
-            };
-
-            html2pdf().from(element).set(opt).save();
+    const loadPdfMake = async () => {
+        if (typeof window !== "undefined" && !window.pdfMake) {
+            const pdfMakeModule = await import("pdfmake/build/pdfmake");
+            const pdfFonts = await import("pdfmake/build/vfs_fonts");
+            pdfMakeModule.default.vfs = pdfFonts.default.pdfMake.vfs;
+            window.pdfMake = pdfMakeModule.default;
         }
+    };
+
+    async function getBase64Image(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // Handle CORS issues
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+
+                try {
+                    const dataURL = canvas.toDataURL("image/png"); // Convert to Base64
+                    resolve(dataURL);
+                } catch (error) {
+                    reject(new Error(`Error converting image to Base64: ${url}`));
+                }
+            };
+            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+            img.src = url;
+        });
+    }
+
+    const handleDownload = async () => {
+        const fileName = "invoice";
+
+        try {
+            // PDF content generate karna
+            const htmlContent = generateInvoiceHtml();
+
+            // Create a new PDF document
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4",
+            });
+
+            // Add the HTML content as text
+            pdf.html(htmlContent, {
+                callback: (doc) => {
+                    doc.save(`${fileName}.pdf`);
+                },
+                x: 2,
+                y: 2,
+                html2canvas: {
+                    scale: 0.2,
+                    allowTaint: true,
+                    useCORS: true,
+                },
+                width: 210,
+                windowWidth: 1500,
+            });
+        } catch (error) {
+            console.error("PDF generation failed:", error);
+        }
+    };
+
+    // HTML content ko string ke roop me return kiya
+    const generateInvoiceHtml = () => {
+        // React component ko HTML string me convert kiya
+        return ReactDOMServer.renderToString(
+            <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center" }}>
+                <Classic
+                    formData={formData}
+                    orderData={downloadOrder}
+                    storeData={storeData}
+                    type="order"
+                    logo={logo}
+                    signature={signature}
+                />
+            </div>
+        );
     };
 
     const [value, setValue] = useState('');
@@ -169,7 +242,7 @@ export function OnlineOrders() {
                         "access-token": session.accessToken
                     },
                 });
-    
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     console.error("Error fetching orders:", response.status, errorData);
@@ -182,7 +255,7 @@ export function OnlineOrders() {
                 console.error("Error fetching orders:", error);
             }
         };
-    
+
         fetchOrders();
     }, []);
 
@@ -407,6 +480,35 @@ export function OnlineOrders() {
 
         fetchTempateData(); // Call the async function inside the effect
     }, []);
+
+
+    // Logo Image For Invoice
+    const logo = (<div>
+        <input type="file" accept="image/*" id="logoInput" style={{ display: "none" }} />
+        {storeData?.logo_image ? (
+            <img
+                src={`http://localhost:3001/${storeData?.logo_image}`}
+                alt="Logo"
+                id="logoImage"
+                style={{ cursor: 'pointer', width: "250px", height: "125px" }}
+            />
+        ) : null}
+    </div>);
+
+    // Signature Image For Invoice
+    const signature = (
+        <div>
+            <input type="file" accept="image/*" id="signatureInput" style={{ display: "none" }} />
+            {storeData?.signature_image ? (
+                <img
+                    src={`http://localhost:3001/${storeData?.signature_image}`}
+                    alt="Signature"
+                    id="signatureImage"
+                    style={{ cursor: 'pointer', width: "150px", height: "80px", marginTop: "10px" }}
+                />
+            ) : null}
+        </div>
+    );
 
     // Checked List
     return (
@@ -1171,9 +1273,16 @@ export function OnlineOrders() {
                     </ul>
                 </div>
             )}
+            {/* <div style={{ visibility: "hidden" }}>
+                {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
+                {templateData?.template_type === "Informative" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
+                {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
+                {templateData?.template_type === "Classic" && <Classic formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
+                {templateData?.template_type === "Standard" && <Standard formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
+            </div> */}
 
-           {/* <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} /> */}
-            <Minimal formData = {formData} orderData={downloadOrder} storeData={storeData} />
+            {/* <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} /> */}
+            {/* <Minimal formData = {formData} orderData={downloadOrder} storeData={storeData} /> */}
             {/* {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Informative" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} />}

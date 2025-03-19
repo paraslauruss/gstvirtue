@@ -67,8 +67,13 @@ const OrderSchema = new mongoose.Schema({
     customer: {
         type: mongoose.Schema.Types.Mixed,  // Customer object with any structure
         default: {}
-    }
-},{ timestamps: true });
+    },
+    total_shipping_price_set: {
+        type: mongoose.Schema.Types.Mixed,  // Customer object with any structure
+        default: {}
+    },
+    total_discounts: { type: String }
+}, { timestamps: true });
 
 
 const Order = mongoose.model('Order', OrderSchema);

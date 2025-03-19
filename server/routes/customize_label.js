@@ -132,6 +132,7 @@ router.get('/', async (req, res) => {
                         "gst": "GST",
                         "cgst_igst": "cgst-sgst",
                         "cgst": "CGST",
+                        "igst": "IGST",
                         "sgst": "SGST",
                         "cess": "CESS",
                         "total": "TOTAL"

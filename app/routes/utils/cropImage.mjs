@@ -1,13 +1,13 @@
 import { createImage } from './utils';
 
-export default async function getCroppedImg(imageSrc, pixelCrop) {
+export default async function getCroppedImg(imageSrc, pixelCrop, width, height) {
   try {
     const image = await createImage(imageSrc);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    canvas.width = 250;
-    canvas.height = 125;
+    canvas.width = width;
+    canvas.height = height;
 
     ctx.drawImage(
       image,

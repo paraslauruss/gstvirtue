@@ -14,52 +14,51 @@ router.post('/', upload.fields([{ name: 'logo_image', maxCount: 1 }, { name: 'si
             store_country, store_country_code
         } = req.body;
 
-        // Validate image sizes
+        const updateData = {
+            store_name,
+            company_legal_name,
+            brand_name,
+            store_phone,
+            store_email,
+            store_address,
+            contact_person,
+            gst_number,
+            iec_code,
+            cin_number,
+            pan_number,
+            fssai_lic_number,
+            store_city,
+            store_pincode,
+            store_state,
+            store_state_code,
+            store_country,
+            store_country_code
+        };
+
+        // Logo image validation and update
         if (req.files['logo_image']) {
             const logoImagePath = req.files['logo_image'][0].path;
             const metadata = await sharp(logoImagePath).metadata();
             if (metadata.width > 250 || metadata.height > 125) {
                 return res.status(400).json({ message: 'Logo image dimensions must be no more than 250px (width) and 125px (height).' });
             }
+            updateData.logo_image = logoImagePath;
         }
 
+        // Signature image validation and update
         if (req.files['signature_image']) {
             const signatureImagePath = req.files['signature_image'][0].path;
             const metadata = await sharp(signatureImagePath).metadata();
             if (metadata.width > 150 || metadata.height > 80) {
                 return res.status(400).json({ message: 'Signature image dimensions must be no more than 150px (width) and 80px (height).' });
             }
+            updateData.signature_image = signatureImagePath;
         }
-
-        // Get file paths for uploaded images
-        const logo_image = req.files['logo_image'] ? req.files['logo_image'][0].path : null;
-        const signature_image = req.files['signature_image'] ? req.files['signature_image'][0].path : null;
 
         // Create or update settings
         const settings = await Setting.findOneAndUpdate(
             { store_name },
-            {
-                store_name,
-                company_legal_name,
-                brand_name,
-                store_phone,
-                store_email,
-                store_address,
-                contact_person,
-                gst_number,
-                iec_code,
-                cin_number,
-                pan_number,
-                fssai_lic_number,
-                store_city,
-                store_pincode,
-                store_state,
-                store_state_code,
-                store_country,
-                store_country_code,
-                logo_image,
-                signature_image
-            },
+            updateData,
             { upsert: true, new: true }
         );
 
@@ -68,6 +67,7 @@ router.post('/', upload.fields([{ name: 'logo_image', maxCount: 1 }, { name: 'si
         res.status(500).json({ message: 'Error updating settings', error: error.message });
     }
 });
+
 
 router.get('/:store_name', async (req, res) => {
     try {

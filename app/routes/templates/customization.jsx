@@ -8,7 +8,7 @@ import getCroppedImg from "../utils/cropImage";
 import ImageCropper from "./ImageCropper";
 import PopupDialog from '../utils/PopupDialog';
 import { createRoot } from 'react-dom/client';
-import invoice_ph from '../../assets/images/invoice_ph.png'
+import invoice_ph from '../../assets/images/invoice_ph.png';
 import { CustomizationLabel } from "./customization_label";
 import { useLoaderData } from "@remix-run/react";
 import ColorPickerModal from "../components/ColorPickerModal";
@@ -114,9 +114,6 @@ export const Customization = ({ onClick }) => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.logoUrl != null) {
-                        setLogoUrl(`http://localhost:3001${data.logoUrl}`);
-                    }
 
                     if (data.signatureUrl != null) {
                         setSignatureLogoUrl(`http://localhost:3001${data.signatureUrl}`);
@@ -466,7 +463,7 @@ export const Customization = ({ onClick }) => {
 
     const onCropImage = async () => {
         try {
-            const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+            const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels, 250, 125);
             handleCropComplete(croppedImage);
             closeCropLogoPopup();
         } catch (e) {
@@ -476,7 +473,7 @@ export const Customization = ({ onClick }) => {
 
     const onCropSignatureImage = async () => {
         try {
-            const croppedImage = await getCroppedImg(imageSignatureSrc, croppedAreaPixels);
+            const croppedImage = await getCroppedImg(imageSignatureSrc, croppedAreaPixels, 150, 80);
             handleSignatureCropComplete(croppedImage);
             closeSignatureCropLogoPopup();
         } catch (e) {
@@ -484,28 +481,30 @@ export const Customization = ({ onClick }) => {
         }
     };
 
+    // Upload Logo
     const uploadLogo = async () => {
         if (selectedFile) {
             const formData = new FormData();
-            formData.append('logo', selectedFile);
+            formData.append('store_name', storeName);
+            formData.append('logo_image', selectedFile);
 
             try {
-                const response = await fetch('http://localhost:3001/api/template/upload-logo', {
+                const response = await fetch('http://localhost:3001/api/settings', {
                     method: 'POST',
                     headers: {
-                        'store-name': 'gst-virtue-paras.myshopify.com',
+                        'store-name': storeName,
                         'api-version': '2025-01',
-                        'access-token': 'shpua_649d3ab48e3b42cbc6c31b5bd9ad8e89'
+                        'access-token': accessToken
                     },
                     body: formData
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    setLogoUrl(`http://localhost:3001${data.logoUrl}`);
+                    setLogoUrl(`http://localhost:3001/${data?.settings?.logo_image}`);
                     closePopup();
-                    shopify.toast.show("Logo uploaded successfully:");
-                    console.log('Logo uploaded successfully:', data.logoUrl);
+                    //shopify.toast.show("Logo uploaded successfully:");
+                    console.log('Logo uploaded successfully:', data?.settings?.logo_image);
                 } else {
                     console.error('Error uploading logo:', response.statusText);
                 }
@@ -521,25 +520,26 @@ export const Customization = ({ onClick }) => {
     const uploadSignature = async () => {
         if (selectedSignatureFile) {
             const formData = new FormData();
-            formData.append('signature', selectedSignatureFile);
+            formData.append('store_name', storeName);
+            formData.append('signature_image', selectedSignatureFile);
 
             try {
-                const response = await fetch('http://localhost:3001/api/template/upload-signature', {
+                const response = await fetch('http://localhost:3001/api/settings', {
                     method: 'POST',
                     headers: {
-                        'store-name': 'gst-virtue-paras.myshopify.com',
+                        'store-name': storeData,
                         'api-version': '2025-01',
-                        'access-token': 'shpua_649d3ab48e3b42cbc6c31b5bd9ad8e89'
+                        'access-token': accessToken
                     },
                     body: formData
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    setSignatureLogoUrl(`http://localhost:3001${data.signatureUrl}`);
+                    setSignatureLogoUrl(`http://localhost:3001/${data?.settings?.signature_image}`);
                     closeSignaturePopup();
                     shopify.toast.show("Signature uploaded successfully:");
-                    console.log('Signature uploaded successfully:', data.signatureUrl);
+                    console.log('Signature uploaded successfully:', data?.settings?.signature_image);
                 } else {
                     console.error('Error uploading signature:', response.statusText);
                 }
@@ -559,7 +559,6 @@ export const Customization = ({ onClick }) => {
         const croppedImageFile = new File([croppedImage], `croppedImage.${fileExtension}`, { type: selectedFile.type });
         setCroppedImage(croppedImageUrl);
         setSelectedFile(croppedImageFile);
-        //setLogoUrl(croppedImageUrl);
     };
 
     const handleSignatureCropComplete = (croppedImage) => {
@@ -678,6 +677,7 @@ export const Customization = ({ onClick }) => {
         fetchData();
     }, []);
 
+    // Fetch Store Data
     const [storeData, setStoreData] = useState(null);
     useEffect(() => {
         const fetchStoreData = async () => {
@@ -687,6 +687,8 @@ export const Customization = ({ onClick }) => {
                 if (response.ok) {
                     const data = await response.json();
                     setStoreData(data);
+                    setLogoUrl(`http://localhost:3001/${data.logo_image}`);
+                    setSignatureLogoUrl(`http://localhost:3001/${data?.signature_image}`);
                     // shopify.toast.show("Store data fetched successfully:");
                     console.log("Store data:", data);
                 } else {
@@ -801,11 +803,11 @@ export const Customization = ({ onClick }) => {
                     <div>
 
                         {storeData && <div style={{ border: '1px solid #ccc', borderRadius: '10px', padding: '20px', marginTop: '20px' }}>
-                            {templateType === "Standard" && <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
-                            {templateType === "Classic" && <Classic bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
-                            {templateType === "Modern" && <Modern bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
-                            {templateType === "Minimal" && <Minimal bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
-                            {templateType === "Informatinve" && <Informatinve bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} />}
+                            {templateType === "Standard" && <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" /> }
+                            {templateType === "Classic" && <Classic bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
+                            {templateType === "Modern" && <Modern bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
+                            {templateType === "Minimal" && <Minimal bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
+                            {templateType === "Informatinve" && <Informatinve bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                         </div>}
 
                     </div>

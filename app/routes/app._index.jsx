@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { json } from "@remix-run/node";
-import { useFetcher,useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -20,11 +20,11 @@ import ic_get_started from '../assets/images/ic_get_started.png';
 import { sessionStorage } from "../shopify.server";
 
 export const loader = async ({ request }) => {
- 
-    const { session } = await authenticate.admin(request);
 
-    return json({ sessionData: session });
-  
+  const { session } = await authenticate.admin(request);
+
+  return json({ sessionData: session.shop });
+
 };
 
 export const action = async ({ request }) => {
@@ -114,8 +114,8 @@ export default function Index() {
   return (
     <div style={{ backgroundColor: '#ffffff', height: '100%' }}>
       <Page>
-      <h2>Session Data</h2>
-      <pre>{JSON.stringify(sessionData)}</pre>
+        <h2>Session Data</h2>
+        <pre>{sessionData}</pre>
         <BlockStack gap="500">
           <BlockStack gap="200">
             <InlineStack wrap={false} gap="500">

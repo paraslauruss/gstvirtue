@@ -67,6 +67,7 @@ const CustomizeLabelSchema = new mongoose.Schema({
         hsn: String,
         gst: String,
         cgst_igst: String,
+        igst: String,
         cgst: String,
         sgst: String,
         cess: String,

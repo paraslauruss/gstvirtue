@@ -38,11 +38,12 @@ router.get('/', async (req, res) => {
         }
 
         const customerIds = Array.from(new Set(shopifyOrders.map(order => order.customer?.id).filter(Boolean)));
-        let customerDataMap = new Map();
+
+        // let customerDataMap = new Map();
         if (customerIds.length > 0) {
             const customers = await Customer.find({ shopifyId: { $in: customerIds } }).lean();
             customerDataMap = new Map(customers.map(customer => [customer.customer_id, customer]));
-
+            console.log("Customer IDs: ", customerDataMap);
         }
 
         const existingOrders = await Order.find({
@@ -59,8 +60,12 @@ router.get('/', async (req, res) => {
             const shopifyOrderId = shopifyOrder.id || uuidv4();
 
             const customerId = shopifyOrder.customer?.id;
-            const customerData = customerDataMap.get(customerId) || {};
-            console.log("Customer Data : ", customerData);
+            let customerData = {};
+            if (customerId) {
+                customerData = await Customer.findOne({ shopifyId: customerId }).lean() || {};
+                //console.log("Fetched Customer Data: ", customerData);
+            }
+
             const orderData = {
                 order_number: shopifyOrder.order_number,
                 invoice_number: shopifyOrder.name || `#${shopifyOrder.order_number}`,
@@ -83,10 +88,9 @@ router.get('/', async (req, res) => {
                 line_items: shopifyOrder.line_items || [],
                 billing_address: shopifyOrder.billing_address,
                 shipping_address: shopifyOrder.shipping_address,
-                customer: {
-                    ...shopifyOrder.customer,
-                    ...customerData,  // Merge MongoDB customer data
-                },
+                customer: customerData,
+                total_shipping_price_set: shopifyOrder.total_shipping_price_set,
+                total_discounts: shopifyOrder.total_discounts,
             };
 
             if (!existingOrder) {
@@ -102,10 +106,6 @@ router.get('/', async (req, res) => {
 
         // Fetch all orders from the database
         let allOrders = await Order.find({ store_name: storeName }).lean();
-
-        allOrders.forEach(order => {
-            console.log("All Order Details : ", order);
-        });
 
         const productIdsToFetch = new Set();
         allOrders.forEach(order => {

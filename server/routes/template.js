@@ -137,18 +137,39 @@ router.post('/reset-style', async (req, res) => {
         // Check if a template with the given store name already exists
         let template = await Template.findOne({ storeName });
 
+        let templateType = template?.template_type || 'Standard';
+        let textColor = "#000000";
+        let backgroundColor = "#EEEEEE";
+
+        if (templateType === 'Standard') {
+            textColor = "#000000";
+            backgroundColor = "#EEEEEE";
+        } else if (templateType === 'Classic') {
+            textColor = "#000000";
+            backgroundColor = "#bcd6ee";
+        } else if (templateType === 'Modern') {
+            textColor = "#000000";
+            backgroundColor = "#eeeeee";
+        } else if (templateType === 'Minimal') {
+            textColor = "#000000";
+            backgroundColor = "#ffffff";
+        } else if (templateType === 'Informatinve') {
+            textColor = "#000000";
+            backgroundColor = "#ffffff";
+        }
+
         if (template) {
             // Update the existing template's signature URL
             template.fontStyle = "Arial";
-            template.textColor = "#000000";
-            template.backgroundColor = "#EEEEEE";
+            template.textColor = textColor;
+            template.backgroundColor = backgroundColor;
         } else {
             // Create a new template with the store name and signature URL
             template = new Template({
                 storeName,
                 fontStyle: "Arial",
-                textColor: "#000000",
-                backgroundColor: "#EEEEEE"
+                textColor: textColor,
+                backgroundColor: backgroundColor
             });
         }
 
