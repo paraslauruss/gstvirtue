@@ -31,21 +31,29 @@ export function Product() {
     const handleMainCheckboxChange = (event) => {
         const checked = event.target.checked;
         setIsMainChecked(checked);
-
+    
+        // Set all checkboxes to the same state as the main checkbox
         const newCheckedItems = {};
         filteredProducts.forEach((item) => {
-            newCheckedItems[item.node.id] = checked;
+            newCheckedItems[item.id] = checked;
         });
+    
         setCheckedItems(newCheckedItems);
     };
-
+    
     const handleItemCheckboxChange = (id) => (event) => {
         const checked = event.target.checked;
-        const newCheckedItems = { ...checkedItems, [id]: checked };
-        setCheckedItems(newCheckedItems);
+        setCheckedItems((prevCheckedItems) => {
+            const newCheckedItems = {
+                ...prevCheckedItems,
+                [id]: checked,
+            };
+            const allChecked = filteredProducts.length > 0 && 
+                           filteredProducts.every((item) => newCheckedItems[item.id] === true);
 
-        const allChecked = filteredProducts.every((item) => newCheckedItems[item.node.id]);
-        setIsMainChecked(allChecked);
+            setIsMainChecked(allChecked); 
+            return newCheckedItems;
+        });
     };
 
 
@@ -322,9 +330,7 @@ export function Product() {
                                         borderRadius: '4px',
                                         cursor: 'pointer',
                                         border: 'none'
-                                    }}
-                                    onClick={handleSearch}
-                                >
+                                    }} onClick={handleSearch} >
                                     Search
                                 </button>
                             </div>
@@ -376,10 +382,11 @@ export function Product() {
                     <div style={{ backgroundColor: '#565656', color: 'white', fontSize: '16px', fontWeight: '600', display: 'flex', marginTop: '20px', padding: '10px 20px', borderRadius: '10px' }}>
                         <div style={{ gap: '10px', flex: '2', display: 'flex', alignItems: 'center', justifyContent: 'start', padding: '8px', borderRadius: '4px' }}>
                             <CustomCheckbox
-                                id="main-checkbox"
-                                isChecked={isMainChecked}
-                                onChange={handleMainCheckboxChange}
-                            /><label htmlFor="main-checkbox" style={{ color: 'white', fontWeight: 'bold', fontSize: '16px' }}>Product</label>
+                               id="main-checkbox"
+                               isChecked={isMainChecked}
+                               onChange={handleMainCheckboxChange}
+                            />
+                             <label htmlFor="main-checkbox" style={{ color: 'white', fontWeight: 'bold', fontSize: '16px' }}>Product</label>
                         </div>
                         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>{isMyProductGstChecked && "Mini Amount"}</div>
                         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>{isMyProductGstChecked && "Mini GST(%)"}</div>
@@ -402,9 +409,7 @@ export function Product() {
                                         <label htmlFor={items.id} className="checkbox-label">{items.title}</label>
                                     </div>
 
-                                    <div
-                                        style={{ flex: '1', display: 'flex', alignItems: 'center' }}
-                                    >
+                                    <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
                                         {isMyProductGstChecked && (
                                             <input
                                                 style={{
@@ -425,13 +430,10 @@ export function Product() {
                                                     setFilteredProducts(updatedCollectionProduct);
                                                 }}
                                             // onChange={handleInputChange(items.id)}
-
                                             />
                                         )}
                                     </div>
-                                    <div
-                                        style={{ flex: '1', display: 'flex', alignItems: 'center' }}
-                                    >
+                                    <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
                                         {isMyProductGstChecked && (
                                             <input
                                                 style={{
@@ -450,13 +452,10 @@ export function Product() {
                                                     const updatedCollectionProduct = [...filteredProducts];
                                                     updatedCollectionProduct[index] = updatedProduct;
                                                     setFilteredProducts(updatedCollectionProduct);
-                                                }}
-                                            />
+                                                }}/>
                                         )}
                                     </div>
-                                    <div
-                                        style={{ flex: '1', display: 'flex', alignItems: 'center' }}
-                                    >
+                                    <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
                                         <input
                                             style={{
                                                 border: '0.5px solid #000',
@@ -477,9 +476,7 @@ export function Product() {
                                             }}
                                         />
                                     </div>
-                                    <div
-                                        style={{ flex: '1', display: 'flex', alignItems: 'center' }}
-                                    >
+                                    <div style={{ flex: '1', display: 'flex', alignItems: 'center' }} >
                                         <input
                                             style={{
                                                 border: '0.5px solid #000',
@@ -499,9 +496,7 @@ export function Product() {
                                             }}
                                         />
                                     </div>
-                                    <div
-                                        style={{ flex: '1', display: 'flex', alignItems: 'center' }}
-                                    >
+                                    <div style={{ flex: '1', display: 'flex', alignItems: 'center' }} >
                                         {isCessChecked && (
                                             <input
                                                 style={{

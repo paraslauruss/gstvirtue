@@ -101,7 +101,7 @@ export const Payees = () => {
   };
 
   const session = useLoaderData();
-
+  const [saveshowPopup, setSaveShowPopup] = useState(false);
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -150,6 +150,8 @@ export const Payees = () => {
                 console.error('Failed to fetch payees:', fetchResponse.statusText);
                 alert(`Failed to fetch payees: ${fetchResponse.statusText}`);
             }
+            setSaveShowPopup(true);  // <-- Show popup
+            setTimeout(() => setSaveShowPopup(false), 3000)
             handleCloseModal();
         } else {
             console.error('Failed to save/update payee:', response.status, response.statusText, await response.text());
@@ -159,7 +161,7 @@ export const Payees = () => {
         console.error('Error saving/updating payee:', error);
         alert(`Error saving/updating payee: ${error.message}`);
     }
-};
+   };
     useEffect(() => {
       const fetchPayees = async () => {
           try {
@@ -337,6 +339,7 @@ export const Payees = () => {
 
 
 
+
   return (
     <div style={{ padding: "12px", backgroundColor: "#ffffff", borderRadius: "5px" }}>
     {/* Header */}
@@ -353,13 +356,12 @@ export const Payees = () => {
           cursor: "pointer",
         }}
         onMouseOver={(e) => (e.target.style.backgroundColor = "#64b100")}
-        onMouseOut={(e) => (e.target.style.backgroundColor = "#74a535")}
-      >
+        onMouseOut={(e) => (e.target.style.backgroundColor = "#74a535")} >
         + Create New
       </button>
     </div>
   
-    <div style={{ padding: "20px", backgroundColor: "#", borderRadius: "5px", border: '1px solid rgba(241, 241, 244, 1)', borderRadius:'5px',
+    <div style={{ padding: "20px", backgroundColor: "rgb(249, 249, 249)", borderRadius: "5px", border: '1px solid rgba(241, 241, 244, 1)', borderRadius:'5px',
      boxShadow: '0px 4px 4px 0px rgba(0, 0, 0, 0.03)'
      }}>
       <div
@@ -372,6 +374,7 @@ export const Payees = () => {
           borderBottom:'1px solid #ccc',
           paddingBottom:'25px'
         }}>
+
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
         <div style={{ position: "relative", width: "45%", height: "33px" }}>
             <img
@@ -384,7 +387,7 @@ export const Payees = () => {
                 transform: "translateY(-50%)",
                 pointerEvents: "none",
                 width:'16px',
-              }} />                   
+              }}/>                   
                 <input
                   type="text"
                   style={{
@@ -613,6 +616,7 @@ export const Payees = () => {
               padding: "15px",
             }}
             onSubmit={handleSave}>
+
             <div style={{display:'flex', flexDirection:'column'}}>
               <label style={{ fontSize: "14px", marginBottom: "5px", color: "#555" }}>First Name<span style={{color:'red'}}>*</span></label>
               <input
@@ -848,9 +852,23 @@ export const Payees = () => {
                 }}>
                   Save
                 </button>
+            </div>       
             </div>
-            </div>
-          </form>      
+          </form>  
+          {saveshowPopup && (
+              <div style={{
+                  position: "fixed",
+                  top: "20px",
+                  right: "20px",
+                  backgroundColor: "#74A535",
+                  color: "#fff",
+                  padding: "15px 20px",
+                  borderRadius: "5px",
+                  boxShadow: "0px 0px 10px rgba(0,0,0,0.1)"
+              }}>
+                  ✅ Data saved successfully!
+              </div>
+          )}    
         </div>
       </div>
     )}

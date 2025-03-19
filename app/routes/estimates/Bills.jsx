@@ -1975,7 +1975,7 @@ function formatDate(dateString) {
                           cursor: "pointer",
                           background: "#fff",
                       }}
-                  >
+>
                     <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
                     <span>{date ? date.toLocaleDateString("en-US") : "Select Start Date"}</span>
                 </div>

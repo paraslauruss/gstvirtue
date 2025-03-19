@@ -23,7 +23,7 @@ export const loader = async ({ request }) => {
  
     const { session } = await authenticate.admin(request);
 
-    return json({ sessionData: session.shop });
+    return json({ sessionData: session });
   
 };
 
@@ -115,7 +115,7 @@ export default function Index() {
     <div style={{ backgroundColor: '#ffffff', height: '100%' }}>
       <Page>
       <h2>Session Data</h2>
-      <pre>{sessionData}</pre>
+      <pre>{JSON.stringify(sessionData)}</pre>
         <BlockStack gap="500">
           <BlockStack gap="200">
             <InlineStack wrap={false} gap="500">

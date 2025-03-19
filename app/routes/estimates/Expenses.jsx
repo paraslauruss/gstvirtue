@@ -506,15 +506,23 @@ export const Expenses = () => {
         // filter to name
         if (searchName) {
             filteredData = filteredData.filter(expense =>
-                expense.payees.toLowerCase().includes(searchName.toLowerCase())
+              expense.payees && expense.payees.toLowerCase().includes(searchName.toLowerCase())
             );
         }
         //Date validation
         if (date && endDate) {
-            filteredData = filteredData.filter(expense => {
-                const expenseDate = new Date(expense.expenseDate);
-                return expenseDate >= date && expenseDate <= endDate;
-            });
+          filteredData = filteredData.filter(exp => {
+            const expenseDate = exp.expenseDate ? new Date(exp.expenseDate) : null;
+            if(!expenseDate || isNaN(expenseDate.getTime())){
+              console.warn(`Invalid date found:${exp.expenseDate}. Skipping data filetering for this...` );
+              return true;
+            }
+            const expenseDateTime = expenseDate.getTime();
+            const startDatemtime = date.getTime();
+            const endDateTime = endDate.getTime();
+
+            return expenseDateTime >= startDatemtime && expenseDateTime <= endDateTime;
+          })
         }
         setFilteredExpenses(filteredData) // Update the filteredData
     };
@@ -524,7 +532,7 @@ export const Expenses = () => {
       const date = new Date(dateString);
       const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
       return formattedDate;
-  }   
+  }  
 
   return (
     <div style={{
@@ -1486,21 +1494,20 @@ export const Expenses = () => {
                           cursor: "pointer",
                           background: "#fff",
                           borderRadius:'5px'
-                      }}
-                  >
-                <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
-                <span>{date ? date.toLocaleDateString("en-US") : "Select Start Date"}</span>
-            </div>
-              {/* Start Date Picker (Appears Below the Input) */}
-              {isDatePickerOpen && (
-                  <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
-              <DatePicker
-                          selected={date}
-                          onChange={handleStartDateChange}
-                          inline
-                      />
-                  </div>
-              )}
+                      }} >
+                      <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                      <span>{date ? date.toLocaleDateString("en-US") : "Select Start Date"}</span>
+                 </div>
+                    {isDatePickerOpen && (
+                        <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                         <DatePicker
+                            selected={date}
+                            onChange={handleStartDateChange}
+                            dateFormat="dd/MM/yyyy" 
+                            inline
+                            />
+                        </div>
+                    )}
                 </div>
                 {/* End date */}
                 <div style={{ position: 'relative', display: 'inline-block', width: '180px', height: '36px' }}>
@@ -1522,6 +1529,7 @@ export const Expenses = () => {
                           <DatePicker
                               selected={endDate}
                               onChange={handleEndDateChange}
+                              dateFormat="dd/MM/yyyy" 
                               inline
                           />
                     </div>
@@ -1529,8 +1537,7 @@ export const Expenses = () => {
                 </div>
 
                 <button style={{cursor:'pointer', width: '100px', height: '36px', border:'1px solid #ccc', borderRadius:'4px', color:'#fff', backgroundColor:'#74A535',fontWeight:'600' }} 
-                  onClick={handleSearchClick} 
-                >
+                  onClick={handleSearchClick} >
                   Search
                 </button>
               </div>

@@ -295,6 +295,7 @@ router.get('/', async (req, res) => {
         }
 
         const productData = {
+          id:shopifyProduct.id,
           shopify_id: shopifyProduct.id, // Avoids conflict with MongoDB _id
           store_name: storeName,
           title: shopifyProduct.title,
@@ -366,8 +367,7 @@ router.get('/missing-gst-hsn', async (req, res) => {
       return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
     }
 
-    // Filter products where gst or hsn_code is 0, null, or an empty string
-    const products = await Product.find({
+    let products = await Product.find({
       store_name: storeName,
       $or: [
         { gst: { $in: [0, "0", null, ""] } },
@@ -375,29 +375,32 @@ router.get('/missing-gst-hsn', async (req, res) => {
       ]
     }).lean();
 
-    // If no matching products are found, return an empty array
-    if (!products || products.length === 0) {
-      return res.status(200).json([]);
+    console.log("Fetched Products from DB:", products);
+
+    // Ensure valid product IDs (use admin_graphql_api_id instead of id)
+    products = products.filter(product => 
+      product.admin_graphql_api_id && typeof product.admin_graphql_api_id === "string" && product.admin_graphql_api_id.trim() !== ""
+    );
+
+    console.log("Valid Products After Filtering:", products);
+
+    if (products.length === 0) {
+      console.error("No valid product IDs found.");
+      return res.status(400).json({ error: "No valid product IDs found" });
     }
 
     const updatedProducts = [];
     const newProducts = [];
 
-    // Iterate over each product and process it
     for (const product of products) {
-      const { id, gst, hsn, cess, miniAmount, minGst } = product;
+      const { admin_graphql_api_id, gst, hsn, cess, miniAmount, minGst } = product;
 
-      // Validate and extract the numeric product ID
-      if (!id) {
-        return res.status(400).json({ error: "Product ID is required" });
-      }
-      const numericId = id.replace("gid://shopify/Product/", "");
+      // Extract numeric product ID from admin_graphql_api_id
+      const numericId = admin_graphql_api_id.replace("gid://shopify/Product/", "");
 
-      // Check if product exists in MongoDB
-      let existingProduct = await Product.findOne({ id: numericId });
+      let existingProduct = await Product.findOne({ admin_graphql_api_id });
 
       if (existingProduct) {
-        // Update only the specified fields if they exist
         let updateFields = {
           gst: gst !== undefined ? gst.toString() : existingProduct.gst,
           hsn: hsn !== undefined ? hsn : existingProduct.hsn,
@@ -408,16 +411,14 @@ router.get('/missing-gst-hsn', async (req, res) => {
         };
 
         let updatedProduct = await Product.findOneAndUpdate(
-          { id: numericId },
+          { admin_graphql_api_id },
           { $set: updateFields },
           { new: true, runValidators: true }
         );
 
         updatedProducts.push(updatedProduct);
       } else {
-        // If product doesn't exist, fetch from Shopify
         const shopifyUrl = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/products/${numericId}.json`;
-
         try {
           const shopifyResponse = await axios.get(shopifyUrl, {
             headers: {
@@ -425,16 +426,12 @@ router.get('/missing-gst-hsn', async (req, res) => {
               "X-Shopify-Access-Token": accessToken,
             },
           });
-
           const shopifyProduct = shopifyResponse.data.product;
-
           if (!shopifyProduct) {
             return res.status(404).json({ error: "Product not found in Shopify" });
           }
-
-          // Insert new product in MongoDB
           const newProduct = await Product.create({
-            id: numericId,
+            admin_graphql_api_id,
             title: shopifyProduct.title,
             gst: gst ? gst.toString() : "",
             hsn: hsn || "",
@@ -444,7 +441,6 @@ router.get('/missing-gst-hsn', async (req, res) => {
             createdAt: new Date(),
             updatedAt: new Date(),
           });
-
           newProducts.push(newProduct);
         } catch (shopifyError) {
           console.error("Shopify API Error:", shopifyError.response?.data || shopifyError.message);
@@ -455,7 +451,6 @@ router.get('/missing-gst-hsn', async (req, res) => {
         }
       }
     }
-
     return res.status(200).json({
       message: "Products processed successfully",
       updatedProducts,
@@ -623,7 +618,7 @@ router.get('/:productId', async (req, res) => {
     const apiVersion = req.headers['api-version'];
     const accessToken = req.headers['access-token'];
     const productId = req.params.productId;  // Get the product ID from the URL parameters
-
+    console.log("Product Id", productId);
     if (!storeName || !apiVersion || !accessToken) {
       return res.status(400).json({ error: 'Missing required headers: store-name, api-version, access-token' });
     }
@@ -641,9 +636,9 @@ router.get('/:productId', async (req, res) => {
     }
 
     // If product not found in MongoDB, try to fetch it from Shopify
-    const shopifyUrl = `https://${storeName}.myshopify.com/admin/api/${apiVersion}/products/${productId}.json`;
+    const shopifyUrl = `https://${storeName}/admin/api/${apiVersion}/products/${productId}.json`;
 
-    try {
+    try { 
       const shopifyResponse = await axios.get(shopifyUrl, {
         headers: {
           'Content-Type': 'application/json',
@@ -659,7 +654,8 @@ router.get('/:productId', async (req, res) => {
 
       // Construct the product data from Shopify and save to MongoDB
       const newProduct = new Product({
-        id: productId,
+        shopify_id: id,
+        // id: productId,
         title: shopifyProduct.title,
         body_html: shopifyProduct.body_html,
         vendor: shopifyProduct.vendor,

@@ -63,10 +63,7 @@ export const Invoice = () => {
       console.error('Error fetching orders:', error);
     }
   };
-
   useEffect(() => {
-
-
     fetchTempateData(); // Call the async function inside the effect
   }, [storeName]);
 

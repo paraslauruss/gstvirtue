@@ -154,7 +154,8 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                                                                 </tbody></table>
                                                         </td>
                                                     </tr>
-                                                </tbody></table>
+                                                </tbody>
+                                            </table>
                                         </td>
                                     </tr>
                                     <tr>
@@ -181,8 +182,6 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                                                         <td width="581px" class="label_billing_on_off" height="35" valign="middle" style={{ padding: '0 5px', borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000' }}>{orderData?.shipping_address?.address1 || '505 Shapath2, Opp. Rajpath Club, SG Highway, 360015, Bodakdev, Ahmedabad, Gujarat 380054'}</td>
                                                         <td width="601px" class="label_shipping_on_off" valign="middle" style={{ display: isShippingVisible ? 'table-cell' : 'none', padding: '0 5px', borderBottom: 'solid 1px #000' }}>{orderData?.billing_address?.address1 || '505 Shapath2, Opp. Rajpath Club, SG Highway, 360015, Bodakdev, Ahmedabad, Gujarat 380054'}</td>
                                                     </tr>
-
-
 
                                                     <tr id="bill_ship_phone_and_customer_email_tr">
                                                         <td class="label_billing_on_off">
@@ -234,7 +233,8 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                                                         </td>
                                                     </tr>
 
-                                                </tbody></table>
+                                                </tbody>
+                                            </table>
                                         </td>
                                     </tr>
                                 </tbody>

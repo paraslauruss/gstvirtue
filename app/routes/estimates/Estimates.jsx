@@ -841,7 +841,7 @@ export const Estimates = () => {
   const [isExpiryDateOpen, setIsExpiryDateOpen] = useState(false);
   const handleExpiryDate = (date) => {
     setExpiryDate(date);
-    setFormData({ ...formData, ExpiryDate: date ? date.toLocaleDateString : null });
+    setFormData({ ...formData, ExpiryDate: date ? date.toISOString().split('T')[0] : null });
     setIsExpiryDateOpen(false);
   }
 
@@ -892,6 +892,7 @@ export const Estimates = () => {
             (product) => product.title.toLowerCase() === query.toLowerCase()
           );
 
+         // console.log("Shopify ID: ", selected.id);
           if (selected) {
             const detailsResponse = await fetch(
               `http://localhost:3001/api/products/${selected.id}`,
@@ -1317,6 +1318,8 @@ export const Estimates = () => {
         }
 
         resetForm();
+        setIsEditing(false);
+        setEditIndex(null);
         setShowSavePopup(true);
         setIsFormVisible(false);
         setTimeout(() => {
@@ -1332,6 +1335,7 @@ export const Estimates = () => {
       alert(`Error saving/updating estimate: ${error.message}`);
     }
   };
+
   const resetForm = () => {
     setFormData({
       Customer: "",
@@ -1586,6 +1590,13 @@ export const Estimates = () => {
     setEmailActive(false);
   };
 
+  function formatDate(dateString) {
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const date = new Date(dateString);
+    const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
+    return formattedDate;
+}
+
   return (
     <div
       style={{
@@ -1639,12 +1650,11 @@ export const Estimates = () => {
                   alignItems: "center",
                   cursor: "pointer",
                 }}
-                onClick={handleSave}
-              >
+                onClick={handleSave}>
                 Save
               </button>
             </div>
-            {showSavePopup && isFormVisible() && (
+            {showSavePopup &&  (
               <div style={{
                 position: 'fixed',
                 top: '50%',
@@ -1655,7 +1665,7 @@ export const Estimates = () => {
                 border: '1px solid #ccc',
                 boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
                 zIndex: 1000,
-              }}>
+              }}> 
                 Data Saved!
               </div>
             )}
@@ -1966,46 +1976,46 @@ export const Estimates = () => {
                       <h1 style={{ fontSize: "15px", color: "black", marginBottom: "8px", }} >
                         Expiry Date <span style={{ color: "red" }}>*</span>
                       </h1>
-                      <div
-                        style={{
-                          width: "90%",
-                          height: "33px",
-                          border: "1px solid #ccc",
-                          borderRadius: "4px",
-                          backgroundColor: "#fff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "5px",
-                          cursor: "pointer",
-                          position: "relative",
-                        }}
-                        onClick={() => setIsExpiryDateOpen(!isExpiryDateOpen)}>
-                        <span>{expiryDate ? expiryDate.toLocaleDateString() : "Select Date"}</span>
-                      </div>
-                      {/* DatePicker Component */}
-                      {isExpiryDateOpen && (
                         <div
                           style={{
-                            position: "absolute",
-                            top: "50px",
-                            left: 0,
-                            zIndex: 2, // Ensures it's above everything
-                            background: "#fff",
-                            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                            width: "90%",
+                            height: "33px",
+                            border: "1px solid #ccc",
                             borderRadius: "4px",
-                            width: 'auto'
+                            backgroundColor: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "5px",
+                            cursor: "pointer",
+                            position: "relative",
                           }}
-                        >
-                          <DatePicker
-                            selected={expiryDate}
-                            onChange={handleExpiryDate}
-                            inline
-                          />
+                          onClick={() => setIsExpiryDateOpen(!isExpiryDateOpen)}>
+                          <span>{expiryDate ? expiryDate.toLocaleDateString() : "Select Date"}</span>
                         </div>
-                      )}
-                    </label>
-                  </div>
+                        {/* DatePicker Component */}
+                        {isExpiryDateOpen && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "50px",
+                              left: 0,
+                              zIndex: 2, // Ensures it's above everything
+                              background: "#fff",
+                              boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                              borderRadius: "4px",
+                              width: 'auto'
+                            }}
+                          >
+                            <DatePicker
+                              selected={expiryDate}
+                              onChange={handleExpiryDate}
+                              inline
+                            />
+                          </div>
+                        )}
+                      </label>
+                    </div>
                 </div>
               </div>
 
@@ -2480,8 +2490,7 @@ export const Estimates = () => {
                                 zIndex: 1000,
                                 maxHeight: "300px",
                                 overflowY: "auto",
-                              }}
-                            >
+                              }}>
                               <li style={{ padding: "8px", color: "#666" }}>Write two or more letters</li>
                             </ul>
                           )}
@@ -3066,8 +3075,8 @@ export const Estimates = () => {
                       filteredEstimate.map((estimate, index) => (
                         <tr key={index}>
                           <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.Estimatenum}</td>
-                          <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.estDate}</td>
-                          <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.ExpiryDate}</td>
+                          <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(estimate.estDate)}</td>
+                          <td style={{ padding: '12px', textAlign: 'left' }}>{formatDate(estimate.ExpiryDate)}</td>
                           <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.Customer}</td>
                           <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.totalTax}</td>
                           <td style={{ padding: '12px', textAlign: 'left' }}>{estimate.total}</td>

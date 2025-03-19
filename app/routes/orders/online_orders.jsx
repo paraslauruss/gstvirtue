@@ -24,7 +24,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Standard } from "../templates/invoice/standard";
 import { Modern } from "../templates/invoice/modern";
 import { Minimal } from "../templates/invoice/minimal";
-import { Informatinve } from "../templates/invoice/Informative";
+import { Informatinve } from "../templates/invoice/informative";
 import { Classic } from "../templates/invoice/classic";
 
 export const loader = async ({ request }) => {
@@ -155,9 +155,13 @@ export function OnlineOrders() {
 
     useEffect(() => {
         const fetchOrders = async () => {
+            if (!session.storeName || !session.accessToken) {
+                console.error("Missing storeName or accessToken");
+                return;
+            }
             try {
                 const response = await fetch("http://localhost:3001/api/orders", {
-                    method: 'GET',
+                    method: "GET",
                     headers: {
                         "Content-Type": "application/json",
                         "store-name": session.storeName,
@@ -165,13 +169,20 @@ export function OnlineOrders() {
                         "access-token": session.accessToken
                     },
                 });
+    
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Error fetching orders:", response.status, errorData);
+                    return;
+                }
                 const data = await response.json();
                 setOrderList(data);
                 setFilteredOrders(data);
             } catch (error) {
-                console.error('Error fetching orders:', error);
+                console.error("Error fetching orders:", error);
             }
         };
+    
         fetchOrders();
     }, []);
 
@@ -356,21 +367,17 @@ export function OnlineOrders() {
                     if (response.ok) {
                         const data = await response.json();
                         setStoreData(data);
-
                         console.log("Store data:", data);
                     } else {
-                        // Handle the error appropriately, e.g., show an error message
                         console.error("Error fetching store data:", response.status, await response.text());
                     }
                 } catch (error) {
-                    console.error("Error fetching store data:", error);
-                    // Handle the error appropriately
+                    console.error("ErrorHandle fetching store data:", error);
                 } finally {
                     setLoading(false); // Set loading to false after fetching, regardless of success or failure
                 }
             }
         };
-
         fetchStoreData(); // Call the async function inside the effect
     }, [storeName]);
 
@@ -814,7 +821,7 @@ export function OnlineOrders() {
                                                     day: "2-digit",
                                                     month: "short",
                                                     year: "numeric",
-                                                }).format(new Date(orderData.createdAt || orderData.date))}</Text>
+                                                }).format(new Date(orderData.date || orderData.date))}</Text>
                                             </div>
                                             <div style={{ width: '12.5%', alignItems: 'cemter', alignContent: 'center' }}>
                                                 {hasCustomerName ? (
@@ -1165,11 +1172,13 @@ export function OnlineOrders() {
                 </div>
             )}
 
-            {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} />}
+           {/* <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} /> */}
+            <Minimal formData = {formData} orderData={downloadOrder} storeData={storeData} />
+            {/* {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Informative" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Classic" && <Classic formData={formData} orderData={downloadOrder} storeData={storeData} />}
-            {templateData?.template_type === "Standard" && <Standard formData={formData} orderData={downloadOrder} storeData={storeData} />}
+            {templateData?.template_type === "Standard" && <Standard formData={formData} orderData={downloadOrder} storeData={storeData} />} */}
 
         </div>
     );
