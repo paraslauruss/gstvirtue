@@ -1,4 +1,3 @@
-import { maxHeaderSize } from "http";
 import ic_scanner from '../../../assets/images/ic_scanner.png'
 export const Informatinve = ({ logo }) => {
 

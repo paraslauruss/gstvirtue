@@ -1282,7 +1282,7 @@ export function OnlineOrders() {
             </div> */}
 
             {/* <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} /> */}
-            {/* <Minimal formData = {formData} orderData={downloadOrder} storeData={storeData} /> */}
+            <Minimal formData = {formData} orderData={downloadOrder} storeData={storeData} />
             {/* {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Informative" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} />}
             {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} />}
