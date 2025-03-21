@@ -6,7 +6,8 @@ import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles },
-  { rel: 'stylesheet', href: '/styles/styles.css' },
+{ rel: 'stylesheet', href: '/styles/styles.css' },
+{ rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Roboto&display=swap" }
 ];
 
 export const loader = async ({ request }) => {
@@ -32,7 +33,7 @@ export default function App() {
       </NavMenu>
       <Outlet />
     </AppProvider>
-    
+
   );
 }
 

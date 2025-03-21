@@ -33,7 +33,7 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  // origin: "https://robots-boxed-numerous-sandra.trycloudflare.com",  // Aapke frontend ka URL
+  origin: "https://ecommerce-donated-clothes-costumes.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
 }));

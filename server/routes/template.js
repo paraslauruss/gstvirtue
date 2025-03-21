@@ -160,7 +160,7 @@ router.post('/reset-style', async (req, res) => {
 
         if (template) {
             // Update the existing template's signature URL
-            template.fontStyle = "Arial";
+            template.fontStyle = "Roboto";
             template.textColor = textColor;
             template.backgroundColor = backgroundColor;
         } else {

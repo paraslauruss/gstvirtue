@@ -132,14 +132,14 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                                                 <tbody><tr>
                                                     <td style={{ paddingTop: '5px' }} width="33%" align="left">
 
-                                                        {/* &nbsp;<img id="storeEmailIcon" src="/assets/images/mail-icon.png" alt="" width="12px" height="12px"></img>&nbsp; */}
+                                                        &nbsp;<img id="storeEmailIcon" src="/assets/images/mail-icon.png" alt="" width="12px" height="12px"></img>&nbsp;
                                                         <strong id="template_store_email">{formData?.store_information?.store_email}</strong>
 
                                                     </td>
                                                     <td align="center" style={{ paddingTop: '5px', paddingLeft: '30px' }}>
 
                                                         <span id="store_domain_on_off_tr">
-                                                            {/* <img src="/assets/images/web-icon.png" alt="" width="10px" height="10px"></img>&nbsp; */}
+                                                            <img src="/assets/images/web-icon.png" alt="" width="10px" height="10px"></img>&nbsp;
                                                             <strong id="template_store_domain">
                                                                 {formData?.store_information?.shop_domain}
                                                             </strong>
@@ -147,7 +147,7 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
 
                                                     </td>
                                                     <td style={{ paddingTop: '5px' }} width="33%" align="right">
-                                                        {/* <img src="/assets/images/phone-icon.png" alt="" width="12px" height="12px"></img>&nbsp; */}
+                                                        <img src="/assets/images/phone-icon.png" alt="" width="12px" height="12px"></img>&nbsp;
                                                         <strong><span id="template_contact_person"></span><span></span><span id="template_shop_phone">{formData?.store_information?.store_phone}</span></strong>&nbsp;
                                                     </td>
                                                 </tr>
@@ -173,7 +173,7 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                                             <table width="100%" border="0" cellspacing="0" cellpadding="0" id="table-top">
                                                 <tbody><tr>
                                                     <td width="290px" height="25" style={{
-                                                        padding: '0 5px', borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000', fontSize: '12px',            // Reduced font size for better fit
+                                                        padding: '0 5px', borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000',           // Reduced font size for better fit
                                                         textAlign: 'left',           // Consistent alignment
                                                         fontWeight: 'normal',        // Reduced font weight to avoid bold overlapping
                                                         lineHeight: '1.4',           // Increased line height for better spacing
@@ -578,7 +578,7 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                                     </tr>
                                 </tbody></table>
                             <div style={{ position: 'absolute', bottom: '10px', right: '10px', }}>
-                                {/* <img id="financial_status_on_off_tr" src="/assets/images/paid_imag.png" alt="" width="150" height="70" /> */}
+                                <img id="financial_status_on_off_tr" src="/assets/images/paid_imag.png" alt="" width="150" height="70" />
                             </div>
                         </td>
                         <td width="599px" align="left" valign="top">

@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { json } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
   Page,
@@ -23,7 +22,7 @@ export const loader = async ({ request }) => {
 
   const { session } = await authenticate.admin(request);
 
-  return json({ sessionData: session.shop });
+  return null;
 
 };
 
@@ -94,7 +93,7 @@ export const action = async ({ request }) => {
 
 export default function Index() {
   const fetcher = useFetcher();
-  const { sessionData } = useLoaderData();
+
   const shopify = useAppBridge();
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
@@ -114,8 +113,7 @@ export default function Index() {
   return (
     <div style={{ backgroundColor: '#ffffff', height: '100%' }}>
       <Page>
-        <h2>Session Data</h2>
-        <pre>{sessionData}</pre>
+
         <BlockStack gap="500">
           <BlockStack gap="200">
             <InlineStack wrap={false} gap="500">

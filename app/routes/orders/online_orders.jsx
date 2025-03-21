@@ -30,6 +30,21 @@ import htmlToPdfmake from "html-to-pdfmake";
 import html2canvas from "html2canvas";
 import ReactDOMServer from "react-dom/server";
 import { jsPDF } from "jspdf";
+import { arialBase64 } from "../templates/invoice/font/arial_unicode_ms";
+import { arialBoldBase64 } from "../templates/invoice/font/arial_unicode_ms_bold";
+import { robotoBase64 } from "../templates/invoice/font/roboto_base64";
+import { poppinsRegularBase64 } from "../templates/invoice/font/poppins_regular";
+import { poppinsBoldBase64 } from "../templates/invoice/font/poppins_bold";
+import { rubikRegularBase64 } from "../templates/invoice/font/rubik_regular";
+import { rubikBoldBase64 } from "../templates/invoice/font/rubik_bold";
+import { calibriBoldBase64 } from "../templates/invoice/font/calibri_bold";
+import { calibriRegularBase64 } from "../templates/invoice/font/calibri_regular";
+import { helveticaRegularBase64 } from "../templates/invoice/font/helvetica_regular";
+import { helveticaBoldBase64 } from "../templates/invoice/font/helvetica_bold";
+import { verdanaRegularBase64 } from "../templates/invoice/font/verdana_bold";
+import { verdanaBoldBase64 } from "../templates/invoice/font/verdana_regular";
+import { ebgaramondRegularBase64 } from "../templates/invoice/font/ebgaramond_regular";
+import { ebgaramondBoldBase64 } from "../templates/invoice/font/ebgaramond_bold";
 
 export const loader = async ({ request }) => {
     const { admin, session } = await authenticate.admin(request);
@@ -114,30 +129,6 @@ export function OnlineOrders() {
         }
     };
 
-    async function getBase64Image(url) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous"; // Handle CORS issues
-            img.onload = () => {
-                const canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
-
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-
-                try {
-                    const dataURL = canvas.toDataURL("image/png"); // Convert to Base64
-                    resolve(dataURL);
-                } catch (error) {
-                    reject(new Error(`Error converting image to Base64: ${url}`));
-                }
-            };
-            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
-            img.src = url;
-        });
-    }
-
     const handleDownload = async () => {
         const fileName = "invoice";
 
@@ -151,6 +142,91 @@ export function OnlineOrders() {
                 unit: "mm",
                 format: "a4",
             });
+
+            pdf.addFileToVFS("ArialUnicodeMS-Bold.ttf", arialBoldBase64);
+            pdf.addFont("ArialUnicodeMS-Bold.ttf", "ArialUnicodeMS", "bold");
+
+            // Normal font add karna
+            pdf.addFileToVFS("ArialUnicodeMS.ttf", arialBase64);
+            pdf.addFont("ArialUnicodeMS.ttf", "ArialUnicodeMS", "normal");
+
+            pdf.addFileToVFS("Roboto-Regular.ttf", robotoBase64);
+            pdf.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+
+            pdf.addFileToVFS("Roboto-Bold.ttf", robotoBase64);
+            pdf.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+
+            // Normal font set karna
+            pdf.setFont("ArialUnicodeMS", "normal");
+
+            // Bold text set karna
+            pdf.setFont("ArialUnicodeMS", "bold");
+
+            pdf.setFont("Roboto", "normal");
+            pdf.setFont("Roboto", "bold");
+
+            // Poppins Regular
+            pdf.addFileToVFS("Poppins-Regular.ttf", poppinsRegularBase64);
+            pdf.addFont("Poppins-Regular.ttf", "Poppins", "normal");
+
+            // Poppins Bold
+            pdf.addFileToVFS("Poppins-Bold.ttf", poppinsBoldBase64);
+            pdf.addFont("Poppins-Bold.ttf", "Poppins", "bold");
+            pdf.setFont("Poppins", "normal");
+            pdf.setFont("Poppins", "bold");
+
+            // Rubik Regular
+            pdf.addFileToVFS("Rubik-Regular.ttf", rubikRegularBase64);
+            pdf.addFont("Rubik-Regular.ttf", "Rubik", "normal");
+
+            // Rubik Bold
+            pdf.addFileToVFS("Rubik-Bold.ttf", rubikBoldBase64);
+            pdf.addFont("Rubik-Bold.ttf", "Rubik", "bold");
+
+            pdf.setFont("Rubik", "normal");
+            pdf.setFont("Rubik", "bold");
+
+            // Calibri Regular
+            pdf.addFileToVFS("Calibri.ttf", calibriRegularBase64);
+            pdf.addFont("Calibri.ttf", "Calibri", "normal");
+
+            // Calibri Bold
+            pdf.addFileToVFS("Calibri-Bold.ttf", calibriBoldBase64);
+            pdf.addFont("Calibri-Bold.ttf", "Calibri", "bold");
+
+            pdf.setFont("Calibri", "normal");
+            pdf.setFont("Calibri", "bold");
+
+            pdf.addFileToVFS("Helvetica.ttf", helveticaRegularBase64);
+            pdf.addFont("Helvetica.ttf", "Helvetica", "normal");
+
+            pdf.addFileToVFS("Helvetica-Bold.ttf", helveticaBoldBase64);
+            pdf.addFont("Helvetica-Bold.ttf", "Helvetica", "bold");
+
+            pdf.setFont("Helvetica", "normal");
+            pdf.setFont("Helvetica", "bold");
+
+            // Verdana Normal Font
+            pdf.addFileToVFS("Verdana.ttf", verdanaRegularBase64);
+            pdf.addFont("Verdana.ttf", "Verdana", "normal");
+
+            // Verdana Bold Font
+            pdf.addFileToVFS("Verdana-Bold.ttf", verdanaBoldBase64);
+            pdf.addFont("Verdana-Bold.ttf", "Verdana", "bold");
+
+            pdf.setFont("Verdana", "normal");
+            pdf.setFont("Verdana", "bold");
+
+            // EB Garamond Normal Font
+            pdf.addFileToVFS("EBGaramond-Regular.ttf", ebgaramondRegularBase64);
+            pdf.addFont("EBGaramond-Regular.ttf", "EBGaramond", "normal");
+
+            // EB Garamond Bold Font
+            pdf.addFileToVFS("EBGaramond-Bold.ttf", ebgaramondBoldBase64);
+            pdf.addFont("EBGaramond-Bold.ttf", "EBGaramond", "bold");
+
+            pdf.setFont("EBGaramond", "normal");
+            pdf.setFont("EBGaramond", "bold");
 
             // Add the HTML content as text
             pdf.html(htmlContent, {
@@ -176,15 +252,12 @@ export function OnlineOrders() {
     const generateInvoiceHtml = () => {
         // React component ko HTML string me convert kiya
         return ReactDOMServer.renderToString(
-            <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center" }}>
-                <Classic
-                    formData={formData}
-                    orderData={downloadOrder}
-                    storeData={storeData}
-                    type="order"
-                    logo={logo}
-                    signature={signature}
-                />
+            <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center", }}>
+                {templateData?.template_type === "Minimal" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
+                {templateData?.template_type === "Informative" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
+                {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
+                {templateData?.template_type === "Classic" && <Classic formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
+                {templateData?.template_type === "Standard" && <Standard fontFamily={templateData.fontStyle} formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
             </div>
         );
     };
@@ -1273,21 +1346,6 @@ export function OnlineOrders() {
                     </ul>
                 </div>
             )}
-            {/* <div style={{ visibility: "hidden" }}>
-                {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
-                {templateData?.template_type === "Informative" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
-                {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
-                {templateData?.template_type === "Classic" && <Classic formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
-                {templateData?.template_type === "Standard" && <Standard formData={formData} orderData={downloadOrder} storeData={storeData} logo={logo} signature={signature} />}
-            </div> */}
-
-            {/* <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} /> */}
-            <Minimal formData = {formData} orderData={downloadOrder} storeData={storeData} />
-            {/* {templateData?.template_type === "Minimal" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} />}
-            {templateData?.template_type === "Informative" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} />}
-            {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} />}
-            {templateData?.template_type === "Classic" && <Classic formData={formData} orderData={downloadOrder} storeData={storeData} />}
-            {templateData?.template_type === "Standard" && <Standard formData={formData} orderData={downloadOrder} storeData={storeData} />} */}
 
         </div>
     );

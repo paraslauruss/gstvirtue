@@ -76,20 +76,14 @@ export const Customization = ({ onClick }) => {
     };
 
     const states = [
-        "Arial",
         "Roboto",
         "Poppins",
         "Rubik",
         "Calibri",
-        "Helvetica",
-        "Verdana",
-        "EB Garamond",
-        "Open Sans",
-        "Futura",
     ];
 
     const [formValues, setFormValues] = useState({
-        state: "Arial"
+        state: "Roboto"
     });
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -803,7 +797,7 @@ export const Customization = ({ onClick }) => {
                     <div>
 
                         {storeData && <div style={{ border: '1px solid #ccc', borderRadius: '10px', padding: '20px', marginTop: '20px' }}>
-                            {templateType === "Standard" && <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" /> }
+                            {templateType === "Standard" && <Standard bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                             {templateType === "Classic" && <Classic bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                             {templateType === "Modern" && <Modern bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                             {templateType === "Minimal" && <Minimal bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}

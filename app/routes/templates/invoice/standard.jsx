@@ -1,73 +1,49 @@
 import { useEffect } from "react";
 import numberToWords from 'number-to-words';
 
-export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, formData, orderData, storeData }) => {
+export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, formData, orderData, storeData, type }) => {
 
-    useEffect(() => {
-        console.log('orderData changed:', orderData);
-    }, [orderData]);
+    function formatDate(dateString) {
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        const date = new Date(dateString);
+        const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
+        return formattedDate;
+    }
 
-    const styles = {
-        table: {
-            border: '1px solid black',
-            textAlign: 'left',
-            padding: '5px 10px',
-            color: textColor,
-            fontFamily: fontFamily,
-        },
-        td: {
-            border: '1px solid black',
-            textAlign: 'left',
-            padding: '5px 10px',
-            color: textColor,
-            fontFamily: fontFamily,
-        },
-        th: {
-            border: '1px solid black', textAlign: 'left', padding: '5px 10px', backgroundColor: bgColor
-        },
-        leftSection: {
-            fontSize: '12px',
-            fontWeight: '500',
-            marginTop: '20px',
-        },
-        title: {
-            fontSize: '20px',
-            fontWeight: '600',
-            marginTop: '20px',
-        },
-        rightSection: {
-            fontSize: '12px',
-            fontWeight: '500',
-            justifyContent: 'end',
-            display: 'flex',
-        },
+    const gstStateCodes = {
+        "AP": "37",
+        "AR": "12",
+        "AS": "18",
+        "BR": "10",
+        "CG": "22",
+        "DL": "07",
+        "GJ": "24",
+        "HR": "06",
+        "HP": "02",
+        "JK": "01",
+        "JH": "20",
+        "KA": "29",
+        "KL": "32",
+        "MP": "23",
+        "MH": "27",
+        "MN": "14",
+        "ML": "17",
+        "MZ": "15",
+        "NL": "13",
+        "OD": "21",
+        "PB": "03",
+        "RJ": "08",
+        "SK": "11",
+        "TN": "33",
+        "TS": "36",
+        "TR": "16",
+        "UP": "09",
+        "UK": "05",
+        "WB": "19",
     };
 
-    const paymentMode = formData?.others_labels?.payment_mode;
-    const isPaymentMode = formData?.others_labels?.is_payment_mode;
-
-    const orderNote = formData?.others_labels?.order_note;
-    const isOrderNote = formData?.others_labels?.is_order_note;
-
-    const termAndConditions = formData?.others_labels?.term_and_conditions;
-    const terms_and_conditions = formData?.store_information?.terms_and_conditions;
-    const isTermAndConditions = formData?.others_labels?.is_term_and_conditions;
-
-    const totalInvoiceAmountInWords = formData?.others_labels?.total_invoice_amount_in_words;
-    const isTotalInvoiceAmountInWords = formData?.others_labels?.is_total_invoice_amount_in_words;
-
-    const eAndOE = formData?.others_labels?.e_and_o_e;
-    const companyLegalName = formData?.store_information?.company_legal_name;
-
-    const hideShowFinancialStatus = formData?.others_labels?.hide_show_financial_status;
-    const hideShowQrCodeImage = formData?.others_labels?.hide_show_qr_code_image;
-
-    const thankYouForYourBusiness = formData?.footer_labels?.thank_you_for_your_business;
-    const isThankYouForYourBusiness = formData?.footer_labels?.is_thank_you_for_your_business;
-
-    const shopDomain = formData?.store_information?.shop_domain;
-    const hideShowGeneratedFrom = formData?.footer_labels?.hide_show_generated_from;
-    const hideShowPageNo = formData?.footer_labels?.hide_show_page_no;
+    const isShippingVisible = formData?.billing_shipping_labels?.hide_show_shipping_section
+    const cgst_igst = formData?.product_items_labels?.cgst_igst
 
     const calculateTaxValues = (item) => {
         const taxRate = item.tax_lines?.length > 0 ? item.tax_lines[0].rate * 100 : 0;
@@ -78,7 +54,9 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
         const cgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2);
         const sgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2); // SGST = 50% of GST
         const cessAmount = ((item.cess / 100) * taxableAmount).toFixed(2);
-        const totalAmount = (item.price * item.current_quantity).toFixed(2); // Total amount after tax
+        const totalAmount = ((item.price * item.current_quantity)).toFixed(2); // Total amount after tax
+        const totalAmountDiscount = ((item.price * item.current_quantity) - parseFloat(item?.total_discount)).toFixed(2); // Total amount after tax
+        const totalDiscount = (parseFloat(item?.total_discount)).toFixed(2);
 
         return {
             taxRate,
@@ -87,395 +65,581 @@ export const Standard = ({ bgColor, textColor, fontFamily, logo, signature, form
             cgstAmount,
             sgstAmount,
             cessAmount,
-            totalAmount
+            totalAmount,
+            totalDiscount,
+            totalAmountDiscount
         };
     };
 
-    function formatDate(dateString) {
-        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-        const formattedDate = new Date(dateString).toLocaleDateString('en-GB', options);
-        return formattedDate;
-    }
-
-    // Calculate the total sum of the total amounts and quantities
-    const { totalAmountSum, totalQuantitySum, totalTaxableAmountSum } = (orderData?.line_items || []).reduce((acc, item) => {
-        const { totalAmount, taxableAmount } = calculateTaxValues(item);
+    let { totalAmountSum, totalQuantitySum, totalTaxableAmountSum, totalDiscountSum, totalAmountDiscountSum } = (orderData?.line_items || []).reduce((acc, item) => {
+        const { totalAmount, taxableAmount, totalDiscount, totalAmountDiscount } = calculateTaxValues(item);
         acc.totalAmountSum += parseFloat(totalAmount);
         acc.totalQuantitySum += parseFloat(item.quantity);
         acc.totalTaxableAmountSum += parseFloat(taxableAmount);
+        acc.totalDiscountSum += parseFloat(totalDiscount);
+        acc.totalAmountDiscountSum += parseFloat(totalAmountDiscount);
         return acc;
-    }, { totalAmountSum: 0, totalQuantitySum: 0, totalTaxableAmountSum: 0 });
+    }, { totalAmountSum: 0, totalQuantitySum: 0, totalTaxableAmountSum: 0, totalDiscountSum: 0, totalAmountDiscountSum: 0 });
 
-    const roundedTotal = Math.round(totalAmountSum);
-    const roundOff = (roundedTotal - totalAmountSum).toFixed(2);
+    if (!isNaN(parseFloat(orderData?.total_shipping_price_set?.shop_money?.amount))) {
+        totalAmountDiscountSum += parseFloat(orderData?.total_shipping_price_set?.shop_money?.amount);
+    }
+    const roundedTotal = Math.round(totalAmountDiscountSum);
+    const sign = roundedTotal >= 0 ? "+" : "-";
+    const roundOff = (roundedTotal - totalAmountDiscountSum).toFixed(2);
 
     const totalAmountInWords = numberToWords.toWords(roundedTotal);
+    const totalDiscountInPercentage = (totalDiscountSum / totalAmountSum) * 100;
 
     return (
-        <div id="invoice">
-            <div style={{ fontFamily: fontFamily, color: textColor, margin: '10px', outline: '1px solid #000', outlineOffset: '-1px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 10px' }}>
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: '1' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '600', marginTop: '20px' }}>
-                            {formData.customize_store_labels ? formData.customize_store_labels.tax_invoice || "" : ""}
+        <div id="invoice" style={{ fontFamily: fontFamily, fontSize: '14px', fontWeight: 'normal' }}>
+            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tbody><tr>
+                    <td align="left" valign="top" width="35%" style={{ borderTop: 'solid 1px #444444', borderLeft: 'solid 1px #444444', padding: '8px 0px 0px 5px', }}>
+                        <h2>&nbsp;<span id="template_invoice_title" style={{ fontSize: '26px', fontWeight: 'normal', fontFamily: fontFamily }}>{formData?.customize_store_labels?.tax_invoice}</span></h2>
+                        <span id="store_gstin_on_off_tr">
+                            &nbsp;&nbsp;{formData?.customize_store_labels?.is_gstin && (<strong><span id="template_store_gstin">{formData?.customize_store_labels?.gstin}</span> : 22ABCDE1234F1Z9</strong>)}
+                        </span>
+                        {formData?.customize_store_labels?.is_iec_code && (<div id="store_iec_code_on_off_tr">&nbsp;&nbsp;<strong><span id="template_store_iec_code">{formData?.customize_store_labels?.iec_code}</span> : 1234567890</strong></div>)}
+                        {formData?.customize_store_labels?.is_cin && (<div id="store_cin_on_off_tr">&nbsp;<strong>&nbsp;<span id="template_store_cin">{formData?.customize_store_labels?.cin}</span> : U12345MH2020PLC678901</strong></div>)}
+                    </td>
+                    <td align="center" valign="top" width="30%" style={{ borderTop: 'solid 1px #444444', padding: '10px 0px 0px', }}>
+                        <div class="crop-element-wrap" data-toggle="modal" data-target="#imageCropModal">
+                            {logo}
                         </div>
-
-                        <div style={{ fontSize: '12px', fontWeight: '500' }}>
-                            {formData.customize_store_labels ? formData.customize_store_labels.export_invoice ? formData.customize_store_labels.is_gstin ? `${formData.customize_store_labels.gstin} : ${storeData?.gst_number}` : "" : "" : ""}
-                        </div>
-                        <div style={{ fontSize: '12px', fontWeight: '500' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_iec_code ? formData.customize_store_labels ? `${formData.customize_store_labels.iec_code} : ${storeData?.iec_code}` || "" : "" : ""}
-                        </div>
-                        <div style={{ fontSize: '12px', fontWeight: '500' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_cin ? formData.customize_store_labels ? `${formData.customize_store_labels.cin} : ${storeData?.cin_number}` || "" : "" : ""}
-                        </div>
-                    </div>
-                    <div style={{ width: '100%', flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {logo}
-                    </div>
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: '1' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '500', justifyContent: 'end', display: 'flex', marginTop: '20px' }}>
-                            <strong>{formData.customize_store_labels ? formData.customize_store_labels.original || "" : ""}</strong>
-                        </div>
-                        <div style={{ fontSize: '12px', fontWeight: '500', justifyContent: 'end', display: 'flex' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_pan_no ? formData.customize_store_labels ? `${formData.customize_store_labels.pan_no} : ${storeData?.pan_number}` || "" : "" : ""}
-                        </div>
-                        <div style={{ fontSize: '12px', fontWeight: '500', justifyContent: 'end', display: 'flex' }}>
-                            {formData.customize_store_labels && formData.customize_store_labels.is_fssai_lic_no ? formData.customize_store_labels ? `${formData.customize_store_labels.fssai_lic_no} : ${storeData?.fssai_lic_number}` || "" : "" : ""}
-                        </div>
-                    </div>
-
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', fontWeight: '600', padding: '0px 10px' }}>
-
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', fontWeight: '600', padding: '0px 10px', }}>
-                    {formData.store_information ? formData.store_information.branch_name || "" : ""}
-                    <div>
-                        {storeData?.brand_name}
-                    </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', fontWeight: '600', padding: '0px 10px', }}>
-                    {formData.store_information ? formData.store_information.company_legal_name || "" : ""}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', fontSize: '12px', padding: '0px 10px', }}>
-                    {formData.store_information ? formData.store_information.store_address || "" : ""}
-                </div>
-                <div style={{ display: 'flex', fontSize: '12px', justifyContent: 'space-between', marginTop: '10px', padding: '0px 10px', }}>
-                    <div>
-                        {formData.store_information && formData.store_information.store_email ? (<div style={{ alignItems: 'center', display: 'flex', }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                width="12" height="12" x="0" y="0" viewBox="0 0 512 512" style={{ enableBackground: 'new 0 0 512 512' }}
-                                xml:space="preserve" class="">
-                                <g>
-                                    <path
-                                        d="M507.49 101.721 352.211 256 507.49 410.279c2.807-5.867 4.51-12.353 4.51-19.279V121c0-6.927-1.703-13.412-4.51-19.279zM467 76H45c-6.927 0-13.412 1.703-19.279 4.51l198.463 197.463c17.548 17.548 46.084 17.548 63.632 0L486.279 80.51C480.412 77.703 473.927 76 467 76zM4.51 101.721C1.703 107.588 0 114.073 0 121v270c0 6.927 1.703 13.413 4.51 19.279L159.789 256 4.51 101.721z"
-                                        fill="#000000" opacity="1" data-original="#000000" class=""></path>
-                                    <path
-                                        d="m331 277.211-21.973 21.973c-29.239 29.239-76.816 29.239-106.055 0L181 277.211 25.721 431.49C31.588 434.297 38.073 436 45 436h422c6.927 0 13.412-1.703 19.279-4.51L331 277.211z"
-                                        fill="#000000" opacity="1" data-original="#000000" class=""></path>
-                                </g>
-                            </svg>
-                            <div style={{ marginLeft: '5px' }}>{formData.store_information ? formData.store_information.store_email || "" : ""}</div>
-
-                        </div>) : null}
-                    </div>
-                    <div style={{ alignItems: 'center', display: 'flex', }}>
-                        {formData.store_information && formData.store_information.is_shop_domain ? <div style={{ alignItems: 'center', display: 'flex' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                width="12" height="12" x="0" y="0" viewBox="0 0 32 32" style={{ enableBackground: 'new 0 0 512 512' }}
-                                xml:space="preserve" class="">
-                                <g>
-                                    <path
-                                        d="M21.386 10C20.331 5.1 18.081 2 16 2s-4.331 3.1-5.386 8zM10 16a30.013 30.013 0 0 0 .267 4h11.466A30.013 30.013 0 0 0 22 16a30.013 30.013 0 0 0-.267-4H10.267A30.013 30.013 0 0 0 10 16zM10.614 22c1.055 4.9 3.305 8 5.386 8s4.331-3.1 5.386-8zM23.434 10h6.3a15.058 15.058 0 0 0-10.449-8.626C21.182 3.043 22.67 6.129 23.434 10zM30.453 12h-6.7A32.332 32.332 0 0 1 24 16a32.332 32.332 0 0 1-.248 4h6.7a14.9 14.9 0 0 0 0-8zM19.285 30.626A15.058 15.058 0 0 0 29.736 22h-6.3c-.766 3.871-2.254 6.957-4.151 8.626zM8.566 22h-6.3a15.058 15.058 0 0 0 10.451 8.626C10.818 28.957 9.33 25.871 8.566 22zM12.715 1.374A15.058 15.058 0 0 0 2.264 10h6.3c.766-3.871 2.254-6.957 4.151-8.626zM8 16a32.332 32.332 0 0 1 .248-4h-6.7a14.9 14.9 0 0 0 0 8h6.7A32.332 32.332 0 0 1 8 16z"
-                                        fill="#000000" opacity="1" data-original="#000000"></path>
-                                </g>
-                            </svg>
-                            <div style={{ marginLeft: '5px' }}>{formData.store_information ? formData.store_information.shop_domain || "" : ""}</div>
-                        </div> : null}
-
-
-                    </div>
-                    <div>
-                        {formData.store_information && formData.store_information.store_phone ? (<div style={{ alignItems: 'center', display: 'flex', }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                width="12" height="12" x="0" y="0" viewBox="0 0 513.64 513.64"
-                                style={{ enableBackground: 'new 0 0 512 512' }} xml:space="preserve" class="">
-                                <g>
-                                    <path
-                                        d="m499.66 376.96-71.68-71.68c-25.6-25.6-69.12-15.359-79.36 17.92-7.68 23.041-33.28 35.841-56.32 30.72-51.2-12.8-120.32-79.36-133.12-133.12-7.68-23.041 7.68-48.641 30.72-56.32 33.28-10.24 43.52-53.76 17.92-79.36l-71.68-71.68c-20.48-17.92-51.2-17.92-69.12 0L18.38 62.08c-48.64 51.2 5.12 186.88 125.44 307.2s256 176.641 307.2 125.44l48.64-48.64c17.921-20.48 17.921-51.2 0-69.12z"
-                                        fill="#000000" opacity="1" data-original="#000000"></path>
-                                </g>
-                            </svg>
-                            <div style={{ marginLeft: '5px' }}>{formData.store_information ? formData.store_information.contact_person || "" : ""} : {formData.store_information ? formData.store_information.store_phone || "" : ""}</div>
-
-                        </div>) : null}
-                    </div>
-
-                </div>
-
-                <table style={{ ...styles.table, marginTop: '20px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
+                    </td>
+                    <td align="right" width="35%" valign="top" style={{ fontSize: '18px', borderTop: 'solid 1px #444444', borderRight: 'solid 1px #444444', lineHeight: '22px', padding: '8px 5px 0px 0px', }}>
+                        <strong id="template_original">{formData?.customize_store_labels?.original}&nbsp;</strong>
+                        {formData?.customize_store_labels?.is_pan_no && (<div id="store_pan_no_on_off_tr">&nbsp;<strong style={{ fontSize: '12px', }}> <span id="template_store_pan_no">{formData?.customize_store_labels?.pan_no}</span> : ABCDE1234F</strong>&nbsp;</div>)}
+                        {formData?.customize_store_labels?.is_fssai_lic_no && (<div id="store_fssai_lic_no_on_off_tr">&nbsp;<strong style={{ fontSize: '12px', }}> <span id="template_store_fssai_lic_no">{formData?.customize_store_labels?.fssai_lic_no}</span> : 10012021000000</strong>&nbsp;</div>)}
+                    </td>
+                </tr>
                     <tr>
-                        <td style={styles.td} colspan="1">{formData.customize_store_labels ? `${formData.customize_store_labels.invoice_no} : ${formData.customize_store_labels.is_invoice_no ? orderData?.invoice_number : ""}` || "" : ""}</td>
-                        <td style={styles.td} colspan="2">{formData.customize_store_labels ? formData.customize_store_labels.order_no || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_order_no ? orderData?.order_number : ""}</strong></td>
-                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.transport_mode || "" : ""} : {formData.customize_store_labels && formData.customize_store_labels.is_transport_mode ? "-" : ""}</td>
+                        <td colspan="3" style={{ borderLeft: 'solid 1px #444444', borderRight: 'solid 1px #444444', lineHeight: '25px', paddingBottom: '10px', }} align="center">
+                            <strong><span id="template_brand_name">{formData?.store_information?.branch_name}</span></strong><br />
+                            <strong><span id="template_shop_name">{formData?.store_information?.company_legal_name}</span></strong>
+                            <br />
+                            <span id="template_shop_address">{formData?.store_information?.store_address}</span>
+                        </td>
                     </tr>
                     <tr>
-                        <td style={styles.td} colspan="1">{formData.customize_store_labels ? formData.customize_store_labels.invoice_date || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_invoice_date ? new Date().toLocaleDateString('en-GB') : ""}</strong></td>
-                        <td style={styles.td} colspan="2">{formData.customize_store_labels ? formData.customize_store_labels.order_date || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_order_date ? formatDate(orderData?.date) : ""}</strong></td>
-                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.date_of_supply || "" : ""} : <strong>{formData.customize_store_labels && formData.customize_store_labels.is_date_of_supply ? formatDate(orderData?.processed_at) : ""}</strong></td>
+                        <td style={{ borderLeft: 'solid 1px #444444', lineHeight: '25px', padding: '0px 0px 8px 8px', }} align="left">
+
+                            &nbsp;<img id="storeEmailIcon" src="https://gst.webplanex.biz/images/mail-icon.png" alt="" width="12px" height="12px" />&nbsp;<strong><span id="template_store_email">{formData?.store_information?.store_email}</span></strong>
+
+                        </td>
+                        <td style={{ lineHeight: '25px', paddingBottom: '8px', }} align="center">
+
+                            {formData?.store_information?.is_shop_domain && <span id="store_domain_on_off_tr">
+                                &nbsp;<img src="https://gst.webplanex.biz/images/web-icon.png" alt="" width="10px" height="10px" />&nbsp;
+                                <strong id="template_store_domain">
+                                    {formData?.store_information?.shop_domain}
+                                </strong>
+                            </span>}
+
+                        </td>
+                        <td style={{ borderRight: 'solid 1px #444444', lineHeight: '25px', padding: '0px 8px 8px 0px', }} align="right">
+                            &nbsp;<img src="https://gst.webplanex.biz/images/phone-icon.png" alt="" width="12px" height="12px" />&nbsp;<strong><span id="template_contact_person"></span><span></span><span id="template_shop_phone">{formData?.store_information?.store_phone}</span></strong>&nbsp;
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" id="table-top">
+                <tbody><tr>
+                    <td align="left" width="591" style={{ padding: '0 5px', borderTop: 'solid 1px #444444', borderLeft: 'solid 1px #444444', lineHeight: '30px', }}>
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                            <tbody><tr>
+                                <td align="left" width="295" style={{ lineHeight: '30px', }}>&nbsp;&nbsp;<span id="template_invoice_no">{formData?.customize_store_labels?.invoice_no}</span>: <strong id="invoice_no_on_off_tr">{formData?.customize_store_labels?.is_invoice_no && (orderData?.invoice_number || '#1048')}</strong></td>
+                                <td align="left" width="296" style={{ borderLeft: 'solid 1px #444444', lineHeight: '30px', }}>&nbsp;&nbsp;<span id="template_order_no">{formData?.customize_store_labels?.order_no}</span>: <strong id="order_no_on_off_tr">{formData?.customize_store_labels?.is_order_no && (orderData?.order_number || "045")}</strong></td>
+                            </tr>
+                            </tbody></table>
+                    </td>
+                    <td align="left" width="591" style={{ padding: '0 5px', border: 'solid 1px #444444', lineHeight: '30px', }}>&nbsp;
+                        <span>
+                            <span id="template_transport_mode">{formData?.customize_store_labels?.transport_mode}</span>: <strong id="transport_mode_on_off_tr">{formData?.customize_store_labels?.is_transport_mode && ' -'}&nbsp;&nbsp;</strong>
+                        </span>
+                    </td>
+                </tr>
+                    <tr>
+                        <td align="left" width="591" style={{ padding: '0 5px', border: 'solid 1px #444444', lineHeight: '30px', }}>
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td align="left" width="295" style={{ lineHeight: '30px', }}>&nbsp;&nbsp;<span id="template_invoice_date">{formData?.customize_store_labels?.invoice_date}</span>: <strong id="invoice_date_on_off_tr">{formData?.customize_store_labels?.is_invoice_date && new Date().toLocaleDateString('en-GB')}</strong></td>
+                                    <td align="left" width="296" style={{ borderLeft: 'solid 1px #444444', lineHeight: '30px', }}>&nbsp;&nbsp;<span id="template_order_date">{formData?.customize_store_labels?.order_date}</span>: <strong id="order_date_on_off_tr">{formData?.customize_store_labels?.is_order_date && (formatDate(orderData?.date))}</strong></td>
+                                </tr>
+                                </tbody></table>
+                        </td>
+                        <td align="left" width="591" style={{ padding: '0 5px', border: 'solid 1px #444444', lineHeight: '30px', }}>&nbsp;
+                            <span>
+                                <span id="template_date_of_supply">{formData?.customize_store_labels?.date_of_supply}</span>: <strong id="date_of_supply_on_off_tr">{formData?.customize_store_labels?.is_date_of_supply && (formatDate(orderData?.processed_at))}</strong>
+                            </span>
+                        </td>
                     </tr>
                     <tr>
-                        <td style={styles.td}>State: <strong>{orderData?.shipping_address?.province}</strong></td>
-                        <td style={styles.td}>Code</td>
-                        <td style={styles.td}><strong>{orderData?.shipping_address?.province_code}</strong></td>
-                        <td style={styles.td}>{formData.customize_store_labels ? formData.customize_store_labels.place_of_supply || "" : ""} : {formData.customize_store_labels && formData.customize_store_labels.place_of_supply ? orderData?.shipping_address?.city : ""}</td>
+                        <td align="left" style={{ borderLeft: 'solid 1px #444444', }}>
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td align="left" width="68%" style={{ padding: '0 5px', lineHeight: '30px', fontSize: '14px' }}>&nbsp;&nbsp;State: <strong>{orderData?.shipping_address?.province || "Gujarat"}</strong></td>
+                                    <td width="16%" style={{ borderLeft: 'solid 1px #444444', lineHeight: '30px', }} align="center">&nbsp;&nbsp;Code</td>
+                                    <td width="16%" style={{ borderLeft: 'solid 1px #444444', lineHeight: '30px', }} align="center"><strong>{gstStateCodes[orderData?.shipping_address?.province_code] || "24"}</strong></td>
+                                </tr>
+                                </tbody></table>
+                        </td>
+                        <td align="left" style={{ padding: '0 5px', borderLeft: 'solid 1px #444444', borderRight: 'solid 1px #444444', lineHeight: '30px', }}>&nbsp;
+                            <span>
+                                <span id="template_place_of_supply">{formData?.customize_store_labels?.place_of_supply}</span>:
+                                <strong id="place_of_supply_on_off_tr">{formData?.customize_store_labels?.is_place_of_supply && (orderData?.shipping_address?.city || 'Rajkot')}</strong>
+                            </span>
+                        </td>
                     </tr>
-                </table>
+                </tbody>
+            </table>
+            <table class="td-gray" width="100%" border="1" cellspacing="0" cellpadding="0" id="table-top2">
+                <tbody><tr>
+                    <td colspan="2" style={{ padding: '20px 10px', }}>&nbsp;</td>
+                </tr>
 
-                <table style={{ ...styles.table, marginTop: '20px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
                     <tr>
-                        <th style={{ border: '1px solid black', textAlign: 'center', padding: '5px 10px', backgroundColor: bgColor, }} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.bill_to_party || "" : ""}</th>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <th style={{ border: '1px solid black', textAlign: 'center', padding: '5px 10px', backgroundColor: bgColor, }} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.ship_to_party || "" : ""}</th> : null}
+                        <td align="center" bgcolor="#eeeeee" class="label_billing_on_off  custom_bg_text_color" style={{ padding: '0 5px', lineHeight: '30px', }}><strong><span id="template_billing_head_title">{formData?.billing_shipping_labels?.bill_to_party}</span></strong></td>
+                        <td align="center" bgcolor="#eeeeee" class="label_shipping_on_off custom_bg_text_color" style={{ padding: '0 5px', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_shipping_section ? 'table-cell' : 'none' }}><strong><span id="template_shipping_head_title">{formData?.billing_shipping_labels?.ship_to_party}</span></strong></td>
                     </tr>
                     <tr>
-                        <td style={styles.td} colspan="4">{orderData?.billing_address?.address1}</td>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan="4">{orderData?.shipping_address?.address1}</td> : null}
+                        <td align="left" class="label_billing_on_off" width="50%" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;&nbsp;<strong>{orderData?.customer?.first_name} {orderData?.customer?.last_name}</strong></td>
+                        <td align="left" class="label_shipping_on_off" width="50%" style={{ padding: '0 5px', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_shipping_section ? 'table-cell' : 'none' }}>&nbsp;&nbsp;<strong>{orderData?.customer?.shipping_address?.first_name} {orderData?.customer?.shipping_address?.last_name}</strong></td>
                     </tr>
                     <tr>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? "2" : "4"}>{formData.billing_shipping_labels ? formData.billing_shipping_labels.billing_phone || "" : ""}: {orderData?.billing_address?.phone}</td> : null}
+                        <td align="left" class="label_billing_on_off" valign="top" style={{ padding: '0 14px', lineHeight: '30px', }}>{orderData?.customer?.default_address?.address1 || '505 Shapath2, Opp. Rajpath Club, SG Highway, 360015, Bodakdev, Ahmedabad, Gujarat 380054'}</td>
+                        <td align="left" class="label_shipping_on_off" valign="top" style={{ padding: '0 14px', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_shipping_section ? 'table-cell' : 'none' }}>{orderData?.shipping_address?.address1 || '505 Shapath2, Opp. Rajpath Club, SG Highway, 360015, Bodakdev, Ahmedabad, Gujarat 380054'}</td>
+                    </tr>
 
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? "2" : "4"}>E : {orderData?.billing_address?.email}</td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? "2" : "4"}>{formData.billing_shipping_labels ? formData.billing_shipping_labels.shipping_phone || orderData?.shipping_address?.phone : ""}: -</td> : null : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_customer_email ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan={formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_phone ? "2" : "4"}>E : {orderData?.shipping_address?.email}</td> : null : null}
+                    <tr id="bill_ship_phone_and_customer_email_tr">
+                        <td align="left" style={{ padding: '0 5px', lineHeight: '30px', }} class="label_billing_on_off">
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td class="bill_ship_phone_no_on_off_tr" align="left" style={{ border: '0', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_phone ? 'table-cell' : 'none' }}>&nbsp;&nbsp;<strong><span id="template_billing_phone">{formData?.billing_shipping_labels?.billing_phone}</span>:</strong> {orderData?.customer?.phone || '9876543210'}</td>
+                                    <td class="label_customer_email_on_off_tr" align="left" width="62%" style={{ borderWidth: '0px 0px 0px 1px', borderLeftStyle: 'solid', borderColor: 'initial', lineHeight: '30px', borderTopStyle: 'initial', borderBottomStyle: 'initial', borderRightStyle: 'initial', display: formData?.billing_shipping_labels?.hide_show_customer_email ? 'table-cell' : 'none', }}>
+                                        &nbsp;&nbsp;<strong>E:</strong> {orderData?.customer?.email}
+                                    </td>
+                                </tr>
+                                </tbody></table>
+                        </td>
+                        <td align="left" style={{ padding: '0 5px', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_shipping_section ? 'table-cell' : 'none' }} class="label_shipping_on_off">
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td class="bill_ship_phone_no_on_off_tr" align="left" style={{ border: '0', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_phone ? 'table-cell' : 'none' }}>&nbsp;&nbsp;<strong><span id="template_shipping_phone">{formData?.billing_shipping_labels?.shipping_phone}</span>:</strong> {orderData?.billing_address?.phone || '9876543210'}</td>
+                                    <td class="label_customer_email_on_off_tr" align="left" width="62%" style={{ borderWidth: '0px 0px 0px 1px', borderLeftStyle: 'solid', borderColor: 'initial', lineHeight: '30px', borderTopStyle: 'initial', borderBottomStyle: 'initial', borderRightStyle: 'initial', display: formData?.billing_shipping_labels?.hide_show_customer_email ? 'table-cell' : 'none', }}>
+                                        &nbsp;&nbsp;<strong>E:</strong> -
+                                    </td>
+                                </tr>
+                                </tbody></table>
+                        </td>
+                    </tr>
+
+                    <tr class="bill_ship_gstin_on_off_tr">
+                        <td align="left" class="label_billing_on_off" style={{ padding: '0 5px', lineHeight: '30px', display: formData?.billing_shipping_labels?.hide_show_gstin ? 'table-cell' : 'none' }}>&nbsp;&nbsp;<strong><span id="template_billing_gstin">{formData?.billing_shipping_labels?.billing_gstin}</span>:</strong> {orderData?.customer?.gst_number}</td>
+                        <td align="left" class="label_shipping_on_off" style={{ padding: '0 5px', lineHeight: '30px', display: (formData?.billing_shipping_labels?.hide_show_shipping_section && formData?.billing_shipping_labels?.hide_show_gstin) ? 'table-cell' : 'none' }}>&nbsp;&nbsp;<strong><span id="template_shipping_gstin">{formData?.billing_shipping_labels?.shipping_gstin}</span>:</strong> </td>
                     </tr>
                     <tr>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_gstin ? <td style={styles.td} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.billing_gstin || "" : ""}: -</td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_gstin ? formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td} colspan="4">{formData.billing_shipping_labels ? formData.billing_shipping_labels.shipping_gstin || "" : ""}: -</td> : null : null}
-                    </tr>
-                    <tr>
-                        <td style={styles.td}>State: {orderData?.billing_address?.province}</td>
-                        <td style={styles.td}>Code</td>
-                        <td style={styles.td}>{orderData?.billing_address?.province_code}</td>
-                        <td style={styles.td}>Country: {orderData?.billing_address?.country}</td>
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>State: {orderData?.shipping_address?.province}</td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>Code</td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}> {orderData?.shipping_address?.province_code} </td> : null}
-                        {formData.billing_shipping_labels && formData.billing_shipping_labels.hide_show_shipping_section ? <td style={styles.td}>Country: {orderData?.shipping_address?.country}</td> : null}
-                    </tr>
-                </table >
-
-                <table style={{ ...styles.table, marginTop: '20px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
-                    <tr>
-                        <th style={styles.th}>#</th>
-                        <th style={{ ...styles.th, width: '200px' }}>{formData.product_items_labels ? formData.product_items_labels.item_sku || "" : ""}</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.qty || "" : ""}</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.rate_per_item || "" : ""}(₹)</th>
-                        {formData.product_items_labels?.hide_show_product_hsn && <th style={styles.th}>{formData.product_items_labels?.discount_item || ""}(₹)</th>}
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.texable_item || "" : ""}(₹)</th>
-                        {formData.product_items_labels?.hide_show_product_hsn && (
-                            <th style={styles.th}>{formData.product_items_labels?.hsn || ""}</th>
-                        )}
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.gst || "" : ""} (%)</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.cgst || "" : ""} (₹)</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.sgst || "" : ""} (₹)</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.cess || "" : ""} (%)(₹)</th>
-                        <th style={styles.th}>{formData.product_items_labels ? formData.product_items_labels.total || "" : ""} (₹)</th>
-                    </tr>
-                    {orderData?.line_items.length > 0 ? orderData?.line_items.map((item, index) => {
-                        const taxRate = item.tax_lines?.length > 0 ? item.tax_lines[0].rate * 100 : 0; // Extract GST rate dynamically
-
-                        // const gstCessTotal = item.gst + item.cess;
-                        // const taxableAdd = gstCessTotal / 100;
-                        // const taxableAmount = gstCessTotal;
-                        const taxableAmount = ((item.price / (1 + ((parseFloat(item.gst) || 0) + (parseFloat(item.cess) || 0)) / 100)) * item.current_quantity).toFixed(2);
-                        const gstAmount = (item.price * ((parseFloat(item.gst) || 0) / 100)).toFixed(2);
-                        const igstAmount = gstAmount; // Assuming IGST for inter-state sales
-
-                        const cgstRate = (parseFloat(item.gst) || 0) / 2;
-                        const cgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2);
-                        const sgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2); // SGST = 50% of GST
+                        <td align="left" class="label_billing_on_off">
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td align="left" width="40%" style={{ padding: '0 5px', lineHeight: '30px', border: '0px', }}>&nbsp;&nbsp;<strong>State:</strong> {orderData?.customer?.default_address?.province}</td>
+                                    <td width="16%" style={{ borderLeft: 'solid 1px #444444', borderRight: 'solid 1px #444444', borderTop: '0px', borderBottom: '0px', lineHeight: '30px', }} align="center"><strong>Code</strong></td>
+                                    <td width="16%" style={{ borderLeft: 'solid 1px #444444', borderTop: '0px', borderBottom: '0px', lineHeight: '30px', }} align="center">{gstStateCodes[orderData?.customer?.default_address?.province_code]}</td>
+                                    <td align="left" width="28%" style={{ padding: '0 5px', lineHeight: '30px', border: '0px', }}>&nbsp;&nbsp;<strong>Country:</strong> {orderData?.customer?.default_address?.country_name}</td>
+                                </tr>
+                                </tbody></table>
+                        </td>
+                        <td align="left" class="label_shipping_on_off" style={{ display: formData?.billing_shipping_labels?.hide_show_shipping_section ? 'table-cell' : 'none' }}>
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td align="left" width="40%" style={{ padding: '0 5px', lineHeight: '30px', border: '0px', }}>&nbsp;&nbsp;<strong>State:</strong> {orderData?.customer?.shipping_address?.province} </td>
+                                    <td width="16%" style={{ borderLeft: 'solid 1px #444444', borderRight: 'solid 1px #444444', borderTop: '0px', borderBottom: '0px', lineHeight: '30px', }} align="center"><strong>Code</strong></td>
+                                    <td width="16%" style={{ borderLeft: 'solid 1px #444444', borderTop: '0px', borderBottom: '0px', lineHeight: '30px', }} align="center">{gstStateCodes[orderData?.customer?.shipping_address?.province_code]}</td>
+                                    <td align="left" width="28%" style={{ padding: '0 5px', lineHeight: '30px', border: '0px', }}>&nbsp;&nbsp;<strong>Country:</strong> {orderData?.customer?.shipping_address?.country_name}</td>
+                                </tr>
+                                </tbody></table >
+                        </td >
+                    </tr >
 
 
-                        const cessAmount = ((item.cess / 100) * taxableAmount).toFixed(2);
-                        const totalAmount = (item.price * item.current_quantity).toFixed(2); // Total amount after tax
+                </tbody >
+            </table >
+            <table width="100%" border="1" cellspacing="0" cellpadding="0" class="td-gray" style={{ marginTop: '-1px', }}>
 
+                <tbody><tr class="sortable-row ui-sortable">
+                    <td class="custom_bg_text_color" width="38px" valign="top" align="center" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', }}><strong>#</strong></td>
+                    <td class="custom_bg_text_color" width="280px" valign="top" align="center" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}><strong><span id="template_product_title">{formData?.product_items_labels?.item_sku}</span></strong></td>
+                    <td class="draggable-cell custom_bg_text_color ui-sortable-handle" data-value="qty" width="40px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}>
+                        <strong><span id="template_product_quantity">{formData?.product_items_labels?.qty}</span></strong>
+                    </td>
+                    <td class="draggable-cell custom_bg_text_color ui-sortable-handle" data-value="rate_per_item" width="120px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}> <strong><span id="template_product_rate">{formData?.product_items_labels?.rate_per_item}</span>(₹)</strong></td >
+                    {formData?.product_items_labels?.hide_show_product_discount && (<td class="draggable-cell custom_bg_text_color product_discount_on_off_tr ui-sortable-handle" data-value="discount_item" width="80px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}>
+                        <strong><span id="template_product_discount">{formData?.product_items_labels?.discount_item}</span>(₹)</strong>
+                    </td >)}
+                    <td class="draggable-cell custom_bg_text_color ui-sortable-handle" data-value="taxable_item" width="120px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}>
+                        <strong><span id="template_product_taxable_item">{formData?.product_items_labels?.texable_item}</span>(₹)</strong>
+                    </td >
+                    {formData?.product_items_labels?.hide_show_product_hsn && <td class="draggable-cell custom_bg_text_color product_hsn_on_off_tr ui-sortable-handle" data-value="hsn" width="80px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}> <strong><span id="template_product_hsn">{formData?.product_items_labels?.hsn}</span></strong></td >}
+                    <td class="draggable-cell custom_bg_text_color ui-sortable-handle" data-value="gst" width="40px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}> <strong><span id="template_product_gst">{formData?.product_items_labels?.gst}</span> <br />(%)</strong></td >
 
-                        return (<tr key={index}>
-                            <td style={styles.td}>{index + 1}</td>
-                            <td style={{ ...styles.td, width: '200px' }}>
-                                {formData.product_items_labels?.hide_show_product_title ? `${item.name || ''}` : ""}
-                                {(formData.product_items_labels?.hide_show_product_title && item.name && formData.product_items_labels?.hide_show_product_sku && item.sku) ? " - " : ""}
-                                {formData.product_items_labels?.hide_show_product_sku ? `${item.sku || ''}` : ""}
-                            </td>
-                            <td style={styles.td}>{`${item.quantity || ''}`}</td>
-                            <td style={styles.td}>{`${item.price || ''}`}</td>
-                            <td style={styles.td}>{`${item.total_discount || ''}`}</td>
-                            <td style={styles.td}>{taxableAmount}</td>
-                            {formData.product_items_labels?.hide_show_product_hsn && (
-                                <td style={styles.td}>{item.hsn}</td>
-                            )}
-                            <td style={styles.td}>{item.gst}</td>
-                            <td style={styles.td}>{cgstAmount}</td>
-                            <td style={styles.td}>{`${sgstAmount}`}</td>
-                            <td style={styles.td}>{`${item.cess}% (${cessAmount})`}</td>
-                            <td style={styles.td}>{totalAmount}</td>
-                        </tr>)
+                    <td class="gst-type-cgst-sgst custom_bg_text_color" width="80px" valign="top" align="center" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}> <strong><span id="template_product_cgst">{formData?.product_items_labels?.cgst}</span> <br />(₹)</strong></td >
+                    <td class="gst-type-cgst-sgst custom_bg_text_color" width="80px" valign="top" align="center" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}> <strong><span id="template_product_sgst">{formData?.product_items_labels?.sgst}</span> <br />(₹)</strong></td >
+                    <td class="gst-type-igst custom_bg_text_color" width="80px" valign="top" align="center" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}> <strong><span id="template_product_igst">{formData?.product_items_labels?.igst}</span> <br />(₹)</strong></td >
+                    <td class="custom_bg_text_color" width="100px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}> <strong><span id="template_product_cess">{formData?.product_items_labels?.cess}</span> <br />(%)(₹)</strong></td >
+                    <td class="custom_bg_text_color" width="120px" align="center" valign="top" bgcolor="#eeeeee" style={{ padding: '0 5px', lineHeight: '30px', textTransform: 'uppercase', }}>&nbsp;&nbsp; <strong><span id="template_product_total">{formData?.product_items_labels?.total}</span> <br /> (₹)</strong></td >
+                </tr >
+
+                    {type === 'order' ? <>
+                        {orderData?.line_items?.map((item, index) => {
+                            const taxableAmount = ((item.price / (1 + ((parseFloat(item.gst) || 0) + (parseFloat(item.cess) || 0)) / 100)) * item.current_quantity).toFixed(2);
+                            const cgstRate = (parseFloat(item.gst) || 0) / 2;
+                            const cgstAmount = (((cgstRate / 100) * taxableAmount)).toFixed(2);
+
+                            const sgstRate = (parseFloat(item.gst) || 0) / 2;
+                            const sgstAmount = (((sgstRate / 100) * taxableAmount)).toFixed(2);
+
+                            const cessAmount = ((item.cess / 100) * taxableAmount).toFixed(2);
+                            const totalAmount = ((item.price * item.current_quantity) - item?.total_discount).toFixed(2);
+
+                            const igstRate = parseFloat(item.gst) || 0;
+                            const igstAmount = ((igstRate / 100) * taxableAmount).toFixed(2);
+
+                            return (
+                                <tr>
+                                    <td width="38px" style={{ lineHeight: '30px', }} align="center" valign="top">1</td>
+                                    <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }} align="left" valign="top"><span class="product_title_on_off_tr">{formData?.product_items_labels?.hide_show_product_title && item?.name}</span><span class="product_sku_on_off_tr"> {formData?.product_items_labels?.hide_show_product_title &&
+                                        formData?.product_items_labels?.hide_show_product_sku && (
+                                            <span> - </span>
+                                        )} {formData?.product_items_labels?.hide_show_product_sku && item?.sku}</span></td>
+                                    <td class="cell-1" data-position="1" data-value="qty" width="44px" style={{ lineHeight: '30px', }} align="center" valign="top">{item?.quantity}</td>
+                                    <td class="cell-1" data-position="2" data-value="rate_per_item" width="120px" style={{ lineHeight: '30px', }} align="center" valign="top">{item?.price}</td>
+                                    {formData?.product_items_labels?.hide_show_product_discount && <td class="cell-1 product_discount_on_off_tr" data-position="3" data-value="discount_item" width="80px" style={{ lineHeight: '30px', }} align="center" valign="top">{item?.total_discount}</td>}
+                                    <td class="cell-1" data-position="4" data-value="taxable_item" width="120px" style={{ lineHeight: '30px', }} align="center" valign="top">{taxableAmount}</td>
+                                    {formData?.product_items_labels?.hide_show_product_hsn && <td class="cell-1 product_hsn_on_off_tr" data-position="5" data-value="hsn" width="80px" style={{ lineHeight: '30px', }} align="center" valign="top">{item?.hsn}</td>}
+                                    <td class="cell-1" data-position="6" data-value="gst" width="40px" style={{ lineHeight: '30px', }} align="center" valign="top">{item.gst}</td>
+                                    <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }} align="center" valign="top">{cgstAmount}</td>
+                                    <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }} align="center" valign="top">{sgstAmount}</td>
+                                    <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }} align="center" valign="top">{igstAmount}</td>
+                                    <td width="100px" style={{ lineHeight: '30px', }} align="center" valign="top">({item?.cess}) {cessAmount}</td>
+                                    <td width="120px" style={{ lineHeight: '30px', }} align="right" valign="top">{totalAmount}&nbsp;&nbsp;</td>
+                                </tr>
+                            );
+                        })}
+
+                        {/* Empty Rows */}
+                        {Array.from({ length: Math.max(0, 5 - orderData?.line_items?.length) }).map((_, emptyIndex) => (
+                            <tr>
+                                <td width="38px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                                <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;</td>
+                                <td width="44px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                                <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                                {formData?.product_items_labels?.hide_show_product_discount && <td width="80px" class="product_discount_on_off_tr" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                                <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                                {formData?.product_items_labels?.hide_show_product_hsn && <td class="product_hsn_on_off_tr" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                                <td width="40px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                                <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                                <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                                <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}>&nbsp;</td>
+                                <td width="100px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                                <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            </tr>
+                        ))}
+                    </> : <>
+                        <tr>
+                            <td width="38px" style={{ lineHeight: '30px', }} align="center" valign="top">2</td>
+                            <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }} align="left" valign="top"><span class="product_title_on_off_tr">T-Shirt</span><span class="product_sku_on_off_tr"> - SKU</span></td>
+                            <td class="cell-2" data-position="1" data-value="qty" width="44px" style={{ lineHeight: '30px', }} align="center" valign="top">5</td>
+                            <td class="cell-2" data-position="2" data-value="rate_per_item" width="120px" style={{ lineHeight: '30px', }} align="center" valign="top">500.00</td>
+                            {formData?.product_items_labels?.hide_show_product_discount && <td class="cell-2 product_discount_on_off_tr" data-position="3" data-value="discount_item" width="80px" style={{ lineHeight: '30px', }} align="center" valign="top">0.00</td>}
+                            <td class="cell-2" data-position="4" data-value="taxable_item" width="120px" style={{ lineHeight: '30px', }} align="center" valign="top">2293.58</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td class="cell-2 product_hsn_on_off_tr" data-position="5" data-value="hsn" width="80px" style={{ lineHeight: '30px', }} align="center" valign="top">665854</td>}
+                            <td class="cell-2" data-position="6" data-value="gst" width="40px" style={{ lineHeight: '30px', }} align="center" valign="top">9</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }} align="center" valign="top">103.21</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }} align="center" valign="top">103.21</td>
+                            <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }} align="center" valign="top">206.42</td>
+                            <td width="100px" style={{ lineHeight: '30px', }} align="center" valign="top"></td>
+                            <td width="120px" style={{ lineHeight: '30px', }} align="right" valign="top">2500.00&nbsp;&nbsp;</td>
+                        </tr>
+
+                        <tr>
+                            <td width="38px" style={{ lineHeight: '30px' }}>&nbsp;</td>
+                            <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="44px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td width="80px" class="product_discount_on_off_tr" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td class="product_hsn_on_off_tr" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="40px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}>&nbsp;</td>
+                            <td width="100px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td width="38px" style={{ lineHeight: '30px' }}>&nbsp;</td>
+                            <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="44px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td width="80px" class="product_discount_on_off_tr" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td class="product_hsn_on_off_tr" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="40px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="100px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td width="38px" style={{ lineHeight: '30px' }}>&nbsp;</td>
+                            <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="44px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td width="80px" class="product_discount_on_off_tr" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td class="product_hsn_on_off_tr" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="40px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}>&nbsp;</td>
+                            <td width="100px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td width="38px" style={{ lineHeight: '30px' }}>&nbsp;</td>
+                            <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="44px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td width="80px" class="product_discount_on_off_tr" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td class="product_hsn_on_off_tr" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="40px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}>&nbsp;</td>
+                            <td width="100px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td width="38px" style={{ lineHeight: '30px' }}>&nbsp;</td>
+                            <td width="280px" style={{ padding: '0 5px', lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="44px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td width="80px" class="product_discount_on_off_tr" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            {formData?.product_items_labels?.hide_show_product_hsn && <td class="product_hsn_on_off_tr" width="80px" style={{ lineHeight: '30px', }}>&nbsp;</td>}
+                            <td width="40px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-cgst-sgst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>&nbsp;</td>
+                            <td class="gst-type-igst" width="80px" style={{ lineHeight: '30px', display: cgst_igst === 'igst' ? 'table-cell' : 'none' }}>&nbsp;</td>
+                            <td width="100px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                            <td width="120px" style={{ lineHeight: '30px', }}>&nbsp;</td>
+                        </tr>
+                    </>
                     }
-                    )
 
-                        : <tr>
-                            <td style={styles.td}>1</td>
-                            <td style={{ ...styles.td, width: '200px' }}>
-                                {formData.product_items_labels?.hide_show_product_title ? "Eye & Lip Primer - BLNK-LB-01-04-YP-EP05" : ""}
-                                {formData.product_items_labels?.hide_show_product_title && formData.product_items_labels?.hide_show_product_sku ? " - " : ""}
-                                {formData.product_items_labels?.hide_show_product_sku ? "SKU" : ""}
-                            </td>
-                            <td style={styles.td}>1</td>
-                            <td style={styles.td}>27.00</td>
-                            <td style={styles.td}>0.00</td>
-                            <td style={styles.td}>19.85</td>
-                            {formData.product_items_labels?.hide_show_product_hsn && (
-                                <td style={styles.td}>18</td>
-                            )}
-                            <td style={styles.td}>18</td>
-                            <td style={styles.td}>3.57</td>
-                            <td style={styles.td}>(18) 3.57</td>
-                            <td style={styles.td}>27.00</td>
-                        </tr>}
 
+
+                </tbody >
+            </table >
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style={{ marginTop: '-1px', }}>
+                <tbody><tr>
+                    <td align="left" valign="top" style={{ borderTop: 'solid 1px #444444', borderLeft: 'solid 1px #444444', borderRight: 'solid 1px #444444', }}>
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                            <tbody><tr id="payment_mode_on_off_tr">
+                                <td style={{ padding: '8px 0px', borderBottom: 'solid 1px #444444', }} valign="bottom">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left">
+                                        <tbody><tr>
+                                            <td style={{ paddingLeft: '15px', }}>
+                                                <strong><span id="template_payment_mode">{formData?.others_labels?.payment_mode}</span> : </strong>
+                                                {formData?.others_labels?.is_payment_mode && <div>
+                                                    {Array.isArray(orderData?.payment_gateway_names) && orderData?.payment_gateway_names.length > 0
+                                                        ? orderData.payment_gateway_names[0]
+                                                        : 'N/A'}
+                                                </div>}
+                                            </td>
+                                        </tr>
+                                        </tbody></table>
+                                </td>
+                            </tr>
+                                <tr id="order_note_on_off_tr">
+                                    <td style={{ padding: '8px 0px', borderBottom: 'solid 1px #444444', }} valign="bottom">
+                                        <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left">
+                                            <tbody><tr>
+                                                <td style={{ paddingLeft: '15px', }}><strong><span id="template_order_note">{formData?.others_labels?.order_note}</span> : </strong>{orderData?.note}</td>
+                                            </tr>
+                                            </tbody></table>
+                                    </td>
+                                </tr>
+                                <tr id="terms_conditions_on_off_tr">
+                                    <td valign="top" style={{ padding: '15px 15px 5px 15px', borderBottom: 'solid 1px #444444', }}>
+                                        <table cellspacing="0" cellpadding="0" border="0">
+                                            <tbody><tr>
+                                                <td>
+                                                    <strong><span id="template_terms_conditions">{formData?.others_labels?.term_and_conditions}</span></strong>
+                                                </td>
+                                            </tr>
+                                                <tr>
+                                                    <td style={{ padding: '5px 0px', }}><span id="template_store_terms_conditions">
+                                                        {formData?.others_labels?.is_term_and_conditions && formData?.store_information?.terms_and_conditions}</span></td>
+                                                </tr>
+                                            </tbody></table>
+                                    </td>
+                                </tr>
+                                <tr id="total_amount_in_words_on_off_tr">
+                                    <td style={{ padding: '5px 15px', }} valign="bottom">
+                                        <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left">
+                                            <tbody><tr>
+                                                <td>
+                                                    <strong><span id="template_total_amount_in_words">{formData?.others_labels?.total_invoice_amount_in_words}</span></strong>
+                                                </td>
+                                            </tr>
+                                                <tr>
+                                                    <td style={{ padding: '5px 0px', }}>{formData?.others_labels?.is_total_invoice_amount_in_words && "Four Thousand Rupees Only"}</td>
+                                                </tr>
+                                            </tbody></table>
+                                    </td>
+                                </tr>
+                            </tbody ></table >
+                    </td >
+                    <td width="50%" align="left" valign="top" style={{ borderRight: 'solid 1px #444444', borderTop: 'solid 1px #444444', lineHeight: '35px', }}>
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                            <tbody><tr>
+                                <td align="left" height="35" style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>&nbsp;&nbsp;{formData?.others_labels?.total_invoice_amount_in_words}(₹)</td>
+                                <td align="right" height="35" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}>{totalAmountInWords || ''}&nbsp;&nbsp;</td>
+                            </tr>
+                                <tr>
+                                    <td align="left" height="35" style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>&nbsp;&nbsp;Total Tax Amount(₹)</td>
+                                    <td align="right" height="35" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}> {(totalAmountDiscountSum - totalTaxableAmountSum).toFixed(2)} &nbsp;&nbsp;</td >
+                                </tr >
+                                <tr>
+                                    <td style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style={{ borderCollapse: 'collapse', }}>
+                                            <tbody><tr>
+                                                <td height="35" align="left" width="60%">&nbsp;&nbsp;Discount %</td>
+                                                <td align="right" style={{ borderLeft: 'solid 1px #444444', }}>{totalDiscountInPercentage.toFixed(2)}&nbsp;&nbsp;</td>
+                                            </tr>
+                                            </tbody></table>
+                                    </td >
+                                    <td style={{ borderBottom: 'solid 1px #444444', }}>
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style={{ borderCollapse: 'collapse', }}>
+                                            <tbody><tr>
+                                                <td height="35" align="left" width="50%">&nbsp;&nbsp;Discount(₹)</td>
+                                                <td align="right" style={{ width: '100px', borderLeft: 'solid 1px #444444', }}>{orderData?.total_discounts}&nbsp;&nbsp;</td>
+                                            </tr>
+                                            </tbody></table >
+                                    </td >
+                                </tr >
+                                <tr>
+                                    <td align="left" height="35" style={{ borderBottom: 'solid 1px #444444', borderRight: 'solid 1px #444444', }}>
+                                        &nbsp;&nbsp;Shipping Discount(₹)
+                                    </td>
+                                    <td align="right" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}> -&nbsp;&nbsp;</td >
+                                </tr >
+                                <tr>
+                                    <td align="left" valign="middle" height="35" style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>
+                                        &nbsp;&nbsp;Shipping Amount(₹)
+                                        <br />&nbsp;&nbsp;(SAC Code:552114)
+                                    </td>
+                                    <td align="right" valign="middle" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}> {orderData?.total_shipping_price_set?.shop_money?.amount} &nbsp;&nbsp;</td >
+                                </tr >
+                                <tr>
+                                    <td style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style={{ borderCollapse: 'collapse', marginTop: '-2px', marginBottom: '-2px', }}>
+                                            <tbody><tr>
+                                                <td align="left" width="65%">
+                                                    &nbsp;&nbsp;Shipping GST %
+                                                </td>
+                                                <td align="right" style={{ borderLeft: 'solid 1px #444444', }}>-&nbsp;&nbsp;</td>
+                                            </tr>
+                                            </tbody></table>
+                                    </td >
+                                    <td style={{ borderBottom: 'solid 1px #444444', }}>
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style={{ borderCollapse: 'collapse', marginTop: '-0.5px', marginBottom: '-0.5px', }}>
+                                            <tbody><tr>
+                                                <td align="left" width="60%">
+                                                    &nbsp;&nbsp;Amount(₹)
+                                                </td>
+                                                <td align="right" style={{ width: '100px', borderLeft: 'solid 1px #444444', }}>-&nbsp;&nbsp;</td>
+                                            </tr>
+                                            </tbody></table >
+                                    </td >
+                                </tr >
+                                <tr>
+                                    <td style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style={{ borderCollapse: 'collapse', marginTop: '-2px', marginBottom: '-2px', }}>
+                                            <tbody><tr>
+                                                <td align="left" width="65%" height="25"> &nbsp;&nbsp;Shipping CESS %</td>
+                                                <td align="right" style={{ borderLeft: 'solid 1px #444444', }}>-&nbsp;&nbsp;</td>
+                                            </tr>
+                                            </tbody></table>
+                                    </td >
+                                    <td style={{ borderBottom: 'solid 1px #444444', }}>
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style={{ borderCollapse: 'collapse', marginTop: '-0.5px', marginBottom: '-0.5px', }}>
+                                            <tbody><tr>
+                                                <td align="left" width="60%" height="25">&nbsp;&nbsp;Amount(₹)</td>
+                                                <td align="right" height="25" style={{ width: '100px', borderLeft: 'solid 1px #444444', }}>-&nbsp;&nbsp;</td>
+                                            </tr>
+                                            </tbody></table >
+                                    </td >
+                                </tr >
+                                <tr>
+                                    <td align="left" height="35" style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>&nbsp;&nbsp;Total Amount After Tax(₹)</td>
+                                    <td align="right" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}> {totalAmountDiscountSum.toFixed(2)} &nbsp;&nbsp;</td >
+                                </tr >
+                                <tr>
+                                    <td align="left" height="35" style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', }}>&nbsp;&nbsp;Round Off</td>
+                                    <td align="right" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}> {roundOff}&nbsp;&nbsp;</td >
+                                </tr >
+                                <tr>
+                                    <td align="left" height="35" style={{ borderRight: 'solid 1px #444444', borderBottom: 'solid 1px #444444', textTransform: 'uppercase', }}><strong>&nbsp;&nbsp;Total(₹)</strong></td>
+                                    <td align="right" style={{ borderRight: '0px', borderBottom: 'solid 1px #444444', }}> <strong>{roundedTotal.toFixed(2)}&nbsp;&nbsp;</strong></td >
+                                </tr >
+                            </tbody ></table >
+                    </td >
+                </tr >
                     <tr>
-                        <th style={styles.th} colSpan={formData.product_items_labels?.hide_show_product_hsn ? 2 : 1}>{formData.product_items_labels ? formData.product_items_labels.total || "" : ""}</th>
-                        <td style={styles.td}>{totalQuantitySum}</td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        {
-                            formData.product_items_labels?.hide_show_product_hsn && (
-                                <td style={styles.td}></td>
-                            )
-                        }
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        <td style={styles.td}></td>
-                        {/* Total Price / (1 + (GST% + CESS%) / 100) */}
-                        <td style={styles.td}><strong>{totalAmountSum.toFixed(2)}</strong></td>
+                        <td colspan="2" align="left" style={{ padding: '3px 5px', borderLeft: 'solid 1px #444444', borderRight: 'solid 1px #444444', borderTop: 'solid 1px #444444', }}>
+                            <span id="template_e_and_o_e">{formData?.others_labels?.e_and_o_e}</span>
+                        </td>
                     </tr>
-                </table>
-                <div style={{ display: 'flex' }}>
-                    <table style={{ marginRight: '-1', marginTop: '-1px', outline: '1px solid #000', outlineOffset: '-1px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
-                        {isPaymentMode ? <tr><td style={styles.td}><strong>{paymentMode ? paymentMode : ''}</strong> : {orderData?.payment_gateway_names && orderData?.payment_gateway_names.length > 0 ? orderData?.payment_gateway_names[0] : ''}</td></tr> : null}
-                        {isOrderNote || orderData?.note ? <tr><td style={styles.td}><strong>{orderNote ? orderNote : ''}</strong> : {orderData?.note}</td></tr> : null}
-                        {isTermAndConditions ? <tr><td style={styles.td}><strong>{termAndConditions ? termAndConditions : ''}</strong><br></br>{terms_and_conditions}</td></tr> : null}
-                        {isTotalInvoiceAmountInWords ? <tr><td style={styles.td}><strong>{totalInvoiceAmountInWords ? totalInvoiceAmountInWords : ''}</strong><br></br>{totalAmountInWords}</td></tr> : null}
-                    </table>
-                    <table style={{ marginLeft: '-1px', marginTop: '-1px', outline: '1px solid #000', outlineOffset: '-1px', fontSize: '12px', width: '100%', borderCollapse: 'collapse', }}>
-                        <tr>
-                            <td style={styles.td} colSpan={2}>Total Amount before Tax(₹)</td>
-                            <td style={styles.td} colSpan={2}>{totalTaxableAmountSum.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td} colSpan={2}>Total Tax Amount(₹)</td>
-                            <td style={styles.td} colSpan={2}>{(totalAmountSum - totalTaxableAmountSum).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td}>Discount %</td>
-                            <td style={styles.td}>-</td>
-                            <td style={styles.td}>Discount(₹)</td>
-                            <td style={styles.td}>-</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td} colSpan={2}>Shipping Amount(₹)<br></br>(SAC Code:552114)</td>
-                            <td style={styles.td} colSpan={2}>-</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td} colSpan={2}>Total Amount After Tax(₹)</td>
-                            <td style={styles.td} colSpan={2}>{totalAmountSum.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td} colSpan={2}>Round Off</td>
-                            <td style={styles.td} colSpan={2}>{roundOff}</td>
-                        </tr>
-                        <tr>
-                            <td style={styles.td} colSpan={2}><strong>Total(₹)</strong></td>
-                            <td style={styles.td} colSpan={2}><strong>{roundedTotal.toFixed(2)}</strong></td>
-                        </tr>
-                    </table>
-                </div>
+                    <tr>
+                        <td align="left" style={{ borderLeft: 'solid 1px #444444', borderBottom: 'solid 1px #444444', lineHeight: '30px', }}>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{formData?.others_labels?.hide_show_financial_status && <img id="financial_status_on_off_tr" src="https://gst.webplanex.biz/images/paid_imag.png" alt="" width="150" height="70" />}
+                            <div id="qr_code_on_off_tr" style={{ width: '100px', float: 'right', textAlign: 'center', }}>
 
-                <div style={{ justifyContent: 'center', alignItems: 'center', display: 'flex', marginRight: '-1', marginTop: '-1px', outline: '1px solid #000', outlineOffset: '-1px', fontSize: '12px', width: '100%', padding: '5px 10px' }}>
-                    <div style={{ flex: '1', alignItems: 'center' }}>
-                        <div style={{ color: 'black', }}><strong>{eAndOE && eAndOE}</strong></div>
-                        {hideShowFinancialStatus && <div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="136" height="52" viewBox="0 0 136 52" fill="none">
-                                <path d="M119.688 0.6875C121.009 0.661034 121.009 0.661034 122.357 0.634033C125.766 0.637744 128.353 0.721439 131.504 2.07812C136.471 8.45858 135.2 21.9294 135.312 29.8125C135.339 30.9679 135.339 30.9679 135.366 32.1467C135.359 37.5032 135.359 37.5032 133.788 39.6765C131.485 41.3811 129.87 41.5552 127.023 41.8438C125.981 41.954 124.938 42.0643 123.864 42.178C122.712 42.2842 121.561 42.3905 120.375 42.5C119.163 42.6211 117.951 42.7422 116.703 42.8669C102.858 44.2002 88.9813 45.1505 75.1084 46.1294C67.0231 46.7004 58.9455 47.3055 50.875 48.0625C49.6391 48.1784 49.6391 48.1784 48.3782 48.2966C46.7652 48.4493 45.1523 48.6029 43.5396 48.7573C38.6317 49.2263 33.7226 49.68 28.8125 50.125C27.4307 50.2566 27.4307 50.2566 26.021 50.3909C23.3483 50.6313 20.678 50.8301 18 51C16.5254 51.0962 16.5254 51.0962 15.021 51.1943C7.87421 51.462 7.87421 51.462 4.39062 49.6211C2.24291 45.573 2.05356 41.5876 1.75 37.0625C1.67628 36.1255 1.60256 35.1885 1.52661 34.2231C1.32354 31.483 1.15307 28.7434 0.999999 26C0.958587 25.2725 0.917176 24.545 0.87451 23.7954C0.384903 13.9024 0.384903 13.9024 2.07934 11.4165C4.95122 9.29846 7.56254 9.29744 11.0937 8.9375C11.8161 8.86107 12.5384 8.78465 13.2826 8.7059C15.6872 8.45639 18.0932 8.22759 20.5 8C22.1941 7.83061 23.8882 7.66085 25.5823 7.49072C41.2545 5.95023 56.9584 4.86277 72.6711 3.83351C73.5441 3.7763 74.417 3.7191 75.3164 3.66016C76.5963 3.57634 76.5963 3.57634 77.9021 3.49083C84.5718 3.04638 91.2218 2.458 97.875 1.8125C105.146 1.13652 112.385 0.769477 119.688 0.6875Z" fill="#FAFAFC" />
-                                <path d="M129 1C127 4 127 4 123.562 4.6875C109.842 5.92107 109.842 5.92107 106 4C106 4.66 106 5.32 106 6C93.3422 7.24796 80.7046 7.10178 68 7C68 7.66 68 8.32 68 9C60.582 9.59857 53.2378 10.1318 45.793 9.9375C43.9759 9.79678 43.9759 9.79678 43 11C40.3016 11.2907 37.6198 11.5236 34.9141 11.7188C34.1013 11.7816 33.2886 11.8444 32.4513 11.9091C29.8428 12.1104 27.234 12.3058 24.625 12.5C22.0232 12.6945 19.4215 12.8903 16.8202 13.0909C15.1989 13.2159 13.5773 13.3374 11.9555 13.455C8.78892 13.6987 6.02624 13.9913 3 15C3 15.66 3 16.32 3 17C3.66 17 4.32 17 5 17C5.99 26.57 6.98 36.14 8 46C16.2294 46 23.8642 45.9146 31.9727 45.2266C39.7381 44.6454 47.278 45.0799 55 46C52.1941 48.8059 49.3138 48.5616 45.5352 48.8516C44.4132 48.9472 44.4132 48.9472 43.2687 49.0448C41.6794 49.1784 40.0897 49.3075 38.4998 49.4326C36.1024 49.6219 33.7065 49.8253 31.3105 50.0312C26.8765 50.404 22.4408 50.7199 18 51C16.2963 51.1117 16.2963 51.1117 14.5581 51.2256C7.90026 51.4757 7.90026 51.4757 4.39062 49.6211C2.24291 45.573 2.05356 41.5876 1.75 37.0625C1.67628 36.1255 1.60256 35.1885 1.52661 34.2231C1.32354 31.483 1.15307 28.7434 0.999999 26C0.958587 25.2725 0.917176 24.545 0.87451 23.7954C0.384903 13.9024 0.384903 13.9024 2.07934 11.4165C4.95122 9.29847 7.56254 9.29744 11.0937 8.9375C11.8161 8.86107 12.5384 8.78465 13.2826 8.7059C15.6872 8.45639 18.0932 8.22759 20.5 8C22.1941 7.83062 23.8882 7.66085 25.5823 7.49072C41.2545 5.95023 56.9584 4.86277 72.6711 3.83351C73.5441 3.77631 74.417 3.7191 75.3164 3.66016C76.5963 3.57634 76.5963 3.57634 77.9021 3.49083C84.5717 3.04638 91.222 2.45997 97.875 1.8125C108.255 0.818005 118.581 0.806464 129 1Z" fill="#B9BEDA" />
-                                <path d="M107.063 13.875C110.325 17.4535 110.286 20.059 110.211 24.7422C109.914 27.9154 109.144 29.6412 107 32C101.498 34.9628 95.0765 34.177 89 34C88.0615 26.961 87.8919 20.0973 88 13C94.3788 11.6571 101.328 10.3644 107.063 13.875Z" fill="#46559D" />
-                                <path d="M130 2C133 4 133 4 133.73 7.0625C134.611 14.6498 135.211 22.1712 135.312 29.8125C135.33 30.5827 135.348 31.3529 135.366 32.1465C135.359 37.5027 135.359 37.5027 133.788 39.6765C131.485 41.3811 129.87 41.5552 127.023 41.8438C125.458 42.0094 125.458 42.0094 123.86 42.1785C122.71 42.2846 121.56 42.3907 120.375 42.5C119.174 42.6196 117.973 42.7393 116.736 42.8625C105.234 43.9675 93.7106 44.8358 82.1875 45.6875C81.2861 45.7542 80.3847 45.8209 79.456 45.8896C76.8602 46.0798 74.2642 46.2655 71.668 46.4492C70.5101 46.5334 70.5101 46.5334 69.3288 46.6192C64.8732 46.927 60.4662 47.052 56 47C56 46.34 56 45.68 56 45C62.7116 44.1198 69.2341 43.8862 76 44C76 43.34 76 42.68 76 42C103.224 38.6121 103.224 38.6121 108 41C108 40.34 108 39.68 108 39C109.074 38.951 110.148 38.902 111.254 38.8516C112.69 38.7765 114.126 38.7009 115.562 38.625C116.267 38.5941 116.971 38.5631 117.697 38.5312C122.413 38.2705 126.504 37.4534 131 36C130.892 34.8186 130.892 34.8186 130.781 33.6133C130.112 25.7593 129.579 17.8834 130 10C130.33 9.67 130.66 9.34 131 9C130.713 6.66055 130.381 4.32609 130 2Z" fill="#828BBC" />
-                                <path d="M44.5 18.125C46 20 46 20 46.5625 22.875C45.7962 27.1319 44.5149 28.5103 41 31C38.1924 31.41 35.8601 31.2424 33 31C33 33.64 33 36.28 33 39C31.35 39 29.7 39 28 39C26.8883 34.5622 26.8847 30.2304 26.9375 25.6875C26.942 24.9469 26.9465 24.2064 26.9512 23.4434C26.9629 21.6289 26.9808 19.8144 27 18C39.9257 16.0666 39.9257 16.0666 44.5 18.125Z" fill="#4D5BA0" />
-                                <path d="M61.0625 14.9375C62.5166 14.9684 62.5166 14.9684 64 15C65.677 17.9317 67.3398 20.8712 69 23.8125C69.477 24.6459 69.9539 25.4793 70.4453 26.3379C70.8965 27.1403 71.3477 27.9428 71.8125 28.7695C72.2314 29.5079 72.6504 30.2463 73.082 31.0071C74 33 74 33 74 36C71.6875 36.25 71.6875 36.25 69 36C67.1875 34 67.1875 34 66 32C62.04 32.495 62.04 32.495 58 33C57.01 35.475 57.01 35.475 56 38C54.35 38 52.7 38 51 38C55.6683 15.0476 55.6683 15.0476 61.0625 14.9375Z" fill="#49589E" />
-                                <path d="M129 0.999988C127 3.99999 127 3.99999 123.562 4.68749C109.842 5.92106 109.842 5.92106 106 3.99999C106 4.65999 106 5.31999 106 5.99999C98.246 6.7189 90.5934 7.06289 82.8125 6.99999C70.1958 6.90009 57.6031 7.46466 45 7.99999C48.2071 6.14405 50.8603 5.63185 54.5369 5.31395C56.2066 5.16402 56.2066 5.16402 57.91 5.01107C59.114 4.91202 60.3181 4.81297 61.5586 4.71093C63.4397 4.5487 63.4397 4.5487 65.3589 4.3832C68.0243 4.15567 70.6896 3.93154 73.3557 3.71288C76.0472 3.49174 78.7378 3.26311 81.428 3.02636C97.3216 1.63106 113.042 0.621386 129 0.999988Z" fill="#808ABB" />
-                                <path d="M37 8.00001C33.5231 10.318 31.8107 10.343 27.6875 10.5625C26.4474 10.6373 25.2074 10.712 23.9297 10.7891C21.3099 10.9297 18.6901 11.0703 16.0703 11.2109C14.8302 11.2857 13.5902 11.3605 12.3125 11.4375C11.1743 11.4981 10.036 11.5587 8.86329 11.6211C5.8048 11.8118 5.8048 11.8118 3.00001 14C2.78144 17.245 2.78144 17.245 3.18751 21.0625C3.27162 22.1116 3.27162 22.1116 3.35743 23.1819C3.54925 25.4573 3.76998 27.7282 4.00001 30C4.07945 30.7925 4.15888 31.5849 4.24073 32.4014C4.48247 34.7482 4.73678 37.093 5.00001 39.4375C5.08275 40.1769 5.16549 40.9162 5.25074 41.678C5.40549 45.1349 5.40549 45.1349 7.00001 48C8.56901 48.029 10.1394 47.9865 11.707 47.9141C12.6804 47.8708 13.6538 47.8275 14.6567 47.783C15.6981 47.7308 16.7395 47.6787 17.8125 47.625C18.8668 47.5761 19.9211 47.5272 21.0073 47.4768C27.1126 47.1821 33.1879 46.762 39.2734 46.1875C44.5094 45.8274 49.755 45.9239 55 46C52.1941 48.8059 49.3138 48.5617 45.5352 48.8516C44.4132 48.9472 44.4132 48.9472 43.2687 49.0448C41.6794 49.1784 40.0897 49.3075 38.4998 49.4326C36.1024 49.6219 33.7066 49.8253 31.3106 50.0313C26.8766 50.404 22.4408 50.7199 18 51C16.2963 51.1117 16.2963 51.1117 14.5581 51.2256C7.90027 51.4757 7.90027 51.4757 4.39063 49.6211C2.24292 45.573 2.05356 41.5876 1.75001 37.0625C1.67629 36.1255 1.60257 35.1885 1.52662 34.2232C1.32355 31.483 1.15307 28.7434 1.00001 26C0.958596 25.2725 0.917185 24.545 0.874519 23.7954C0.391326 14.032 0.391326 14.032 2.03907 11.2383C5.0458 9.33961 8.22377 9.14857 11.6875 8.81251C12.8031 8.6919 12.8031 8.6919 13.9412 8.56886C21.628 7.809 29.2857 7.81312 37 8.00001Z" fill="#525FA3" />
-                                <path d="M108 41C108 41.66 108 42.32 108 43C97.6768 44.5281 87.3466 45.4082 76.9375 46.125C75.6772 46.2125 74.4169 46.3 73.1184 46.3901C67.4023 46.7698 61.7292 47.1192 56 47C56 46.34 56 45.68 56 45C62.7116 44.1198 69.2341 43.8862 76 44C76 43.34 76 42.68 76 42C103.224 38.6121 103.224 38.6121 108 41Z" fill="#7F89BB" />
-                                <path d="M94 16C101.11 15.277 101.11 15.277 103.645 17.336C105 19 105 19 107 22C106.01 22.495 106.01 22.495 105 23C104.876 23.7838 104.752 24.5675 104.625 25.375C104 28 104 28 102.312 29.8125C100 31 100 31 94 31C94 26.05 94 21.1 94 16Z" fill="#F5F6F9" />
-                                <path d="M44.5 18.125C46 20 46 20 46.4375 22.9375C45.9494 26.3542 45.6502 27.7773 43 30C38.6214 30.4691 36.7042 30.4694 33 28C35.31 27.34 37.62 26.68 40 26C40 24.68 40 23.36 40 22C37.03 21.67 34.06 21.34 31 21C30.67 22.32 30.34 23.64 30 25C30 23.02 30 21.04 30 19C29.34 19 28.68 19 28 19C28 20.65 28 22.3 28 24C27.67 24 27.34 24 27 24C27 22.02 27 20.04 27 18C39.5676 15.9054 39.5676 15.9054 44.5 18.125Z" fill="#45549C" />
-                                <path d="M4 17C4.33 17 4.66 17 5 17C5.99 26.57 6.98 36.14 8 46C16.2189 46 23.8377 45.9279 31.9336 45.2227C36.2935 44.9061 40.6317 44.9113 45 45C41.6922 47.2052 40.2241 47.3523 36.3359 47.6328C35.2132 47.7166 34.0904 47.8004 32.9336 47.8867C31.1721 48.0047 31.1721 48.0047 29.375 48.125C28.2239 48.2114 27.0727 48.2977 25.8867 48.3867C13.234 49.2956 13.234 49.2956 7 49C3.89754 45.8975 4.05412 42.3751 3.88647 38.1157C3.89171 37.1417 3.89695 36.1676 3.90234 35.1641C3.90557 34.1006 3.90879 33.0371 3.91211 31.9414C3.92049 30.847 3.92887 29.7526 3.9375 28.625C3.94201 27.5074 3.94652 26.3898 3.95117 25.2383C3.96291 22.4921 3.97933 19.7461 4 17Z" fill="#C0C5DD" />
-                                <path d="M104 12C103.34 12.66 102.68 13.32 102 14C102 14.99 102 15.98 102 17C99.36 16.67 96.72 16.34 94 16C94.0348 16.6265 94.0696 17.253 94.1055 17.8984C94.1326 18.7157 94.1596 19.533 94.1875 20.375C94.2223 21.1871 94.2571 21.9992 94.293 22.8359C94.1963 23.5501 94.0996 24.2642 94 25C93.01 25.66 92.02 26.32 91 27C90.2639 30.5677 90.2639 30.5677 90 34C89.67 34 89.34 34 89 34C88.0615 26.961 87.8919 20.0973 88 13C93.361 11.8714 98.5531 11.9031 104 12Z" fill="#5966A7" />
-                                <path d="M77 14C78.65 14 80.3 14 82 14C82.9209 18.6554 83.1221 23.1469 83.0625 27.875C83.058 28.5634 83.0535 29.2517 83.0488 29.9609C83.0372 31.6407 83.0192 33.3203 83 35C81.35 35 79.7 35 78 35C77.67 28.07 77.34 21.14 77 14Z" fill="#44539C" />
-                                <path d="M61 21C64.0917 23.5296 64.9093 26.2245 66 30C64.02 30 62.04 30 60 30C58.68 32.64 57.36 35.28 56 38C54.35 38 52.7 38 51 38C52.1506 32.602 53.4242 27.2901 55 22C55.33 22.66 55.66 23.32 56 24C56.99 24.33 57.98 24.66 59 25C59.66 23.68 60.32 22.36 61 21Z" fill="#4E5CA1" />
-                                <path d="M66 21C68.4727 23.2624 70.0639 25.5745 71.6875 28.5C72.343 29.6602 72.343 29.6602 73.0117 30.8438C74 33 74 33 74 36C71.6875 36.25 71.6875 36.25 69 36C68.5669 35.34 68.1337 34.68 67.6875 34C66.2195 31.8065 66.2195 31.8065 64.0391 31.7344C62.0241 31.7485 60.0106 31.8682 58 32C58.66 31.01 59.32 30.02 60 29C62.97 29.495 62.97 29.495 66 30C66.33 29.01 66.66 28.02 67 27C67.99 28.98 68.98 30.96 70 33C69.5669 31.7006 69.5669 31.7006 69.125 30.375C68.0833 27.25 67.0417 24.125 66 21Z" fill="#45549C" />
-                                <path d="M42 6C48.5586 5.87387 48.5586 5.87387 50.75 6.5C54.0674 7.2372 57.3709 7.10402 60.75 7.0625C61.4474 7.05799 62.1448 7.05348 62.8633 7.04883C64.5756 7.0371 66.2878 7.01917 68 7C68 7.66 68 8.32 68 9C59.986 9.64666 52.0421 10.1668 44 10C43.34 8.68 42.68 7.36 42 6Z" fill="#C0C5DD" />
-                                <path d="M92 17C92.33 17 92.66 17 93 17C93.33 21.62 93.66 26.24 94 31C96.31 31.33 98.62 31.66 101 32C101 32.66 101 33.32 101 34C97.37 34 93.74 34 90 34C89.9576 31.6671 89.9591 29.333 90 27C90.33 26.67 90.66 26.34 91 26C91.2319 24.4853 91.4122 22.9625 91.5625 21.4375C91.6463 20.6112 91.7301 19.7849 91.8164 18.9336C91.877 18.2955 91.9376 17.6574 92 17Z" fill="#3E4E98" />
-                                <path d="M31 21C33.97 21 36.94 21 40 21C40.3822 22.6561 40.714 24.3246 41 26C40 27 40 27 38.1523 27.0977C36.1016 27.0651 34.0508 27.0326 32 27C31.67 25.02 31.34 23.04 31 21Z" fill="#F7F8FB" />
-                                <path d="M91 15C91.99 15.33 92.98 15.66 94 16C94.081 17.4574 94.1392 18.9161 94.1875 20.375C94.2223 21.1871 94.2571 21.9992 94.293 22.8359C94.1963 23.5501 94.0996 24.2642 94 25C93.01 25.66 92.02 26.32 91 27C90.264 30.5677 90.264 30.5677 90 34C89.67 34 89.34 34 89 34C88.752 31.2088 88.5259 28.4188 88.3125 25.625C88.2397 24.8309 88.1669 24.0369 88.0918 23.2188C87.9258 20.9141 87.9258 20.9141 88 17C88.99 16.34 89.98 15.68 91 15Z" fill="#6A76B0" />
-                                <path d="M131 39C131 39.33 131 39.66 131 40C129.753 40.0735 129.753 40.0735 128.48 40.1484C127.394 40.2232 126.307 40.298 125.188 40.375C124.109 40.4446 123.03 40.5142 121.918 40.5859C118.814 40.812 118.814 40.812 116 43C113.957 43.1953 113.957 43.1953 111.812 43.125C109.925 43.0631 109.925 43.0631 108 43C108 41.68 108 40.36 108 39C115.83 38.2023 123.196 37.855 131 39Z" fill="#B4BAD7" />
-                                <path d="M61 21C64.0917 23.5296 64.9093 26.2245 66 30C63.69 29.67 61.38 29.34 59 29C59.875 23.25 59.875 23.25 61 21Z" fill="#E4E6F0" />
-                                <path d="M106.875 27.25C107.576 27.4975 108.277 27.745 109 28C108.375 29.9375 108.375 29.9375 107 32C104.062 32.875 104.062 32.875 101 33C100.01 32.34 99.02 31.68 98 31C103.292 26.9385 103.292 26.9385 106.875 27.25Z" fill="#4F5DA1" />
-                                <path d="M79 15C79.33 15 79.66 15 80 15C81.3229 19.9607 81.0889 24.9111 81 30C80.67 30 80.34 30 80 30C79.67 31.65 79.34 33.3 79 35C78.67 35 78.34 35 78 35C77.8896 28.2626 78.2987 21.7002 79 15Z" fill="#515FA2" />
-                                <path d="M34 7C37.3 7 40.6 7 44 7C43.67 8.32 43.34 9.64 43 11C40.03 10.67 37.06 10.34 34 10C34 9.01 34 8.02 34 7Z" fill="#9DA5CB" />
-                                <path d="M28 19C28.66 19 29.32 19 30 19C32 22 32 22 32 26C30.68 26 29.36 26 28 26C28 28.64 28 31.28 28 34C27.67 34 27.34 34 27 34C26.8155 23.4419 26.8155 23.4419 28 19Z" fill="#606DAB" />
-                                <path d="M66 27C67.5625 28.8125 67.5625 28.8125 69 31C68.67 31.99 68.34 32.98 68 34C67.34 33.34 66.68 32.68 66 32C63.3116 31.7301 60.7086 31.9126 58 32C58.66 31.01 59.32 30.02 60 29C62.97 29.495 62.97 29.495 66 30C66 29.01 66 28.02 66 27Z" fill="#3C4C97" />
-                                <path d="M88 13C90.97 13.33 93.94 13.66 97 14C97 14.66 97 15.32 97 16C95.02 16 93.04 16 91 16C90.67 18.64 90.34 21.28 90 24C89.67 24 89.34 24 89 24C88.67 20.37 88.34 16.74 88 13Z" fill="#3E4D98" />
-                                <path d="M109 21C109.33 21 109.66 21 110 21C110 22.98 110 24.96 110 27C108.35 27.66 106.7 28.32 105 29C105.33 27.35 105.66 25.7 106 24C106.66 24 107.32 24 108 24C108.33 23.01 108.66 22.02 109 21Z" fill="#3D4C98" />
-                                <path d="M58 15C59.98 15 61.96 15 64 15C64 15.66 64 16.32 64 17C62.35 17 60.7 17 59 17C59 17.66 59 18.32 59 19C58.34 19 57.68 19 57 19C57.33 17.68 57.66 16.36 58 15Z" fill="#515FA2" />
-                                <path d="M13 11C9.77484 12.7366 6.48671 13.8906 3 15C3.33 14.01 3.66 13.02 4 12C6.95665 10.5217 9.7423 10.9397 13 11Z" fill="#B7BCD8" />
-                            </svg>
-                        </div>}
-                    </div>
+                                {formData?.others_labels?.hide_show_qr_code_image && <img src="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAAAAABVicqIAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAArCSURBVGjevZptbFvVGcd/TkzapGnd0UJThsPo2JpWWTtthGqhoGk0ipBgaJvpJk1buk2wRUoZEAmFQflAGHQS6QYqStk+tCmCTWn2glwGqbMNLW1VUjqa0mGYcDVuYO4qB+wmpCR2/OzDuS/n+t7rmGrifLh6znNeHp9znpf/eY7Bt0yJiPQAaVFlABgXEUkACRGR8ZIhPSIiU76zVfEJlE9ECEHbtT0SiQBp2RWJRBQ9LnFFJGRMEXqJRCLby21X0VViAEgul7OJXC6XLBY3QC6XGy0Wt0AulxssJoF+c1Qml8sJADH3dEAYgFAFiwsFEKHgngBiC2H9tMV8u8Y14DqHHLrXT/ajj3Lv3SW8uWssqv4NHCHTE6WDn3ySn+0ExU9dTQiZ8BMyAUU/pipRNCGUX3NF+xlcAoV0H3JVn91pUZ0W8fDDJrF3L9/tuSghc6cBSF/2RDfA/GmrQRHxm/+5EYD+O/7TCAVWFIKNLrzQUqsX4lcv0LECId8C4Hse/mOPmcQzzwC8+CLtD5WfqShRm56VGDAl8/l8Pp/vBYx8P5DMq5IAEvkx1XkgnwL68mndQcZk1p4tKsVyK6mqKllt2G/94Yq2I7B9x3H47aec+t3Bcxw6VJmQt22GZfDZYcfK7vwhv+vwDB28zRw9DL336apVM+srpKZ8PPBvrgmgPdOFAbYusNzn/ujPT2kmmL0DNj4IwO2+2zW0gJDzQ5C86uBWGGs+0ubw80PQ35FpBJgfggb8Z6s8MtZqXy//4rSr0vLKKwCpH5QNRf4Bs56PClDPbB7q2dMJyab5C7AkNNIGiS3yIdRWy4ec+6yNVh4gvJhp35XUB0hfDMCiRZq30rqG6s3vOf2HWR+PkO0ljF+GH/lviVleDvCU8vPrAZ5/nm9vBt55XOs2vR0get9cNyzvLf4UavrkLgg96ZWqfJdeDOm36TEpZLOjQFxEJAn0Zw298zaZAdolDzRLEYiIfOyDr/ZAofP/f+06YZnBmd8A8M797vb7PbTJyWhF5INMJpPJdKmmdCZTlJlMZsDargSQyGRmPVjYLrFM5n2RTCbjXsmlLpyw3DVkBVBbanAryi52hfrMu4X8HB4I7Sz4D4nrP3l4GODYsbJCHgkOjs2+/LT0KSKZTqfTcWA0PWq6+nQS6E8bQG86DXSl0+l02h7bnE4DkXS68oNvsAkr+DRkARomABomrT4XtCGimAsJeU7zUkdKYOIugJldAOzyG+xiGoYh0gwYRjtgGNsAw3CiRcowCjKo6FH5yDDG9OF9hmmPXSKijNEwDMMAooZhmMZ4paVdq8MAK2sBlulWF9UnXRTlrOsXR8+WriEKSruitnY9DT/Regz4efTXtICYKGnc4xCXbnVzfLQrL+3mPKlUUXqAVKoPSKmLaSqVSqVmZBSIp8aBgVQqlUqZrj6Vsn2XqV2pVEpEAn3X5ZbLrmvQuGt0+pTFse4Ja3Kls6wp77v+AN+pAVCQ6vBhu+XtowC8vx+A/azd5B6536cWTrovILsLAL/ogNtqADogycsa6Pp3BySunFI3sA7o33RFEtYBLEvCun3Eeu1LjaiB4Sb3D7nGu6ol0ZdLWU3HdeffZCpbqElF3yaPqz/gBkrxj4IN8623/LgHaDR3LP+noHiyFSg6XvipYQDGYZnT6eutnOzwYMDBtQAboW/TZeNQz4wvSIz8Pejg17gAwRVXcNKn0wbgjNqxDWU80wbCEoIX4BYAXnKaDmcd+vV3yju4g6xqmTvkw7Y0YAzaclAMnShyt1LPMbg2tH03jDG8A4zonk7QvdWaFeffgitXA2cU7up9cHIldH0foEZdJpkPQ/T30EK4xRr5ZcdSa+3Jhm3mUpfOLGvxXVKLPyc8oip/0RqOwNeqADR/xbvvugavjWZfhc/YGj9ifpd8RdRU4a9a/C3eHzM6qu6Mr42O9nhxl6PqMg4MyMzo6KgXdwGtIqrJD3ddV/MEAF+EFyrB+puZCGrbjAT4LnXAJ6G1klvF4WDOYapaTSIEoMWHx4chwbP7IBs58QHHdoARfVM/jzZIwNroqY12ZNxAG/TcZLbGfmwSza9LlbOSmxyLfxy4vvZZS98U9mnSNGsEPGe55azFnLaIggemvgotnChaKqiyJ/+CL1UDnLWC6/ol50yrPO4Wctz8LlmPb3tAZDThq4zF4312dVziLt8Vd6q98TjQJYV4PD5iZSRMVB+PLwCJWgLADgC3vKnRk8qJ3eLTTfkuu7zhbn7vPXf9VHD1lPldtNanQwhgEG7nC+ooBp0+/7ATaYq51d1hKwzUlvr/bXsBGbI6RPvsaFUUEQsLz4pdNHAnIg64U0VZfKpkb7Y5wwtAVKEVCYEe8VSAWFuadNRuG9pJuGg3u+rzFtVEeP8Ad60zMd3TR01IwFTpLfbPHRbuu0HDgB3QX0cH9DaigY25ddB6pGoAOtYRyYKImHi0IK3eVwdru1w3LfOg1MVUDKBXMtp2zSoHKfbF9Iw9SA9/585xdciziSXljOcLnCHcaBKhqy0CoJ9HlSu1fPor+yAbOfiuO03bDzdfNdJmdesseT+5ymTGDhR/DZ2a73LnIPOmYmwDso6e9FsWX9EjTUxEtHs8lBijusEp53beup/bFwsncgQl1ANaQwDF0K+UzHtCwO0lCSsj+teT0O2ZtA+6rW9vnU8HtV2RhzRjtIs37WG+aZXmIP20yyXE1i61XWeBBs4V/W1r2jfBZCJg/evbwd6uxgkoVF+vcJeFyj/cCb3QuWJPJ/TCDtuxa7Rz8EsAdkBso9MavRMe1LXLNsYZzXelLe1KiuM6EzLm/dkBGe6Sm5aNS2dmtNTGpJUUmdQmnPTbnEn/1kkXWlkJPbw2DCuVzAjAajCiYPm0HgtLOAsAYCfstALD0BBA640qjyorvcbohN+s9Pgl1UTEheb6RUTS3nW1mnteLJ/vyvly56crTJOo4RGAcBcQ4pvzZpa45XNaRkrlvBaxqgt2Qxcs4W9qr2zOKoAau2rePOHocoCoylVIQOkCMk7V9cCsYWG7ZKy0h+nqXe8n0wF5YWWFJUbpQ3u7VNWVdgsv9RWiIuNKPXjDRosAboVtsNy6BNlzLoXYAcutXMu+pUS+EXRqU9JVwkm6gMQYMCgibiDR5TbGi0/ZwgUWh0xiwZ7qGwYo8btDAKtiWjUGl2D2vAESW0pfXWLmqKoYNFrM03VENzFUF+Tqp5xqn467zJStx3f1ltcuE8R4XooKxTLvUHMB+zNXNsN9jR0yZ81p79mtYrGTilrcDmFq2i3fZXsg+4q8e7c7aH2aS6D9Y6XRb70V4MYbOaxm/ZEJcicag0a8BIReqlhIwe9+WahgVHjBB4FWqGJRKyiLGzczKNWtlGqXPuSoTVxi+S6Xq8d5+9V9l4677DLu1S73Pb7gFxkXLvNgPYnPl+3jEPNQXdmZhJvhtOW7RjcDx6+DZusW2wxhq7pvH0AzHA3TDKfDRLKVbZcLd3l9V5/TzXzru6jnJnFXQh6+qLxmwDBTSH20nIw9nVou3fZd8OY6C8Wthp7HcsshqkHh01VEIWwLeaOS9RzcAIy0le1z094LdS6M66B64ePtmvjxJWBIiHCIyl6ZI5Z26bhLXQS7u0HDXRErlR2BiSoi2cp917GmAx4Tb8r6+K5aG4lGrZvWJ/Insv8Bswpn7ReOuQcAAAAASUVORK5CYII=" />}
+                                {formData?.others_labels?.hide_show_qr_code_image && <span style={{ fontSize: '10px', }}>Scan to download</span>}
+                            </div>
+                        </td >
+                        <td align="right" style={{ padding: '0 10px 20px', borderBottom: 'solid 1px #444444', borderRight: 'solid 1px #444444', lineHeight: '30px', }}>
+                            <strong>For, <span id="template_shop_name_footer">{formData?.store_information?.company_legal_name}</span></strong> &nbsp;&nbsp;<br />
 
-                    <div style={{ flex: '1', alignItems: 'center', justifyContent: 'center' }}>
-                        {hideShowQrCodeImage && <div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="50" height="50" x="0" y="0" viewBox="0 0 512 512" style={{ enableBackground: "new 0 0 50 50" }} xml:space="preserve" class=""><g><path d="M0 0v170h170V0H0zm130 130H40V40h90v90z" fill="#000000" opacity="1" data-original="#000000" class=""></path><path d="M65 65h40v40H65zM342 0v170h170V0H342zm130 130h-90V40h90v90z" fill="#000000" opacity="1" data-original="#000000" class=""></path><path d="M407 65h40v40h-40zM0 342v170h170V342H0zm130 130H40v-90h90v90z" fill="#000000" opacity="1" data-original="#000000" class=""></path><path d="M65 407h40v40H65zM40 197h40v40H40zM120 277v-40H80v40h39v40h40v-40zM280 77h40v40h-40zM200 40h40v77h-40zM240 0h40v40h-40zM240 117v40h-40v40h80v-80zM280 355v-39h-40v-79h-40v80h40v39h40v39h80v-40z" fill="#000000" opacity="1" data-original="#000000" class=""></path><path d="M280 197h40v80h-40zM472 236v-39h-73v40h-39v40h40v39h112v-80h-40zm0 40h-72v-39h72v39zM472 355h40v80h-40zM320 277h40v40h-40zM360 395h40v40h-40zM400 355h40v40h-40zM400 435v77h40v-37h32v-40zM200 356h40v76h-40zM320 472v-40h-80v80h40v-40h39v40h40v-40zM120 197h80v40h-80zM0 237h40v80H0z" fill="#000000" opacity="1" data-original="#000000" class=""></path></g></svg>
+                            <div class="crop-element-wrap" style={{ width: '312px', }} data-toggle="modal" data-target="#signatureCropModal">
+                                {signature}
                             </div>
 
-                            <div style={{ color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><strong>Scan to download</strong></div>
-                        </div>}
-
-                    </div>
-
-                    <div style={{ flex: '1', alignItems: 'end', justifyContent: 'end' }}>
-
-                        <div style={{ display: 'flex', color: 'black', justifyContent: 'end' }}><strong>For, {companyLegalName}</strong></div>
-                        <div style={{ display: 'flex', justifyContent: 'end' }}>
-                            {signature}
-                        </div>
-
-                        <div style={{ display: 'flex', color: 'black', justifyContent: 'end' }}>This is a computer generated invoice and does not require a signature</div>
-
-                    </div>
-
+                            <span id="template_no_signature_text" style={{ fontSize: '12px', }}>{formData?.others_labels?.this_is_a_computer_generated_invoice_and_does_not_require_a_signature}</span>
+                        </td >
+                    </tr >
+                </tbody >
+            </table >
+            <div class="footer-text">
+                <div class="footer-left-text">
+                    {formData?.footer_labels?.is_thank_you_for_your_business && <span id="thanks_for_business_on_off_tr">
+                        {formData?.footer_labels?.thank_you_for_your_business}
+                    </span>}
                 </div>
-
-            </div >
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                {isThankYouForYourBusiness ? <div style={{ padding: '5px 10px' }}><strong>{thankYouForYourBusiness && thankYouForYourBusiness}</strong></div> : null}
-                {isThankYouForYourBusiness ? <div style={{ padding: '5px 10px', color: '#ccc' }}>{hideShowGeneratedFrom ? `Generated from: ${shopDomain}` : ''}    {hideShowPageNo ? "Page 1 of 1" : ""}</div> : null}
+                <div class="footer-right-text">
+                    {formData?.footer_labels?.hide_show_generated_from && <span id="generated_from_on_off_tr">
+                        Generated from:
+                        {formData?.store_information?.shop_domain}&nbsp;&nbsp;&nbsp;&nbsp;
+                    </span>}
+                    {formData?.footer_labels?.hide_show_page_no && <span id="page_no_on_off_tr">Page 1 of 1</span>}
+                </div>
             </div>
-
-
-        </div>
+        </div >
     );
 }
