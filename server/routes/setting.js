@@ -72,11 +72,14 @@ router.post('/', upload.fields([{ name: 'logo_image', maxCount: 1 }, { name: 'si
 router.get('/:store_name', async (req, res) => {
     try {
         const { store_name } = req.params;
+        const storeName = req.headers['store-name'];
+    const apiVersion = req.headers['api-version'];
+    const accessToken = req.headers['access-token'];
 
-        const shopifyResponse = await fetch('https://gst-virtue-paras.myshopify.com/admin/api/2025-01/shop.json', {
+        const shopifyResponse = await fetch(`https://${storeName}/admin/api/2025-01/shop.json`, {
             headers: {
                 'Content-Type': 'application/json',
-                'X-Shopify-Access-Token': 'shpua_649d3ab48e3b42cbc6c31b5bd9ad8e89'
+                'X-Shopify-Access-Token': accessToken
             }
         });
 
@@ -91,7 +94,32 @@ router.get('/:store_name', async (req, res) => {
         const settings = await Setting.findOne({ store_name });
 
         if (!settings) {
-            return res.status(404).json({ message: 'Store not found' });
+            return res.status(200).json({
+                "_id": "",
+                "store_name": storeName,
+                "__v": 0,
+                "brand_name": "",
+                "cin_number": "",
+                "company_legal_name": "",
+                "contact_person": "",
+                "createdAt": "",
+                "fssai_lic_number": "",
+                "gst_number": "",
+                "iec_code": "",
+                "logo_image": "",
+                "pan_number": "",
+                "signature_image": "",
+                "store_address": "",
+                "store_city": "",
+                "store_country": "",
+                "store_country_code": "",
+                "store_email": "",
+                "store_phone": "",
+                "store_pincode": "",
+                "store_state": "",
+                "store_state_code": "",
+                "updatedAt": ""
+            });
         }
 
         settings.store_city = shopDetails.city;

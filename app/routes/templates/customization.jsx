@@ -16,7 +16,7 @@ import { Standard } from "./invoice/standard";
 import { Classic } from "./invoice/classic";
 import { Modern } from "./invoice/modern";
 import { Minimal } from "./invoice/minimal";
-import { Informatinve } from "./invoice/Informative";
+import { Informative } from "./invoice/informative";
 
 export const loader = async ({ request }) => {
     const { admin, session } = await authenticate.admin(request);
@@ -100,9 +100,9 @@ export const Customization = ({ onClick }) => {
                 const response = await fetch('http://localhost:3001/api/template/', {
                     method: 'GET',
                     headers: {
-                        'store-name': 'gst-virtue-paras.myshopify.com',
+                        'store-name': storeName,
                         'api-version': '2025-01',
-                        'access-token': 'shpua_649d3ab48e3b42cbc6c31b5bd9ad8e89'
+                        'access-token': accessToken
                     }
                 });
 
@@ -677,7 +677,14 @@ export const Customization = ({ onClick }) => {
         const fetchStoreData = async () => {
 
             try {
-                const response = await fetch(`http://localhost:3001/api/settings/${storeName}`);
+                const response = await fetch(`http://localhost:3001/api/settings/${storeName}`,{
+                    method: 'GET',
+                    headers: {
+                        'store-name': storeName,
+                        'api-version': '2025-01',
+                        'access-token': accessToken
+                    }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setStoreData(data);
@@ -801,7 +808,7 @@ export const Customization = ({ onClick }) => {
                             {templateType === "Classic" && <Classic bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                             {templateType === "Modern" && <Modern bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                             {templateType === "Minimal" && <Minimal bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
-                            {templateType === "Informatinve" && <Informatinve bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
+                            {templateType === "Informative" && <Informative bgColor={bgColor} textColor={textColor} fontFamily={formValues.state} logo={logo} signature={signature} formData={formData} storeData={storeData} type="customization" />}
                         </div>}
 
                     </div>

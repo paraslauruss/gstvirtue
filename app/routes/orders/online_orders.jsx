@@ -24,7 +24,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Standard } from "../templates/invoice/standard";
 import { Modern } from "../templates/invoice/modern";
 import { Minimal } from "../templates/invoice/minimal";
-import { Informatinve } from "../templates/invoice/informative";
+import { Informative } from "../templates/invoice/informative";
 import { Classic } from "../templates/invoice/classic";
 import htmlToPdfmake from "html-to-pdfmake";
 import html2canvas from "html2canvas";

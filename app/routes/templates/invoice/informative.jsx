@@ -1,6 +1,6 @@
 import ic_scanner from '../../../assets/images/ic_scanner.png'
 
-export const Informatinve = ({ logo }) => {
+export const Informative = ({ logo }) => {
 
   const tableStyle = {
     width: '100%',
