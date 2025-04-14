@@ -2,6 +2,7 @@ import { Page, Text, Card, Divider } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import dashboard_ph from "../assets/images/dashboard_ph.png";
 import { useLoaderData } from "@remix-run/react";
+import { useState, useEffect } from "react";
 
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
@@ -62,7 +63,6 @@ export const loader = async ({ request }) => {
 export const action = async ({ request }) => {
   return null;
 };
-
 
 
 
@@ -160,6 +160,92 @@ export default function Dashboard() {
       </div>
     );
   };
+
+  const [estimateCount, setEstimateCount] = useState(0);
+  const [expenseCount, setExpenseCount] = useState(0);
+  const [billCount, setBillCount] = useState(0);
+  const session = useLoaderData();
+  // for estimate
+  useEffect(() => {
+    const fetchEstimates = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/api/estimate", {
+          headers: {
+           "Content-Type": "application/json",
+            "store-name": session.storeName,
+            "api-version": "2025-01",
+            "access-token": session.accessToken
+          },
+        });
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          setEstimateCount(data.length); // Count the total number of estimates
+        }
+      } catch (error) {
+        console.error("Error fetching estimates:", error);
+      }
+    };
+
+    fetchEstimates();
+    const interval = setInterval(fetchEstimates, 5000); // Fetch every 5 seconds
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
+    //for expense
+    useEffect(() => {
+      const fetchExpenses = async () => {
+        try {
+          const response = await fetch("http://localhost:3001/api/expense", {
+            headers: {
+              "Content-Type": "application/json",
+                "store-name": session.storeName,
+                "api-version": "2025-01",
+                "access-token": session.accessToken
+            },
+          });
+          const data = await response.json();
+
+          if (Array.isArray(data)) {
+            setExpenseCount(data.length); // Count the total number of expenses
+          }
+        } catch (error) {
+          console.error("Error fetching expenses:", error);
+        }
+      };
+
+      fetchExpenses();
+      const interval = setInterval(fetchExpenses, 5000); // Fetch every 5 seconds
+      return () => clearInterval(interval); // Cleanup on unmount
+    }, []);
+
+    // For bills
+    useEffect(() => {
+      const fetchBill = async () => {
+        try {
+          const response = await fetch("http://localhost:3001/api/bills",{
+            headers: {
+              "Content-Type": "application/json",
+                "store-name": session.storeName,
+                "api-version": "2025-01",
+                "access-token": session.accessToken
+            },
+          });
+          const data = await response.json();
+
+          if (Array.isArray(data)) {
+            setBillCount(data.length); // Count the total number of expenses
+          }
+        } catch (error) {
+          console.error("Error fetching expenses:", error);
+        }
+      };
+      fetchBill();
+      const interval = setInterval(fetchBill, 5000);
+      return () => clearInterval(interval);
+    }, []);
+
+
   return (
     <div>
       <Page>
@@ -262,10 +348,10 @@ export default function Dashboard() {
             <Card>
               <Text variant="headingMd">Estimates</Text>
               <div style={{ color: "#919090" }}>
-                <Text variant="headingMd">20 Estimates</Text>
+                <Text variant="headingMd">{estimateCount} Estimates</Text>
               </div>
               <div style={{ color: "#74A535", marginTop: "10px" }}>
-                <Text variant="heading2xl">20</Text>
+                <Text variant="heading2xl">{estimateCount}</Text>
               </div>
             </Card>
           </div>
@@ -274,10 +360,10 @@ export default function Dashboard() {
             <Card>
               <Text variant="headingMd">Expense</Text>
               <div style={{ color: "#919090" }}>
-                <Text variant="headingMd">1 Expense</Text>
+                <Text variant="headingMd">{expenseCount} Expense</Text>
               </div>
               <div style={{ color: "#74A535", marginTop: "10px" }}>
-                <Text variant="heading2xl">1</Text>
+                <Text variant="heading2xl">{expenseCount}</Text>
               </div>
             </Card>
           </div>
@@ -286,10 +372,10 @@ export default function Dashboard() {
             <Card>
               <Text variant="headingMd">Bills</Text>
               <div style={{ color: "#919090" }}>
-                <Text variant="headingMd">5 Bills</Text>
+                <Text variant="headingMd">{billCount} Bills</Text>
               </div>
               <div style={{ color: "#74A535", marginTop: "10px" }}>
-                <Text variant="heading2xl">5</Text>
+                <Text variant="heading2xl">{billCount}</Text>
               </div>
             </Card>
           </div>

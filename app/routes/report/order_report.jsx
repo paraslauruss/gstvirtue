@@ -1,68 +1,158 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Divider, IconButton, InputAdornment, TextField } from "@mui/material";
-import dayjs from "dayjs";
 import { Card, Text } from "@shopify/polaris";
-import icEmpty from '../../assets/images/ic_empty.png'
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./DatePickerDialog.css";
+import ic_date from '../../assets/images/ic_date.png';
+import { useLoaderData } from "@remix-run/react";
 
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
 
 export default function OrderReport({ onClick }) {
 
-    const [{ month, year }, setDate] = useState({ month: 1, year: 2018 });
-    const [selectedDates, setSelectedDates] = useState({
-        start: new Date('Wed Feb 07 2018 00:00:00 GMT-0500 (EST)'),
-        end: new Date('Wed Feb 07 2018 00:00:00 GMT-0500 (EST)'),
-    });
+       const [startDate , setStartDate] = useState(null);
+       const [endDate, setEndDate] = useState(null);
+       const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+       const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+       const [reportData, setReportData] = useState(null);
+       const session = useLoaderData();
+       const storeName = session?.storeName;
+       const accessToken = session?.accessToken;
 
-    const handleMonthChange = useCallback(
-        (month, year) => setDate({ month, year }),
-        [],
-    );
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(null);
-  
-    const toggleDialog = () => setIsDialogOpen((prev) => !prev);
-  
-    const handleDateChange = (date) => {
-      setSelectedDate(date);
+       const handleClear = () => {
+        setReportData(null); 
+        setShowReport(false); 
+        // setStartDate(null);
+        // setEndDate(null);
+        };
+
+       const handleStartDateChange = (date) => {
+           setStartDate(date);
+           setIsStartDatePickerOpen(false);
+       };
+   
+       const handleEndDateChange = (date) => {
+           setEndDate(date);
+           setIsEndDatePickerOpen(false);
+       };
+
+       //fetch data from backend 
+       const fetchReportData = async () => {
+        if (!startDate || !endDate) {
+            alert("Please select both start and end dates.");
+            return;
+        }
+        console.log("Session Data:", storeName);
+        if (!session) {
+            console.error("Session is NULL or UNDEFINED. Check authentication.");
+            return;
+        }
+        const formattedStartDate = startDate.toISOString().split("T")[0];
+        const formattedEndDate = endDate.toISOString().split("T")[0];
+    
+        console.log("Formatted Start Date:", formattedStartDate);
+        console.log("Formatted End Date:", formattedEndDate);
+    
+        try {
+            const response = await fetch(
+            `http://localhost:3001/api/orderReport?startDate=${formattedStartDate}&endDate=${formattedEndDate}`, 
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "store-name": storeName,
+                    "api-version": "2025-01",
+                    "access-token": accessToken
+                }
+            }
+        );
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();    
+            setReportData({
+                total_sgst: data.total_sgst || "₹ 0.00",
+                total_cgst: data.total_cgst || "₹ 0.00",
+                total_igst: data.total_igst || "₹ 0.00",
+                total_cess: data.total_cess || "₹ 0.00",
+                total_shipping_amount: data.total_shipping_amount || "₹ 0.00",
+                total_subtotal_price: data.total_subtotal_price || "₹ 0.00",  
+            });
+    
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
+    };
+     
+    //file download csv json xml 
+    const [fileType, setFileType] = useState("csv");
+
+    // Function to convert JSON to CSV format
+    const convertToCSV = (data) => {
+        const headers = Object.keys(data).join(",") + "\n";
+        const values = Object.values(data).join(",") + "\n";
+        return headers + values;
+    };
+
+    // Function to convert JSON to XML format
+    const convertToXML = (data) => {
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<report>\n`;
+        Object.keys(data).forEach((key) => {
+            xml += `  <${key}>${data[key]}</${key}>\n`;
+        });
+        xml += `</report>`;
+        return xml;
+    };
+
+    // Function to trigger file download
+    const downloadFile = (content, fileName, mimeType) => {
+        const blob = new Blob([content], { type: mimeType });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Function to handle export based on selected file type
+    const handleExport = () => {
+        if (!reportData) {
+            alert("No data available to export!");
+            return;
+        }
+
+        let fileContent, fileName, mimeType;
+
+        if (fileType === "csv") {
+            fileContent = convertToCSV(reportData);
+            fileName = "report.csv";
+            mimeType = "text/csv";
+        } else if (fileType === "json") {
+            fileContent = JSON.stringify(reportData, null, 2);
+            fileName = "report.json";
+            mimeType = "application/json";
+        } else if (fileType === "xml") {
+            fileContent = convertToXML(reportData);
+            fileName = "report.xml";
+            mimeType = "application/xml";
+        }
+
+        downloadFile(fileContent, fileName, mimeType);
     };
 
 
-
     return (
-        <div style={{ padding: "50px 100px", backgroundColor: "#ffffff" }}>
-            {isDialogOpen && (
-        <div className="dialog-backdrop">
-          <div className="dialog-container">
-            <h3 style={{ margin: "10px 0", textAlign: "center" }}>
-              {selectedDate
-                ? selectedDate.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                : "Select a Date"}
-            </h3>
-            <DatePicker
-              selected={selectedDate}
-              onChange={handleDateChange}
-              inline
-              calendarClassName="custom-calendar"
-            />
-            <div className="dialog-actions">
-              <button className="dialog-button cancel" onClick={toggleDialog}>
-                Cancel
-              </button>
-              <button className="dialog-button confirm" onClick={toggleDialog}>
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <div style={{ padding: "50px 100px", backgroundColor: "#ffffff",display: 'flex', justifyContent:'center',height:'100vh'}}>
+            <div style={{width: '80%', maxWidth: '1000px', backgroundColor: '#fff'}}>
             <div style={{ display: "flex", gap: "20px" }}>
                 <div style={{ cursor: "pointer" }} onClick={onClick}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="21" viewBox="0 0 24 21" fill="none">
@@ -72,70 +162,158 @@ export default function OrderReport({ onClick }) {
                 </div>
                 <Text variant="headingLg">Order Reports</Text>
             </div>
+
             <div style={{ marginTop: '20px' }} />
-            <Card>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '20px', cursor: 'pointer' }} >
-                        <div
-                        onClick={toggleDialog}
-                            style={{ padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-                                <path d="M16.5 6.5H1.5V5C1.5 4.60218 1.65804 4.22064 1.93934 3.93934C2.22064 3.65804 2.60218 3.5 3 3.5H15C15.3978 3.5 15.7794 3.65804 16.0607 3.93934C16.342 4.22064 16.5 4.60218 16.5 5V6.5Z" fill="#74A535" stroke="#74A535" />
-                                <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V7H1V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H5M13 3V1M13 3H5M5 3V1M1 7.5V17C1 17.5304 1.21071 18.0391 1.58579 18.4142C1.96086 18.7893 2.46957 19 3 19H15C15.5304 19 16.0391 18.7893 16.4142 18.4142C16.7893 18.0391 17 17.5304 17 17V7.5" stroke="#74A535" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <Text>Select Start Date</Text>
+
+            <div style={{border:'1px solid #ccc', borderRadius:'6px',padding:'12px 12px'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '15px', cursor: 'pointer' }} >
+                    {/* start date */}
+                    <div style={{ display: "flex", position: "relative", width:'33%'}}>
+                        {/* Start Date Clickable Input Field */}
+                        <div onClick={() => setIsStartDatePickerOpen(!isStartDatePickerOpen)}
+                            style={{
+                                padding: "12px",
+                                height: "36px",
+                                display: "flex",
+                                alignItems: "center",
+                                width: "100%",
+                                border: "1px solid #000",
+                                borderRadius: "5px",
+                                cursor: "pointer",
+                                background: "#fff",
+                            }}>
+                            <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                            <span>{startDate ? startDate.toLocaleDateString("en-US") : "Select Start Date"}</span>
                         </div>
-
-                        <div
-                            style={{ padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-                                <path d="M16.5 6.5H1.5V5C1.5 4.60218 1.65804 4.22064 1.93934 3.93934C2.22064 3.65804 2.60218 3.5 3 3.5H15C15.3978 3.5 15.7794 3.65804 16.0607 3.93934C16.342 4.22064 16.5 4.60218 16.5 5V6.5Z" fill="#74A535" stroke="#74A535" />
-                                <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V7H1V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H5M13 3V1M13 3H5M5 3V1M1 7.5V17C1 17.5304 1.21071 18.0391 1.58579 18.4142C1.96086 18.7893 2.46957 19 3 19H15C15.5304 19 16.0391 18.7893 16.4142 18.4142C16.7893 18.0391 17 17.5304 17 17V7.5" stroke="#74A535" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <Text>Select End Date</Text>
+                        {isStartDatePickerOpen && (
+                            <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                                <DatePicker
+                                    selected={startDate}
+                                    onChange={handleStartDateChange}
+                                    inline
+                                />
+                            </div>                                   
+                        )}
+                    </div>
+                    {/* end date */}
+                    <div style={{ display: "flex", width: "33%", position: "relative" }}>
+                        <div onClick={() => setIsEndDatePickerOpen(!isEndDatePickerOpen)}
+                                style={{ padding: "12px",height: "36px",
+                                display: "flex",
+                                alignItems: "center",
+                                width: "100%",
+                                border: "1px solid #000",
+                                borderRadius: "5px",
+                                cursor: "pointer",
+                                background: "#fff",
+                                }}>
+                                <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                                <span>{endDate ? endDate.toLocaleDateString("en-US") : "Select End Date"}</span>
+                            </div>
+                            {isEndDatePickerOpen && (
+                            <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                                <DatePicker
+                                    selected={endDate}
+                                    onChange={handleEndDateChange}
+                                    inline
+                                />
+                            </div>
+                            )}
+                        </div>   
+                       {/* location */}
+                        <div>
+                            <select style={{width:'200px', height:'36px',border:'1px solid #000',borderRadius:'5px',
+                                fontSize:'14px', fontFamily:'Inter',padding:'5px',color:'#000'
+                            }}>
+                                <option value="location">Select a location</option>
+                                <option value="shop">Shop Location</option>
+                                <option value="office">Office</option>
+                            </select>
                         </div>
-
-                        <div
-                            style={{ justifyContent: 'space-between', padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-
-                            <Text>Select Location</Text>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="16" viewBox="0 0 11 16" fill="none">
-                                <path d="M1.00001 5.11765L5.52943 1L10.0588 5.11765" stroke="#858585" stroke-linecap="round" stroke-linejoin="round" />
-                                <path d="M10.0588 10.8824L5.52941 15L1 10.8824" stroke="#858585" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </div>
-
-                        <div
-                            style={{ color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px' }}>
-                            <Text>Search</Text>
+                        {/* search */}
+                        <div>
+                         <button style={{ color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px', 
+                            display: 'flex', flexDirection: 'row',cursor:'pointer', gap: '10px', borderRadius: '5px',fontSize:'14px',fontFamily:'Inter',border:'1px solid #ccc' }}
+                            onClick={fetchReportData}
+                            >
+                                Search</button>
                         </div>
                     </div>
-                    <div
-                        style={{ color: 'black', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-                        <Text>Clear</Text>
+                    {/* clear */}
+                    <div>
+                     <button style={{color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px', 
+                        display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px',fontSize:'14px',fontFamily:'Inter',border:'1px solid #ccc',cursor:'pointer'}}
+                        onClick={handleClear}
+                        >
+                            Clear</button>
                     </div>
                 </div>
                 <div style={{ marginTop: '20px' }}>
                     <Divider />
                 </div>
 
-                <div style={{ alignItems: 'center', justifyContent: 'center', marginTop: '50px' }}>
-                    <div style={{ justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
-                        <img src={icEmpty} width={200} />
+                <div style={{  marginTop: '30px',display:'flex', flexDirection:'column'}}>
+                {reportData && (
+                <div>
+                    <div style={{display:'flex',gap:'10px'}}>
+                        <select style={{width:'200px', height:'33px',border:'1px solid #ccc',borderRadius:'5px',backgroundColor:'#E8E8E8'}}>
+                             <option value="default">Default Report Template</option>
+                             <option value="report">report</option>
+                        </select>
+
+                        <select style={{width:'200px', height:'33px',border:'1px solid #ccc',borderRadius:'5px',backgroundColor:'#E8E8E8'}}
+                            value={fileType}
+                            onChange={(e) => setFileType(e.target.value)}  
+                        >
+                             <option value="csv">CSV file</option>
+                             <option value="json">Json file</option>
+                             <option value="xml">XML file</option>
+                        </select>
+
+                        <button style={{width:'120px',height:'33px',color:'#fff',border:'1px solid #ccc',borderRadius:'5px',
+                            backgroundColor:'#74A545',cursor:'pointer',fontSize:'14px',fontFamily:'Inter'}}
+                        
+                            onClick={handleExport}>
+                            Export Report
+                        </button>
+                        
                     </div>
-                    <div style={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
-                        <div>
-                            <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                <Text variant="headingLg">No Data Found</Text>
-                            </div>
-                            <div style={{ marginTop: '10px' }}>
-                                <Text variant="headingMd">You can find orders by changing your search or filtering options</Text>
-                            </div>
-                        </div>
+                    <div style={{width:'100%',marginTop:'20px'}}>
+                    <table style={{width: "100%",borderCollapse: "collapse",borderTop: "1px solid #ccc", borderBottom: "1px solid #ccc" ,fontSize:'12px',fontFamily:'Inter'}}>
+                        <tbody>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total SGST</td>
+                                <td style={{ padding: "10px" }}>₹ {reportData.total_sgst}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total CGST</td>
+                                <td style={{ padding: "10px" }}>₹ {reportData.total_cgst}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total IGST</td>
+                                <td style={{ padding: "10px" }}>₹ {reportData.total_igst}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total CESS</td>
+                                <td style={{ padding: "10px" }}>₹ {reportData.total_cess}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total Shipping Amount</td>
+                                <td style={{ padding: "10px" }}>₹ {reportData.total_shipping_amount}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total Orders Amount</td>
+                                <td style={{ padding: "10px" }}>₹ {reportData.total_subtotal_price}</td>
+                            </tr>    
+                        </tbody>
+                    </table>
                     </div>
                 </div>
-            </Card>
-
+                )}
+                </div>
+            </div>
+            </div>
         </div>
     );
 }

@@ -1,31 +1,152 @@
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Divider, IconButton, InputAdornment, TextField } from "@mui/material";
-import dayjs from "dayjs";
-import { Card, DatePicker, Text } from "@shopify/polaris";
+import React, {useState} from "react";
+import { Divider} from "@mui/material";
+import { Card, Text } from "@shopify/polaris";
 import icEmpty from '../../assets/images/ic_empty.png'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import "./DatePickerDialog.css";
+import ic_date from '../../assets/images/ic_date.png';
+import { useLoaderData } from "@remix-run/react";
+
+
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
+
 
 export default function PurchaseReport({onClick}) {
 
-    const [{ month, year }, setDate] = useState({ month: 1, year: 2018 });
-    const [selectedDates, setSelectedDates] = useState({
-        start: new Date('Wed Feb 07 2018 00:00:00 GMT-0500 (EST)'),
-        end: new Date('Wed Feb 07 2018 00:00:00 GMT-0500 (EST)'),
-    });
+       const [startDate , setStartDate] = useState(null);
+       const [endDate, setEndDate] = useState(null);
+       const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+       const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+       const [error, setError] = useState("");
+       const [initialLoad, setInitialLoad] = useState(true);
+       const [report, setReport] = useState(null);
 
-    const handleMonthChange = useCallback(
-        (month, year) => setDate({ month, year }),
-        [],
-    );
+       const session = useLoaderData();
+       const storeName = session?.storeName;
+       const accessToken = session?.accessToken;
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const handleCreateNewClick = () => {
-        setIsModalOpen(true); // Open the modal
-    };
+        const handleStartDateChange = (date) => {
+            setStartDate(date);
+            setIsStartDatePickerOpen(false);
+        };
 
+        const handleEndDateChange = (date) => {
+            setEndDate(date);
+            setIsEndDatePickerOpen(false);
+        };
+
+        const clearData = () => {
+            setStartDate(null);
+            setEndDate(null);
+            setReport(null);
+            setError("");
+            setInitialLoad(true);  // Reset to initial state
+        };
+        // Format Date as DD/MM/YYYY
+        const formatDate = (date) => {
+            if (!date) return "";
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
+            return `${year}-${month}-${day}`;
+        };
+
+        const fetchSummary = async () => {
+            if (!startDate || !endDate) {
+                setError("Please select both Start and End dates.");
+                return;
+            }
+            const formattedStartDate = formatDate(startDate);
+            const formattedEndDate = formatDate(endDate);
+            setError("");
+            setReport(null);
+            setInitialLoad(false);
+
+            console.log('start date', formattedStartDate);
+            console.log('end date', formattedEndDate);
+            try {
+
+                const response = await fetch(
+                    `http://localhost:3001/api/bills/tax-calculations?startDate=${formattedStartDate}&endDate=${formattedEndDate}`,
+                    { 
+                        method: 'GET', 
+                        headers: {
+                            "Content-Type": "application/json",
+                            "store-name": storeName,
+                            "api-version": "2025-01",
+                            "access-token": accessToken
+                        }
+                    }
+                );
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+    
+                // Check if the response contains bills data
+                if (!data.bills || data.bills.length === 0) {
+                    setError("No data found in the given date range.");
+                    setReport(null);
+                    return;
+                };
+                let totalPrice = 0;
+                let totalCESS = 0;
+                let totalCGST = 0;
+                let totalSGST = 0;
+                let totalIGST = 0;
+                // If there is only one bill, show the individual values for that bill
+                if (data.bills.length === 1) {
+                    const singleBill = data.bills[0];
+                    totalPrice = parseFloat(singleBill.productDetails.price) || 0;
+                    totalCESS = parseFloat(singleBill.productDetails.cessAmount) || 0;
+                    totalCGST = parseFloat(singleBill.productDetails.cgstAmount) || 0;
+                    totalSGST = parseFloat(singleBill.productDetails.sgstAmount) || 0;
+                    totalIGST = parseFloat(singleBill.productDetails.igstAmount) || 0;
+                    setReport({
+                        totalOrders: 1,
+                        totalPrice,
+                        totalCESS,
+                        totalCGST,
+                        totalSGST,
+                        totalIGST,
+                    });
+                } else {
+                    // If multiple bills, calculate totals by adding values for each bill
+                    data.bills.forEach((bill) => {
+                        totalPrice += parseFloat(bill.productDetails.price) || 0;
+                        totalCESS += parseFloat(bill.productDetails.cessAmount) || 0;
+                        totalCGST += parseFloat(bill.productDetails.cgstAmount) || 0;
+                        totalSGST += parseFloat(bill.productDetails.sgstAmount) || 0;
+                        totalIGST += parseFloat(bill.productDetails.igstAmount) || 0;
+                    });
+                    setReport({
+                        totalOrders: data.bills.length,
+                        totalPrice,
+                        totalCESS,
+                        totalCGST,
+                        totalSGST,
+                        totalIGST,
+                    });
+                }
+            } catch (err) {
+                setError("No Data found.");
+                setReport(null);
+            }
+        };
+    
     return (
-        <div style={{ padding: "50px 100px", backgroundColor: "#ffffff" }}>
-            <div style={{ display: "flex", gap: "20px" }}>
+        <div style={{ padding: "50px 100px", backgroundColor: "#ffffff",display: 'flex', justifyContent:'center',height:'100vh' }}>
+           <div style={{ width: '80%', maxWidth: '1000px', backgroundColor: '#fff' }}>
+           <div style={{ display: "flex", gap: "20px" }}>
                 <div style={{ cursor: "pointer" }} onClick={onClick}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="21" viewBox="0 0 24 21" fill="none">
                         <path d="M6.9375 1L1 6.9375L6.9375 12.875" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -35,52 +156,90 @@ export default function PurchaseReport({onClick}) {
                 <Text variant="headingLg">Purchase (Bill) Report</Text>
             </div>
             <div style={{ marginTop: '20px' }} />
-            <Card>
+                
+            <div style={{border:'1px solid #ccc', borderRadius:'6px',padding:'12px 12px'}}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '20px', cursor: 'pointer' }} onClick={handleCreateNewClick}>
-                        <div
-                            style={{ padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-                                <path d="M16.5 6.5H1.5V5C1.5 4.60218 1.65804 4.22064 1.93934 3.93934C2.22064 3.65804 2.60218 3.5 3 3.5H15C15.3978 3.5 15.7794 3.65804 16.0607 3.93934C16.342 4.22064 16.5 4.60218 16.5 5V6.5Z" fill="#74A535" stroke="#74A535" />
-                                <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V7H1V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H5M13 3V1M13 3H5M5 3V1M1 7.5V17C1 17.5304 1.21071 18.0391 1.58579 18.4142C1.96086 18.7893 2.46957 19 3 19H15C15.5304 19 16.0391 18.7893 16.4142 18.4142C16.7893 18.0391 17 17.5304 17 17V7.5" stroke="#74A535" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <Text>Select Start Date</Text>
+                    <div style={{ display: 'flex', gap: '15px', cursor: 'pointer' }}>
+                        {/* start date */}
+                    <div style={{ display: "flex", position: "relative", width:'33%'}}>
+                        {/* Start Date Clickable Input Field */}
+                        <div onClick={() => setIsStartDatePickerOpen(!isStartDatePickerOpen)}
+                            style={{
+                                padding: "12px",
+                                height: "36px",
+                                display: "flex",
+                                alignItems: "center",
+                                width: "100%",
+                                border: "1px solid #000",
+                                borderRadius: "5px",
+                                cursor: "pointer",
+                                background: "#fff",
+                            }}>
+                            <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                            <span>{startDate ? startDate.toLocaleDateString("en-US") : "Select Start Date"}</span>
                         </div>
-
-                        <div
-                            style={{ padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-                                <path d="M16.5 6.5H1.5V5C1.5 4.60218 1.65804 4.22064 1.93934 3.93934C2.22064 3.65804 2.60218 3.5 3 3.5H15C15.3978 3.5 15.7794 3.65804 16.0607 3.93934C16.342 4.22064 16.5 4.60218 16.5 5V6.5Z" fill="#74A535" stroke="#74A535" />
-                                <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V7H1V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H5M13 3V1M13 3H5M5 3V1M1 7.5V17C1 17.5304 1.21071 18.0391 1.58579 18.4142C1.96086 18.7893 2.46957 19 3 19H15C15.5304 19 16.0391 18.7893 16.4142 18.4142C16.7893 18.0391 17 17.5304 17 17V7.5" stroke="#74A535" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <Text>Select End Date</Text>
-                        </div>
-
-                        <div
-                            style={{ justifyContent: 'space-between', padding: '10px', display: 'flex', width: '200px', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-
-                            <Text>Select Location</Text>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="16" viewBox="0 0 11 16" fill="none">
-                                <path d="M1.00001 5.11765L5.52943 1L10.0588 5.11765" stroke="#858585" stroke-linecap="round" stroke-linejoin="round" />
-                                <path d="M10.0588 10.8824L5.52941 15L1 10.8824" stroke="#858585" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </div>
-
-                        <div
-                            style={{ color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px' }}>
-                            <Text>Search</Text>
-                        </div>
+                        {isStartDatePickerOpen && (
+                            <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                                <DatePicker
+                                    selected={startDate}
+                                    onChange={handleStartDateChange}
+                                    inline
+                                />
+                            </div>                                   
+                        )}
                     </div>
-                    <div
-                        style={{ color: 'black', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', border: '1px solid #000', borderRadius: '5px' }}>
-                        <Text>Clear</Text>
+                    {/* end date */}
+                    <div style={{ display: "flex", width: "33%", position: "relative" }}>
+                        <div onClick={() => setIsEndDatePickerOpen(!isEndDatePickerOpen)}
+                                style={{ padding: "12px",height: "36px",
+                                display: "flex",
+                                alignItems: "center",
+                                width: "100%",
+                                border: "1px solid #000",
+                                borderRadius: "5px",
+                                cursor: "pointer",
+                                background: "#fff",
+                                }}>
+                                <img src={ic_date} alt="Calendar" style={{ height: "15px", marginRight: "10px" }} />
+                                <span>{endDate ? endDate.toLocaleDateString("en-US") : "Select End Date"}</span>
+                            </div>
+                            {isEndDatePickerOpen && (
+                            <div style={{ position: "absolute", top: "40px", left: "0px", zIndex: 1000 }}>
+                                <DatePicker
+                                    selected={endDate}
+                                    onChange={handleEndDateChange}
+                                    inline
+                                />
+                            </div>
+                            )}
+                        </div>   
+                         {/* search */}
+                        <div>
+                         <button style={{ color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px', 
+                            display: 'flex', flexDirection: 'row',cursor:'pointer', gap: '10px', borderRadius: '5px',fontSize:'14px',fontFamily:'Inter',border:'1px solid #ccc' }}
+                            onClick={fetchSummary}
+                            >
+                                Search</button>
+                        </div>
+                          {/* clear */}
+                    <div>
+                     <button style={{color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px', 
+                        display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px',fontSize:'14px',fontFamily:'Inter',border:'1px solid #ccc',cursor:'pointer'}}
+                        onClick={clearData}
+                        >
+                            Clear</button>
+                    </div>
                     </div>
                 </div>
                 <div style={{ marginTop: '20px' }}>
                     <Divider />
                 </div>
 
-                <div style={{ alignItems: 'center', justifyContent: 'center', marginTop: '50px' }}>
+                {/* main content */}
+                <div style={{  marginTop: '30px',display:'flex', flexDirection:'column'}}>
+                    {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>} 
+                    {initialLoad && !error && (
+                    <div style={{ alignItems: 'center', justifyContent: 'center', marginTop: '50px' }}>
                     <div style={{ justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
                         <img src={icEmpty} width={200} />
                     </div>
@@ -95,8 +254,51 @@ export default function PurchaseReport({onClick}) {
                         </div>
                     </div>
                 </div>
-            </Card>
-
+                )}
+                {report && (
+                        <div>
+                        <div style={{display:'flex',gap:'10px',justifyContent:'flex-end'}}>
+                            <button style={{width:'120px',height:'33px',color:'#fff',border:'1px solid #ccc',borderRadius:'5px',
+                                backgroundColor:'#74A545',cursor:'pointer',fontSize:'14px',fontFamily:'Inter'}}
+                                >
+                                Export Report
+                            </button>        
+                        </div>
+                     <div style={{width:'100%',marginTop:'20px'}}>
+                        <table style={{width: "100%",borderCollapse: "collapse",borderTop: "1px solid #ccc", borderBottom: "1px solid #ccc" ,fontSize:'12px',fontFamily:'Inter'}}>
+                         <tbody>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total SGST</td>
+                                <td style={{ padding: "10px" }}>₹ {report.totalSGST}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total CGST</td>
+                                <td style={{ padding: "10px" }}>₹ {report.totalCGST}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total IGST</td>
+                                <td style={{ padding: "10px" }}>₹ {report.totalIGST}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total CESS</td>
+                                <td style={{ padding: "10px" }}>₹ {report.totalCESS}</td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ padding: "10px" }}>Total Orders Amount</td>
+                                <td style={{ padding: "10px" }}>₹ {report.totalPrice}</td>
+                            </tr>    
+                        </tbody>
+                     </table>
+                    </div>
+                </div>
+                    )}
+                </div>
+               
+            </div>
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',marginTop:'50px'}}>
+                <p style={{fontSize:'14px',fontFamily:'Inter',color:'#000',fontWeight:'500'}}>© 2025 VirtueGst. All Rights Reserved.</p>
+           </div>
+           </div>
         </div>
     );
 }

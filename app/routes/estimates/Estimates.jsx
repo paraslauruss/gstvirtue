@@ -22,6 +22,7 @@ import ic_print from '../../assets/images/ic_print.png';
 import ic_download from '../../assets/images/ic_download.png'
 import ic_warning from '../../assets/images/ic_warning.jpg';
 import RichTextEditor from "../orders/rich_text_editor";
+import EstimateInvoice from "./Invoices/EstimateInvoice";
 
 
 // customer add function
@@ -806,7 +807,7 @@ export const Estimates = () => {
     subtotal: 0,
     cgstAmount: 0,
     sgstAmount: 0,
-    cessAmount: 0
+    cessAmount: 0,
   });
 
   const session = useLoaderData();
@@ -846,21 +847,154 @@ export const Estimates = () => {
   }
 
   //product suggestion
-  const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('');
+    const [query, setQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (query.length >= 2) {
-        setLoading(true);
-        setError("");
+    useEffect(() => {
+      const fetchProducts = async () => {
+        if (query.length >= 2) {
+          setLoading(true);
+          setError("");
+          try {
+            // Fetch suggestions
+            const suggestionResponse = await fetch("http://localhost:3001/api/products", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "store-name": session.storeName,
+                "api-version": "2025-01",
+                "access-token": session.accessToken,
+              },
+            });
+
+            if (!suggestionResponse.ok) {
+              throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
+            }
+
+            const suggestionData = await suggestionResponse.json();
+
+            if (!Array.isArray(suggestionData)) {
+              throw new Error("Invalid response format: Expected an array");
+            }
+
+            const filteredSuggestions = suggestionData.filter((product) =>
+              product.title.toLowerCase().includes(query.toLowerCase())
+            );
+
+            setSuggestions(filteredSuggestions);
+            setShowDropdown(filteredSuggestions.length > 0);
+
+            // Find selected product
+            const selected = filteredSuggestions.find(
+              (product) => product.title.toLowerCase() === query.toLowerCase()
+            );
+
+          // console.log("Shopify ID: ", selected.id);
+            if (selected) {
+              const detailsResponse = await fetch(
+                `http://localhost:3001/api/products/${selected.id}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "store-name": session.storeName,
+                    "api-version": "2025-01",
+                    "access-token": session.accessToken,
+                  },
+                }
+              );
+
+              if (!detailsResponse.ok) {
+                throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
+              }
+
+              const productDetails = await detailsResponse.json();
+              setSelectedProduct(productDetails);
+            } else {
+              setSelectedProduct(null);
+            }
+          } catch (err) {
+            console.error("Error fetching products:", err);
+            setError("Error fetching products");
+            setShowDropdown(false);
+            setSelectedProduct(null);
+          } finally {
+            setLoading(false);
+          }
+        } else {
+          setSuggestions([]);
+          setShowDropdown(false);
+          setSelectedProduct(null);
+        }
+      };
+      fetchProducts();
+    }, [query]);
+
+    // Handle selection for main search input
+    const handleSelectMain = async (title) => {
+      setQuery(title); // Set the title in the input field
+      setShowDropdown(false); // Hide the dropdown
+    
+      const selected = suggestions.find((p) => p.title === title);
+    
+      if (selected) {
+        setSelectedProduct(selected); // Optional: for displaying product details
+    
+        // Add selected product to `inputs` array (not directly in formData)
+        setInputs((prevInputs) => [
+          ...prevInputs,
+          {
+            query: title, // Store the title
+            selectedProduct: selected, // Store the whole product object
+            hsn: selected.hsn,
+            gst: selected.gst,
+            cess: selected.cess,
+          }
+        ]);
+      }
+    };
+
+    //ADD INPUT
+    const [inputs, setInputs] = useState([]);
+    // Add new input field
+    const addInputField = () => {
+      setInputs([
+        ...inputs,
+        {
+          id: Date.now(), query: "", suggestions: [], showDropdown: false, selectedProduct: null,
+          hsn: "",
+          gst: "",
+          cess: ""
+        },
+      ]);
+    };
+    // Remove input field
+    const removeInputField = (id) => {
+      setInputs(inputs.filter((input) => input.id !== id));
+    };
+
+    // Handle input change for dynamic fields
+    const handleInputChange = async (id, value) => {
+      setInputs((prevInputs) =>
+        prevInputs.map((input) =>
+          input.id === id
+            ? {
+              ...input,
+              query: value,
+              showDropdown: value.length >= 2,
+              ...(value === "" ? { hsn: "", gst: "", cess: "", selectedProduct: null } : {})
+            }
+            : input
+        )
+      );
+
+      if (value.length >= 2) {
         try {
-          // Fetch suggestions
-          const suggestionResponse = await fetch("http://localhost:3001/api/products", {
+          const response = await fetch("http://localhost:3001/api/products", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -870,164 +1004,49 @@ export const Estimates = () => {
             },
           });
 
-          if (!suggestionResponse.ok) {
-            throw new Error(`HTTP error! Status: ${suggestionResponse.status}`);
-          }
+          const data = await response.json();
+          console.log("API Response:", data); // Debugging step
 
-          const suggestionData = await suggestionResponse.json();
-
-          if (!Array.isArray(suggestionData)) {
-            throw new Error("Invalid response format: Expected an array");
-          }
-
-          const filteredSuggestions = suggestionData.filter((product) =>
-            product.title.toLowerCase().includes(query.toLowerCase())
-          );
-
-          setSuggestions(filteredSuggestions);
-          setShowDropdown(filteredSuggestions.length > 0);
-
-          // Find selected product
-          const selected = filteredSuggestions.find(
-            (product) => product.title.toLowerCase() === query.toLowerCase()
-          );
-
-         // console.log("Shopify ID: ", selected.id);
-          if (selected) {
-            const detailsResponse = await fetch(
-              `http://localhost:3001/api/products/${selected.id}`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                  "store-name": session.storeName,
-                  "api-version": "2025-01",
-                  "access-token": session.accessToken,
-                },
-              }
+          if (Array.isArray(data)) {
+            const filteredSuggestions = data.filter((product) =>
+              product.title.toLowerCase().includes(value.toLowerCase())
             );
 
-            if (!detailsResponse.ok) {
-              throw new Error(`HTTP error! Status: ${detailsResponse.status}`);
-            }
+            console.log("Filtered Suggestions:", filteredSuggestions); // Debugging step
 
-            const productDetails = await detailsResponse.json();
-            setSelectedProduct(productDetails);
-          } else {
-            setSelectedProduct(null);
+            setInputs((prevInputs) =>
+              prevInputs.map((input) =>
+                input.id === id
+                  ? { ...input, suggestions: filteredSuggestions, showDropdown: filteredSuggestions.length > 0 }
+                  : input
+              )
+            );
           }
-        } catch (err) {
-          console.error("Error fetching products:", err);
-          setError("Error fetching products");
-          setShowDropdown(false);
-          setSelectedProduct(null);
-        } finally {
-          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching products:", error);
         }
       } else {
-        setSuggestions([]);
-        setShowDropdown(false);
-        setSelectedProduct(null);
+        setInputs((prevInputs) =>
+          prevInputs.map((input) =>
+            input.id === id ? { ...input, suggestions: [], showDropdown: false } : input
+          )
+        );
       }
     };
-    fetchProducts();
-  }, [query]);
 
-  // Handle selection for main search input
-  const handleSelectMain = async (title) => {
-    setQuery(title); // Set the title in the input field
-    setShowDropdown(false); // Hide the dropdown
-  };
-
-  //ADD INPUT
-  const [inputs, setInputs] = useState([]);
-  // Add new input field
-  const addInputField = () => {
-    setInputs([
-      ...inputs,
-      {
-        id: Date.now(), query: "", suggestions: [], showDropdown: false, selectedProduct: null,
-        hsn: "",
-        gst: "",
-        cess: ""
-      },
-    ]);
-  };
-  // Remove input field
-  const removeInputField = (id) => {
-    setInputs(inputs.filter((input) => input.id !== id));
-  };
-
-  // Handle input change for dynamic fields
-  const handleInputChange = async (id, value) => {
-    setInputs((prevInputs) =>
-      prevInputs.map((input) =>
-        input.id === id
-          ? {
-            ...input,
-            query: value,
-            showDropdown: value.length >= 2,
-            ...(value === "" ? { hsn: "", gst: "", cess: "", selectedProduct: null } : {})
-          }
-          : input
-      )
-    );
-
-    if (value.length >= 2) {
-      try {
-        const response = await fetch("http://localhost:3001/api/products", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "store-name": session.storeName,
-            "api-version": "2025-01",
-            "access-token": session.accessToken,
-          },
-        });
-
-        const data = await response.json();
-        console.log("API Response:", data); // Debugging step
-
-        if (Array.isArray(data)) {
-          const filteredSuggestions = data.filter((product) =>
-            product.title.toLowerCase().includes(value.toLowerCase())
-          );
-
-          console.log("Filtered Suggestions:", filteredSuggestions); // Debugging step
-
-          setInputs((prevInputs) =>
-            prevInputs.map((input) =>
-              input.id === id
-                ? { ...input, suggestions: filteredSuggestions, showDropdown: filteredSuggestions.length > 0 }
-                : input
-            )
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    } else {
+    const handleSelect = (id, title, productDetails) => {
       setInputs((prevInputs) =>
         prevInputs.map((input) =>
-          input.id === id ? { ...input, suggestions: [], showDropdown: false } : input
+          input.id === id ? {
+            ...input, query: title, showDropdown: false,
+            selectedProduct: productDetails,
+            hsn: productDetails.hsn || "",
+            gst: productDetails.gst || "",
+            cess: productDetails.cess || ""
+          } : input
         )
       );
-    }
-  };
-
-  const handleSelect = (id, title, productDetails) => {
-    setInputs((prevInputs) =>
-      prevInputs.map((input) =>
-        input.id === id ? {
-          ...input, query: title, showDropdown: false,
-          selectedProduct: productDetails,
-          hsn: productDetails.hsn || "",
-          gst: productDetails.gst || "",
-          cess: productDetails.cess || ""
-        } : input
-      )
-    );
-  };
+    };
 
   // CALCULARIONS
   const [qty, setQty] = useState(1);
@@ -1270,6 +1289,18 @@ export const Estimates = () => {
       let method = 'POST';
       let itemToEditId = null;
 
+      const itemsArray = inputs.map((input) => ({
+        title: input.query,
+        hsn: input.hsn,
+        gst: input.gst,
+        cess: input.cess,
+      }));
+  
+      const updatedFormData = {
+        ...formData,
+        items: itemsArray, 
+      };
+
       if (isEditing && editIndex !== null && filteredEstimate[editIndex] && filteredEstimate[editIndex]._id) {
         itemToEditId = filteredEstimate[editIndex]._id;
         apiURL = `http://localhost:3001/api/estimate/${itemToEditId}`;
@@ -1278,8 +1309,7 @@ export const Estimates = () => {
       } else {
         console.log("Creating new Estimate.");
       }
-
-      console.log("Saving estimate to", apiURL, "with method", method, "data:", formData); // Log the data!
+      console.log("Saving estimate to", apiURL, "with method", method, "data:", updatedFormData); // Log the data!
 
       const headers = {
         'Content-Type': 'application/json',
@@ -1288,10 +1318,12 @@ export const Estimates = () => {
         'access-token': session.accessToken,
       };
 
+      //console.log("Form Data :" ,JSON.stringify(formData));
+
       const response = await fetch(apiURL, {
         method: method,
         headers: headers,
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updatedFormData),
       });
 
       if (response.ok) {
@@ -3299,6 +3331,8 @@ export const Estimates = () => {
           <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '20px', color: '#707070' }}>
             <p>@2024 Virtue. All Rights Reserved.</p>
           </div>
+          
+           <EstimateInvoice />
         </div>
       )}
     </div>

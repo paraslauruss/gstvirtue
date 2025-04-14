@@ -1,5 +1,5 @@
 import { Card, Divider, Text } from "@shopify/polaris";
-import { useNavigate } from "react-router-dom";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import OrderReport from "./report/order_report";
 import { useCallback, useState } from "react";
 import OfflineInvoiceOrder from "./report/offline_invoice_order";
@@ -16,9 +16,19 @@ import HSNSACSummaryPurchase from "./report/hsn_sac_summary_purchase";
 import SupplySummary from "./report/supply_summary";
 import EligibleITC from "./report/eligible_itc";
 import GSTR1 from "./report/gstr_1";
+import { authenticate } from "../shopify.server";
 
+export const loader = async ({ request }) => {
+    const { admin, session } = await authenticate.admin(request);
+    
+    return {
+        accessToken: session.accessToken,
+        storeName: session.shop
+    };
+};
 
 export default function ReportCenter() {
+    const data = useLoaderData();
     const navigate = useNavigate();
     const handleCreateNewClick = () => {
         navigate("/app/report/order_report");

@@ -26,7 +26,9 @@ const collectionRoutes = require('./routes/collection');
 const smartCollectionRoutes = require('./routes/smart_collection');
 const path = require('path');
 const refundedOrderRoutes = require('./routes/RefundOrders');
-
+const OrderReportRoute = require('./routes/OrderReport');
+const creditReport = require('./routes/reportTemplate');
+const onlineReport = require('./routes/onlineReport');
 
 const app = express();
 app.use(bodyParser.json());
@@ -64,6 +66,9 @@ app.use('/api/customize-label', customizeLabelRoutes);
 app.use('/api/email-formate', emailFormateRoutes);
 app.use('/api/collection', collectionRoutes);
 app.use('/api/smart-collection', smartCollectionRoutes);
+app.use('/api',OrderReportRoute);
+app.use('/api/templates', creditReport);
+app.use('/api/online', onlineReport);
 
 // Connect to MongoDB
 require('dotenv').config(); // This will load the variables from the .env file

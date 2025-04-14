@@ -15,9 +15,62 @@ const verifyHeaders = (req, res, next) => {
 // Apply the verifyHeaders middleware to all routes in this router
 router.use(verifyHeaders);
 
+//expense report , report summary code 
+router.get('/summary', async (req, res) => {
+  try {
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+          return res.status(400).json({ message: "Start date and end date are required." });
+      }
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+       }
+      //  Fetch expenses within the given range
+      const expenses = await Expense.find({
+          expenseDate: {
+            $gte: start,
+            $lte: end
+          }
+      });
+
+      //  Calculate totals
+      let totalAmount = 0, totalCGST = 0, totalSGST = 0;
+      let totalIGST = 0, totalCess = 0; // Always 0 as per request
+
+      expenses.forEach(expense => {
+          totalAmount += expense.amount || 0;
+          totalCGST += expense.cgstAmount || 0;
+          totalSGST += expense.sgstAmount || 0;
+      });
+
+      //  Response format with totals at the top
+      res.json({
+          totalAmount,
+          totalCGST,
+          totalSGST,
+          totalIGST, // Always 0
+          totalCess, // Always 0
+          expenses: expenses.map(exp => ({
+              ...exp._doc,
+              expenseDate: exp.expenseDate.toISOString().split("T")[0] 
+          }))
+      });
+
+  } catch (err) {
+      console.error("Error fetching expenses:", err);
+      res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 // GET all expenses
 router.get('/', async (req, res) => {
     try {
+      
       const expenses = await Expense.find();
       res.json(expenses);
     } catch (err) {
@@ -27,23 +80,35 @@ router.get('/', async (req, res) => {
   
   // POST a new expense
   router.post('/', async (req, res) => {
-    const expense = new Expense({
-      payees: req.body.payees,
-      expenseDate: req.body.expenseDate,
-      status: req.body.status,
-      paymentMethod: req.body.paymentMethod,
-      RefNumber: req.body.RefNumber,
-      totalTax: req.body.totalTax,
-      total: req.body.total,
-    });
-  
     try {
-      const newExpense = await expense.save();
-      res.status(201).json(newExpense); // 201 Created
+        const { payees, expenseDate, status, paymentMethod, RefNumber, 
+          totalTax, total, amount, cgstAmount, sgstAmount,rate,
+          discountPercent, discountFlat, gstPercentage, expenseCategoryValue  } = req.body;
+
+        const expense = new Expense({
+            payees,
+            expenseDate,
+            expenseCategoryValue,
+            status,
+            paymentMethod,
+            RefNumber,
+            totalTax,
+            total,
+            amount,      
+            cgstAmount,   
+            sgstAmount ,
+            rate,
+            discountPercent,
+            discountFlat,
+            gstPercentage   
+        });
+
+        const newExpense = await expense.save();
+        res.status(201).json(newExpense); 
     } catch (err) {
-      res.status(400).json({ message: err.message }); // 400 Bad Request
+        res.status(400).json({ message: err.message });
     }
-  });
+});
   
   // GET a single expense by ID
   router.get('/:id', async (req, res) => {

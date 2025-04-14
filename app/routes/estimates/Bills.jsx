@@ -10,6 +10,7 @@ import ic_info from '../../assets/images/ic_delete.png';
 import ic_print from '../../assets/images/ic_print.png';
 import ic_download from '../../assets/images/ic_download.png'
 import ic_warning from '../../assets/images/ic_warning.jpg';
+import BillInvoice from "./Invoices/BillInvoice";
 
 
 export const Bills = () => {
@@ -71,7 +72,11 @@ export const Bills = () => {
         const response = await fetch(apiURL, {
             method: method,
             headers: headers,
-            body: JSON.stringify(formData),
+            body: JSON.stringify({ 
+              ...formData, 
+              totalShippingCharge: shippingCharge ,
+              productId: selectedProduct.id 
+          }),
         });
         if (response.ok) {
             const newBill = await response.json();
@@ -2241,6 +2246,8 @@ function formatDate(dateString) {
             <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '20px', color: '#707070' }}>
             <p>@2024 Virtue. All Rights Reserved.</p>
           </div>
+
+          <BillInvoice />
           </div>
         )}
       </div>

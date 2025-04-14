@@ -48,7 +48,7 @@ import { ebgaramondBoldBase64 } from "../templates/invoice/font/ebgaramond_bold"
 
 export const loader = async ({ request }) => {
     const { admin, session } = await authenticate.admin(request);
-
+    
     return {
         accessToken: session.accessToken,
         storeName: session.shop
@@ -254,7 +254,7 @@ export function OnlineOrders() {
         return ReactDOMServer.renderToString(
             <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center", }}>
                 {templateData?.template_type === "Minimal" && <Minimal formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
-                {templateData?.template_type === "Informative" && <Informatinve formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
+                {templateData?.template_type === "Informative" && <Informative formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
                 {templateData?.template_type === "Modern" && <Modern formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
                 {templateData?.template_type === "Classic" && <Classic formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
                 {templateData?.template_type === "Standard" && <Standard fontFamily={templateData.fontStyle} formData={formData} orderData={downloadOrder} storeData={storeData} type="order" logo={logo} signature={signature} />}
@@ -1033,7 +1033,7 @@ export function OnlineOrders() {
                                                         src={ic_download}
                                                         ref={el => buttonRefs.current[index] = el}
                                                         style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }}
-                                                        alt="Swap"
+                                                        alt="download"
                                                         onClick={() => handleButtonClick({ order: order, index: index })}
                                                         onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
                                                         onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}

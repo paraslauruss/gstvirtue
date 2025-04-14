@@ -1,5 +1,5 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useRef} from "react";
 import groupimage from "../../assets/images/Group@2x.png";
 import { Card } from "@shopify/polaris";
 import {  useLoaderData } from "@remix-run/react";
@@ -13,8 +13,32 @@ import ic_date from '../../assets/images/ic_date.png';
 import ic_warning from '../../assets/images/ic_warning.jpg';
 import searchIcon from '../../assets/images/searchIcon.png'
 import axios from "axios";
+import ExpenseInvoice from "./Invoices/ExpenseInvoice";
+import { jsPDF } from "jspdf";
+import ReactDOMServer from "react-dom/server";
+import { arialBase64 } from "../templates/invoice/font/arial_unicode_ms";
+import { arialBoldBase64 } from "../templates/invoice/font/arial_unicode_ms_bold";
+import { robotoBase64 } from "../templates/invoice/font/roboto_base64";
+import { poppinsRegularBase64 } from "../templates/invoice/font/poppins_regular";
+import { poppinsBoldBase64 } from "../templates/invoice/font/poppins_bold";
+import { rubikRegularBase64 } from "../templates/invoice/font/rubik_regular";
+import { rubikBoldBase64 } from "../templates/invoice/font/rubik_bold";
+import { calibriBoldBase64 } from "../templates/invoice/font/calibri_bold";
+import { calibriRegularBase64 } from "../templates/invoice/font/calibri_regular";
+import { helveticaRegularBase64 } from "../templates/invoice/font/helvetica_regular";
+import { helveticaBoldBase64 } from "../templates/invoice/font/helvetica_bold";
+import { verdanaRegularBase64 } from "../templates/invoice/font/verdana_bold";
+import { verdanaBoldBase64 } from "../templates/invoice/font/verdana_regular";
+import { ebgaramondRegularBase64 } from "../templates/invoice/font/ebgaramond_regular";
+import { ebgaramondBoldBase64 } from "../templates/invoice/font/ebgaramond_bold";
+
+
 
 export const Expenses = () => {
+      const session = useLoaderData();
+      const storeName = session?.storeName;
+      const accessToken = session?.accessToken;
+
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [formData, setFormData] = useState({
     expenseDate: "",
@@ -22,11 +46,14 @@ export const Expenses = () => {
     dueDate: "",
     paymentMethod: "",
     RefNumber: "",
-    items: [],
+    items: [], 
     payees:"",
     billNumber: "",
     total: 0,
-    totalTax: 0
+    totalTax: 0,
+    expenseCategoryValue: "",
+    gstPercentage:"",
+    rate:0,
   });
 
     const [expense, setExpense] = useState([]);
@@ -50,20 +77,30 @@ export const Expenses = () => {
                 console.log("Creating new Bill.");
             }
     
-            //Log URL
-              console.log("Saving Bill to", apiURL, "with method", method);
-    
+            const expenseData = {
+              ...formData,  
+              amount,       
+              cgstAmount,  
+              sgstAmount,
+              rate: rate,
+              discountPercent: formData.discountPercent,
+              discountFlat: formData.discountFlat,
+              gstPercentage: gstPercentage ,
+              expenseCategoryValue: formValues.expenseCategoryValue,
+          };
+
+          console.log("Saving Expense:", expenseData); // Debugging
             const headers = {
                 'Content-Type': 'application/json',
                 'api-version': '2025-01',
-                'store-name': session.storeName,
-                'access-token': session.accessToken,
+                'store-name': storeName,
+                'access-token': accessToken,
             };
     
             const response = await fetch(apiURL, {
                 method: method,
                 headers: headers,
-                body: JSON.stringify(formData),
+                body: JSON.stringify(expenseData),
             });
             if (response.ok) {
                 const newExpense = await response.json();
@@ -72,8 +109,8 @@ export const Expenses = () => {
                     headers: {
                         'Content-Type': 'application/json',
                         'api-version': '2025-01',
-                        'store-name': session.storeName,
-                        'access-token': session.accessToken,
+                        'store-name': storeName,
+                        'access-token':accessToken,
                     }
                 });
                 if (fetchResponse.ok) {
@@ -101,7 +138,7 @@ export const Expenses = () => {
             alert(`Error saving/updating expense: ${error.message}`);
         }
     };
-      // useEffect hook to load bills from localStorage on component mount
+      // useEffect hook to load expense from localStorage on component mount
       useEffect(() => {
         const fetchExpense = async () => {
           try {
@@ -130,6 +167,7 @@ export const Expenses = () => {
         fetchExpense();
       }, [isFormVisible]);
     
+
       const resetForm = () => {
         setFormData({
           expenseDate: "",
@@ -172,8 +210,6 @@ export const Expenses = () => {
   };
   
   // FETCH CUSTOMER NAMES 
-  
-  const session = useLoaderData(); // Get session data from the loader
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -271,8 +307,65 @@ export const Expenses = () => {
   const [startDate, setStartDate] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const handleDateChange = (date) => {
-    setFormData({ ...formData, startDate: date });
-    setIsOpen(false);
+    if (!date) return;
+  
+  // Convert to local date without time shift
+  const localDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() // Ensures only date is stored
+  );
+
+  setFormData((prevData) => ({
+    ...prevData,
+    expenseDate: localDate.toISOString().split("T")[0], // Store only date part
+  }));
+  setIsOpen(false);
+  };
+  // expense type selection
+  const expenseOptions = [
+    { value: "", label: "Search Expense..." },
+    { value: "marketing", label: "Advertising And Marketing" },
+    { value: "automobile", label: "Automobile Expense" },
+    { value: "debt", label: "Bad Debt" },
+    { value: "bank", label: "Consultant Expense" },
+    { value: "Contract", label: "Contract Assets" },
+    { value: "credit", label: "Credit Card Charges" },
+    { value: "depreciation", label: "Depreciation And Amortisation" },
+    { value: "expense", label: "Depreciation Expense" },
+    { value: "IT", label: "It And Internet Expense" },
+    { value: "jamotorial", label: "Janitorial Expense" },
+    { value: "meals", label: "Meals And Entertainment" },
+    { value: "mech", label: "Merchandise" },
+    { value: "office", label: "Office Supplies" },
+    { value: "other", label: "Other Expenses" },
+    { value: "post", label: "Postage" },
+    { value: "print", label: "Printing And Stationery" },
+    { value: "raw", label: "Raw materials And Consumables" },
+    { value: "rent", label: "Rent Expense" },
+    { value: "repairs", label: "Repairs And Maintainence" },
+    { value: "salary", label: "Salaries And Employee Wages" },
+    { value: "tele", label: "Telephone Expense" },
+    { value: "tranport", label: "Transportation Expense" },
+    { value: "travel", label: "Travel Expense" },
+  ];
+
+  const [formValues, setFormValues] = useState({
+    expenseCategoryValue: "", // this is what gets saved to backend
+    // add other form fields if needed
+  });
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+  
+    // Find the selected option's label
+    const selectedOption = expenseOptions.find(option => option.value === value);
+    const selectedLabel = selectedOption ? selectedOption.label : "";
+  
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name]: selectedLabel, // Save the LABEL instead of value
+    }));
   };
 
   // AMOUNT CALCULATIONS
@@ -534,6 +627,264 @@ export const Expenses = () => {
       return formattedDate;
   }  
 
+  const [storeData, setStoreData] = useState(null);
+  useEffect(() => {
+    const fetchStoreData = async () => {
+        if (storeName) { 
+            setIsLoading(true); 
+            try {
+                const response = await fetch(`http://localhost:3001/api/settings/${storeName}`,{
+                  headers:{
+                      "api-version":'2025-01',
+                      "access-token":accessToken,
+                      "store-name":storeName
+                  }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setStoreData(data);
+                    console.log("Store data:", data);
+                } else {
+                    console.error("Error fetching store data:", response.status, await response.text());
+                }
+            } catch (error) {
+                console.error("ErrorHandle fetching store data:", error);
+            } finally {
+                setIsLoading(false); // Set loading to false after fetching, regardless of success or failure
+            }
+        }
+    };
+    fetchStoreData(); // Call the async function inside the effect
+    }, [storeName]);
+
+    useEffect(() => {
+      const fetchExpenseData = async () => {
+        try {
+          const response = await fetch("http://localhost:3001/api/expense", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "api-version":'2025-01',
+              "access-token":accessToken,
+              "store-name":storeName
+            },
+          });
+  
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+  
+          const data = await response.json();
+          setExpense(data); 
+        } catch (error) {
+          console.error("Failed to fetch expenses:", error);
+        }
+      };
+  
+      fetchExpenseData();
+    }, []);
+
+      const handleDownload = async () => {
+          const fileName = "Expense";
+          try {
+              // PDF content generate karna
+              const htmlContent = generateInvoiceHtml();
+              // Create a new PDF document
+              const pdf = new jsPDF({
+                  orientation: "portrait",
+                  unit: "mm",
+                  format: "a4",
+              });
+  
+              // pdf.addFileToVFS("ArialUnicodeMS-Bold.ttf", arialBoldBase64);
+              // pdf.addFont("ArialUnicodeMS-Bold.ttf", "ArialUnicodeMS", "bold");
+              // // Normal font add karna
+              // pdf.addFileToVFS("ArialUnicodeMS.ttf", arialBase64);
+              // pdf.addFont("ArialUnicodeMS.ttf", "ArialUnicodeMS", "normal");
+              // pdf.addFileToVFS("Roboto-Regular.ttf", robotoBase64);
+              // pdf.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+  
+              // pdf.addFileToVFS("Roboto-Bold.ttf", robotoBase64);
+              // pdf.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+              // // Normal font set karna
+              // pdf.setFont("ArialUnicodeMS", "normal");
+              // // Bold text set karna
+              // pdf.setFont("ArialUnicodeMS", "bold");
+  
+              // pdf.setFont("Roboto", "normal");
+              // pdf.setFont("Roboto", "bold");
+              // // Poppins Regular
+              // pdf.addFileToVFS("Poppins-Regular.ttf", poppinsRegularBase64);
+              // pdf.addFont("Poppins-Regular.ttf", "Poppins", "normal");
+  
+              // // Poppins Bold
+              // pdf.addFileToVFS("Poppins-Bold.ttf", poppinsBoldBase64);
+              // pdf.addFont("Poppins-Bold.ttf", "Poppins", "bold");
+              // pdf.setFont("Poppins", "normal");
+              // pdf.setFont("Poppins", "bold");
+  
+              // // Rubik Regular
+              // pdf.addFileToVFS("Rubik-Regular.ttf", rubikRegularBase64);
+              // pdf.addFont("Rubik-Regular.ttf", "Rubik", "normal");
+  
+              // // Rubik Bold
+              // pdf.addFileToVFS("Rubik-Bold.ttf", rubikBoldBase64);
+              // pdf.addFont("Rubik-Bold.ttf", "Rubik", "bold");
+  
+              // pdf.setFont("Rubik", "normal");
+              // pdf.setFont("Rubik", "bold");
+  
+              // // Calibri Regular
+              // pdf.addFileToVFS("Calibri.ttf", calibriRegularBase64);
+              // pdf.addFont("Calibri.ttf", "Calibri", "normal");
+  
+              // // Calibri Bold
+              // pdf.addFileToVFS("Calibri-Bold.ttf", calibriBoldBase64);
+              // pdf.addFont("Calibri-Bold.ttf", "Calibri", "bold");
+  
+              // pdf.setFont("Calibri", "normal");
+              // pdf.setFont("Calibri", "bold");
+  
+              // pdf.addFileToVFS("Helvetica.ttf", helveticaRegularBase64);
+              // pdf.addFont("Helvetica.ttf", "Helvetica", "normal");
+  
+              // pdf.addFileToVFS("Helvetica-Bold.ttf", helveticaBoldBase64);
+              // pdf.addFont("Helvetica-Bold.ttf", "Helvetica", "bold");
+  
+              // pdf.setFont("Helvetica", "normal");
+              // pdf.setFont("Helvetica", "bold");
+  
+              // // Verdana Normal Font
+              // pdf.addFileToVFS("Verdana.ttf", verdanaRegularBase64);
+              // pdf.addFont("Verdana.ttf", "Verdana", "normal");
+  
+              // // Verdana Bold Font
+              // pdf.addFileToVFS("Verdana-Bold.ttf", verdanaBoldBase64);
+              // pdf.addFont("Verdana-Bold.ttf", "Verdana", "bold");
+  
+              // pdf.setFont("Verdana", "normal");
+              // pdf.setFont("Verdana", "bold");
+  
+              // // EB Garamond Normal Font
+              // pdf.addFileToVFS("EBGaramond-Regular.ttf", ebgaramondRegularBase64);
+              // pdf.addFont("EBGaramond-Regular.ttf", "EBGaramond", "normal");
+  
+              // // EB Garamond Bold Font
+              // pdf.addFileToVFS("EBGaramond-Bold.ttf", ebgaramondBoldBase64);
+              // pdf.addFont("EBGaramond-Bold.ttf", "EBGaramond", "bold");
+  
+              // pdf.setFont("EBGaramond", "normal");
+              // pdf.setFont("EBGaramond", "bold");
+  
+              // Add the HTML content as text
+              pdf.html(htmlContent, {
+                  callback: (doc) => {
+                      doc.save(`${fileName}.pdf`);
+                  },
+                  x: 2,
+                  y: 2,
+                  html2canvas: {
+                      scale: 0.2 ,
+                      allowTaint: true,
+                      useCORS: true,
+                  },
+                  width: 210,
+                  windowWidth: 1500,
+              });
+          } catch (error) {
+              console.error("PDF generation failed:", error);
+          }
+      };
+      // customize labels code
+      const [customLabels, setCustomLabels] = useState(null);
+      useEffect(() => {
+        const fetchCustomizeLabels = async () => {
+          try {
+            const response = await fetch('http://localhost:3001/api/customize-label', {
+              headers: {
+                "api-version": '2025-01',
+                "store-name": storeName,
+                "access-token": accessToken
+              }
+            });
+            const data = await response.json();
+            setCustomLabels(data);
+          } catch (error) {
+            console.error("Failed to fetch customize labels:", error);
+          }
+        };
+
+       fetchCustomizeLabels();
+      }, []);
+  
+  // HTML content ko string ke roop me return kiya
+    const generateInvoiceHtml = () => {
+        // React component ko HTML string me convert kiya
+        return ReactDOMServer.renderToString(
+            <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center", }}>
+               { <ExpenseInvoice
+                  expense={selectedExpense}
+                  customLabels={customLabels}
+                  storeData={storeData}
+                  logo={logo}
+                />
+              }
+            </div>
+         );
+      };
+        const [isPopupOpen, setIsPopupOpen] = useState(false);
+        const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+        const [activeButtonIndex, setActiveButtonIndex] = useState(null);
+        const buttonRefs = useRef([]);
+        const [downloadOrder, setDownloadOrder] = useState(null);
+        const popupRef = useRef(null);
+        const [selectedExpense, setSelectedExpense] = useState(null);
+
+        const handleButtonClick = ({ expense, index }) => {
+            const buttonRef = buttonRefs.current[index];
+            console.log("Expense Invoice", expense);
+            setSelectedExpense(expense);
+            if (buttonRef) {
+                setDownloadOrder(expense);
+                const rect = buttonRef.getBoundingClientRect();
+                setPopupPosition({
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + window.scrollX
+                });
+                setActiveButtonIndex(index);
+            }
+            setIsPopupOpen((prev) => !prev);
+        };
+    
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (
+                    popupRef.current &&
+                    !popupRef.current.contains(event.target) &&
+                    !buttonRefs.current.some(ref => ref && ref.contains(event.target))
+                ) {
+                    setIsPopupOpen(false);
+                }
+            };
+    
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, []);
+    
+        const logo = (<div>
+          <input type="file" accept="image/*" id="logoInput" style={{ display: "none" }} />
+          {storeData?.logo_image ? (
+              <img
+                  src={`http://localhost:3001/${storeData?.logo_image}`}
+                  alt="Logo"
+                  id="logoImage"
+                  style={{ cursor: 'pointer', width: "250px", height: "125px" }}
+              />
+          ) : null}
+      </div>);
+
   return (
     <div style={{
       margin: '0',
@@ -666,7 +1017,7 @@ export const Expenses = () => {
                               position: "relative",
                           }}
                             onClick={() => setIsOpen(!isOpen)}>
-                            <span>{formData.startDate ? new Date(formData.startDate).toLocaleDateString() : "Select Date"}</span>
+                            <span>{formData.expenseDate ? new Date(formData.expenseDate).toLocaleDateString() : "Select Date"}</span>
                           </div>
                           {/* DatePicker Component */}
                           {isOpen && (
@@ -683,13 +1034,13 @@ export const Expenses = () => {
                                 width:'auto'
                               }}>
                               <DatePicker
-                                selected={formData.startDate ? new Date(formData.startDate) :  null}
+                                selected={formData.expenseDate ? new Date(formData.expenseDate) : null}
                                 onChange={handleDateChange}
                                 inline 
                               />
                             </div>
                           )} 
-                      </label>
+                      </label>  
                   </div>
                   {/* Status */}
                 <div style={{ width: "100%" }}>
@@ -921,8 +1272,11 @@ export const Expenses = () => {
                   }}
                 >
                   <div>
-                    <select
-                      style={{
+                    <select   
+                      name="expenseCategoryValue"
+                      value={expenseOptions.find(option => option.label === formValues.expenseCategoryValue)?.value || ""}
+                      onChange={handleChange}
+                    style={{
                         width: "95%",
                         padding: "5px",
                         borderRadius: "3px",
@@ -935,7 +1289,12 @@ export const Expenses = () => {
                         boxSizing: 'border-box',
                       }}
                     >
-                      <option value="">Search Expense...</option>
+                      {expenseOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                      {/* <option value="">Search Expense...</option>
                       <option value="marketing">Advertising And Marketing</option>
                       <option value="automobile">Automobile Expense</option>
                       <option value="debt">Bad Debt</option>
@@ -958,7 +1317,7 @@ export const Expenses = () => {
                       <option value="salary">Salaries And Employee Wages</option>
                       <option value="tele">Telephone Expense</option>
                       <option value="tranport">Transportation Expense</option>
-                      <option value="travel">Travel Expense</option>
+                      <option value="travel">Travel Expense</option> */}
                     </select>
                   </div>
                   {/* GST */}
@@ -1031,6 +1390,7 @@ export const Expenses = () => {
                       }}>
                           <div>
                               <select
+                             
                                   style={{
                                       width: "100%",
                                       padding: "5px",
@@ -1721,8 +2081,10 @@ export const Expenses = () => {
                           <div style={{ position: "relative", display: "inline-block" }}>
                                 <img 
                                   src={ic_download} 
+                                  ref={el => buttonRefs.current[index] = el}
                                   style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
                                   alt="Swap"
+                                  onClick={() => handleButtonClick({ expense: expense, index: index })}
                                   onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
                                   onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
                                 />
@@ -1746,7 +2108,27 @@ export const Expenses = () => {
                                 Download Expense
                               </div>
                           </div>
-                    
+                         {isPopupOpen && activeButtonIndex !== null && (
+                          <div  
+                          ref={popupRef}
+                          style={{
+                              position: 'absolute',
+                              top: `${popupPosition.top}px`,
+                              left: `${popupPosition.left}px`,
+                              background: 'white',
+                              border: '1px solid #ccc',
+                              boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                              borderRadius: '4px',
+                              zIndex: 1000
+                          }}>
+                             <ul style={{ listStyleType: 'none', margin: 0, padding: '10px' }}>
+                               <li  style={{ padding: '5px 10px', cursor: 'pointer' }}
+                                  onClick={handleDownload}>
+                                   Download Expense
+                               </li>
+                             </ul>
+                          </div>
+                         )}
                     </td>
                   </tr>
                 ))
@@ -1765,6 +2147,8 @@ export const Expenses = () => {
           <div style={{ textAlign: 'center', fontSize: '12px', marginTop: '20px', color: '#707070' }}>
             <p>@2024 Virtue. All Rights Reserved.</p>
           </div>
+          
+          {/* <ExpenseInvoice expense={expense} storeData={storeData}/> */}
         </div>
       )}
     </div>

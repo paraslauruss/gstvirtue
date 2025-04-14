@@ -591,6 +591,7 @@ export const Standard = ({
               &nbsp;
             </td>
           </tr>
+          
           <tr>
             <td
               align="center"
@@ -1309,6 +1310,7 @@ export const Standard = ({
                         {formData?.product_items_labels
                           ?.hide_show_product_title && item?.name}
                       </span>
+                      
                       <span class="product_sku_on_off_tr">
                         {" "}
                         {formData?.product_items_labels

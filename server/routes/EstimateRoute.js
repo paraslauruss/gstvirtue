@@ -13,6 +13,7 @@ router.post('/', async (req, res) => {
         totalTax,
         total,
         Status,
+        items,
       } = req.body;
 
       const newEstimate = new Estimate({
@@ -22,7 +23,8 @@ router.post('/', async (req, res) => {
         Customer: Customer,
         totalTax: totalTax,
         total: total,
-        Status: Status
+        Status: Status,
+        items,
       });
   
       await newEstimate.save(); // Save the estimate to MongoDB

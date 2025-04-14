@@ -25,14 +25,15 @@ const EstimateSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  created_at: {
-    type: Date,
-    default: Date.now,
-  },
-  updated_at: {
-    type: Date,
-    default: Date.now,
-  },
+  items: [
+    {
+      title: { type: String },
+      hsn: { type: String },
+      gst: { type: String },
+      cess: { type: String }
+    }
+  ],
+ 
 });
 
 module.exports = mongoose.model("Estimate", EstimateSchema);

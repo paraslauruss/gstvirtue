@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Bill = require('../models/Bill');
+const axios = require('axios');
+const moment = require('moment');
+
 
 // Middleware to verify required headers
 const verifyHeaders = (req, res, next) => {
@@ -13,6 +16,123 @@ const verifyHeaders = (req, res, next) => {
 
 // Apply the verifyHeaders middleware to all routes in this router
 router.use(verifyHeaders);
+
+//code for report center bill purchase summarry     
+router.get('/tax-calculations', async (req, res) => {
+    const apiVersion = req.headers["api-version"];
+    const storeName = req.headers["store-name"];
+    const accessToken = req.headers["access-token"];
+
+    if (!apiVersion || !storeName || !accessToken) {
+        console.error("Missing Headers:", { apiVersion, storeName, accessToken });
+        return res.status(400).json({
+          message: "Missing required headers",
+          receivedHeaders: req.headers,
+        });
+      }
+
+      const { startDate, endDate } = req.query; // Expecting 'startDate' and 'endDate' as query params
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Both startDate and endDate are required." });
+      }
+    
+      // Convert to date format (removing time part)
+      const start = moment(startDate).startOf('day').toDate();
+      const end = moment(endDate).endOf('day').toDate();
+    
+      try {
+        // Fetch bills within the date range (based on billDate or dueDate)
+        const bills = await Bill.find({
+          $or: [
+            { billDate: { $gte: start, $lte: end } },
+            { dueDate: { $gte: start, $lte: end } }
+          ]
+        });
+    
+        let totalPrice = 0;
+        let totalCGST = 0;
+        let totalSGST = 0;
+        let totalIGST = 0;
+        let totalCESS = 0;
+    
+        // Fetch product details for each bill (assuming productId is in the bill data)
+        const billsWithDetails = await Promise.all(bills.map(async (bill) => {
+          const productDetails = await axios.get(`http://localhost:3001/api/products/${bill.productId}`, {
+            headers: {
+                "access-token": accessToken,
+                "Content-Type": "application/json",
+                "store-name": storeName,
+                "api-version": apiVersion,
+            }
+          });
+    
+          const product = productDetails.data;
+          const price = parseFloat(product.price) || 0;
+          const gstRate = parseFloat(product.gst) || 0;
+          const cessRate = parseFloat(product.cess) || 0;
+    
+          // Tax calculation
+          const cessAmount = (price * cessRate) / 100;
+          const cgstAmount = (price * gstRate) / 200;
+          const sgstAmount = (price * gstRate) / 200;
+          const igstAmount = cgstAmount + sgstAmount;
+    
+          totalPrice += price;
+          totalCGST += cgstAmount;
+          totalSGST += sgstAmount;
+          totalIGST += igstAmount;
+          totalCESS += cessAmount;
+    
+          // Return the bill with necessary details and calculations
+          return {
+            ...bill.toObject(),
+            productDetails: {
+              hsn: product.hsn,
+              gst: product.gst,
+              cess: product.cess,
+              price: product.price,
+              cgstAmount,
+              sgstAmount,
+              igstAmount,
+              cessAmount
+            }
+          };
+        }));
+    
+        // Check if only one bill is found
+    if (billsWithDetails.length === 1) {
+        const singleBill = billsWithDetails[0];
+        return res.json({
+          totals: {
+            totalPrice: singleBill.productDetails.price,
+            totalCGST: singleBill.productDetails.cgstAmount,
+            totalSGST: singleBill.productDetails.sgstAmount,
+            totalIGST: singleBill.productDetails.igstAmount,
+            totalCESS: singleBill.productDetails.cessAmount,
+          },
+          bills: [singleBill], // Return the single bill in the array
+        });
+    }else{
+         // If multiple bills are found, return the total sum of all
+      return res.json({
+        totals: {
+          totalPrice,
+          totalCGST,
+          totalSGST,
+          totalIGST,
+          totalCESS
+        },
+        bills: billsWithDetails,
+      });
+    }
+        
+      } catch (error) {
+        console.error('Error fetching bills:', error);
+        return res.status(500).json({ message: 'Error fetching bills.' });
+      }
+});
+
 
 // Get all bills
 router.get('/', async (req, res) => {
@@ -27,12 +147,14 @@ router.get('/', async (req, res) => {
 // Create a new bill
 router.post('/', async (req, res) => {
     const bill = new Bill({
+        productId: req.body.productId,
         billNumber: req.body.billNumber,
         payeeVendor: req.body.payeeVendor,
         billDate: req.body.billDate,
         dueDate: req.body.dueDate,
         totalTax: req.body.totalTax,
         total: req.body.total,
+        totalShippingCharge: req.body.totalShippingCharge, 
         paymentTerms: req.body.paymentTerms,
     });
 

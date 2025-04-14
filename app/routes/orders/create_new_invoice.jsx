@@ -1006,7 +1006,13 @@ export function CreateNewInvoice({ onClose }) {
               dateOfSupply: dateOfSupply,
               totalTax: igstAmount, 
               Status: status,  
-              total: total
+              total: total,
+
+              hsn: selectedProduct?.hsn || "", 
+              gst: selectedProduct?.gst || "", 
+              cess: selectedProduct?.cess || "",
+              shippingCharge: shippingCharge || 0, 
+              rate: rate || 0,
           };
           const headers = {
             'Content-Type': 'application/json',
@@ -1138,7 +1144,7 @@ export function CreateNewInvoice({ onClose }) {
         </div>
 
         <div style={{ marginTop: "20px" }}>
-          <Card>
+            <div style={{border:'1px solid #ccc',borderRadius:'8px',padding:'12px 12px'}}>
             <div>
               <span style={{ fontWeight: "bold" }}>Customer</span>
               <span style={{ color: "red" }}>*</span>
@@ -1161,8 +1167,8 @@ export function CreateNewInvoice({ onClose }) {
                   borderRadius: "4px",
                   backgroundColor: "#fff",
                   zIndex: 1000,
-                  left: 20,
-                  right: 20,
+                  left: 40,
+                  right: 40,
                   overflowY: "auto",
                   boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
                 }}>
@@ -1513,7 +1519,7 @@ export function CreateNewInvoice({ onClose }) {
                   </div>
               </div>
             </div>
-          </Card>
+            </div>
 
           <div style={{ marginTop: "20px" }}>
             <Text variant="headingMd" fontWeight="bold">

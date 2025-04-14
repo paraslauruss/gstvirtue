@@ -296,7 +296,7 @@ router.get('/', async (req, res) => {
 
         const productData = {
           id:shopifyProduct.id,
-          shopify_id: shopifyProduct.id, // Avoids conflict with MongoDB _id
+          shopify_id: shopifyProduct.id,
           store_name: storeName,
           title: shopifyProduct.title,
           body_html: shopifyProduct.body_html,
@@ -315,7 +315,7 @@ router.get('/', async (req, res) => {
           options: shopifyProduct.options,
           images: shopifyProduct.images,
           image: shopifyProduct.image,
-          price: productPrice  // Add price here
+          price: productPrice,
         };
 
         if (!existingProducts) {
@@ -331,9 +331,7 @@ router.get('/', async (req, res) => {
     });
 
     await Promise.all(operations);
-
     const allProducts = await Product.find({ store_name: storeName }).lean();
-
     // **Modification: Fetch price from the first variant**
     const productsWithPrice = allProducts.map(product => {
       let productPrice = null; // Initialize to null
@@ -676,8 +674,6 @@ router.get('/:productId', async (req, res) => {
         gst: shopifyProduct.gst || '',
         hsn: shopifyProduct.hsn || "",
         cess: shopifyProduct.cess || '',
-
-        // you may have to add other properties here to be saved to MongoDB
       });
 
       await newProduct.save();

@@ -37,8 +37,7 @@ export default function EligibleITC({onClick}) {
                         <option value="10">November</option>
                         <option value="11">December</option>
                     </select>
-                    <span
-                        style={{
+                    <span style={{
                             position: 'absolute',
                             right: '15px',
                             top: '50%',
