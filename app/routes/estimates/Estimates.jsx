@@ -23,6 +23,9 @@ import ic_download from '../../assets/images/ic_download.png'
 import ic_warning from '../../assets/images/ic_warning.jpg';
 import RichTextEditor from "../orders/rich_text_editor";
 import EstimateInvoice from "./Invoices/EstimateInvoice";
+import { jsPDF } from "jspdf";
+import ReactDOMServer from "react-dom/server";
+
 
 
 // customer add function
@@ -783,6 +786,10 @@ export function SendEmailInvoiceDialog({ active, toggleModal, selectedInvoice })
 
 
 export const Estimates = () => {
+  const session = useLoaderData();
+  const storeName = session?.storeName;
+  const accessToken = session?.accessToken;
+  
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [formData, setFormData] = useState({
     Customer: "",
@@ -791,7 +798,7 @@ export const Estimates = () => {
     estDate: "",
     ExpiryDate: "",
     TransportModel: "",
-    SupplyDate: "",
+    supplyDate: "",
     Status: "",
     items: [],
     discountType: "",
@@ -810,7 +817,6 @@ export const Estimates = () => {
     cessAmount: 0,
   });
 
-  const session = useLoaderData();
 
   const [isToggled, setIsToggled] = useState(false);
 
@@ -835,6 +841,7 @@ export const Estimates = () => {
   const [isSupplyOpne, setIsSupplyOpen] = useState(false);
   const handleSupplyDate = (date) => {
     setSupplyDate(date);
+    setFormData({...formData, supplyDate: date ? date.toISOString().split('T')[0] : null})
     setIsSupplyOpen(false);
   }
   //expiry date
@@ -937,26 +944,8 @@ export const Estimates = () => {
     // Handle selection for main search input
     const handleSelectMain = async (title) => {
       setQuery(title); // Set the title in the input field
-      setShowDropdown(false); // Hide the dropdown
-    
-      const selected = suggestions.find((p) => p.title === title);
-    
-      if (selected) {
-        setSelectedProduct(selected); // Optional: for displaying product details
-    
-        // Add selected product to `inputs` array (not directly in formData)
-        setInputs((prevInputs) => [
-          ...prevInputs,
-          {
-            query: title, // Store the title
-            selectedProduct: selected, // Store the whole product object
-            hsn: selected.hsn,
-            gst: selected.gst,
-            cess: selected.cess,
-          }
-        ]);
-      }
-    };
+      setShowDropdown(false);
+  };
 
     //ADD INPUT
     const [inputs, setInputs] = useState([]);
@@ -1289,18 +1278,6 @@ export const Estimates = () => {
       let method = 'POST';
       let itemToEditId = null;
 
-      const itemsArray = inputs.map((input) => ({
-        title: input.query,
-        hsn: input.hsn,
-        gst: input.gst,
-        cess: input.cess,
-      }));
-  
-      const updatedFormData = {
-        ...formData,
-        items: itemsArray, 
-      };
-
       if (isEditing && editIndex !== null && filteredEstimate[editIndex] && filteredEstimate[editIndex]._id) {
         itemToEditId = filteredEstimate[editIndex]._id;
         apiURL = `http://localhost:3001/api/estimate/${itemToEditId}`;
@@ -1309,6 +1286,17 @@ export const Estimates = () => {
       } else {
         console.log("Creating new Estimate.");
       }
+       // Attach selected product details to formData
+      const updatedFormData = {
+        ...formData,
+        selectedProduct: selectedProduct ? {
+          id: selectedProduct.id,
+          title: selectedProduct.title,
+          hsn: selectedProduct.hsn,
+          gst: selectedProduct.gst,
+          cess: selectedProduct.cess
+        } : null
+      };
       console.log("Saving estimate to", apiURL, "with method", method, "data:", updatedFormData); // Log the data!
 
       const headers = {
@@ -1317,8 +1305,6 @@ export const Estimates = () => {
         'store-name': session.storeName,
         'access-token': session.accessToken,
       };
-
-      //console.log("Form Data :" ,JSON.stringify(formData));
 
       const response = await fetch(apiURL, {
         method: method,
@@ -1550,7 +1536,7 @@ export const Estimates = () => {
   const handleConfirmDelete = async () => {
     if (expenseToDelete === null || expenseToDelete >= filteredEstimate.length) {
       console.error("Invalid expenseToDelete index:", expenseToDelete);
-      alert("Invalid expense selection. Please try again.");
+      alert("Invalid estimate selection. Please try again.");
       return;
     }
     try {
@@ -1628,7 +1614,184 @@ export const Estimates = () => {
     const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
     return formattedDate;
 }
+ const [storeData, setStoreData] = useState(null);
+  useEffect(() => {
+    const fetchStoreData = async () => {
+        if (storeName) { 
+            setLoading(true); 
+            try {
+                const response = await fetch(`http://localhost:3001/api/settings/${storeName}`,{
+                  headers:{
+                      "api-version":'2025-01',
+                      "access-token":accessToken,
+                      "store-name":storeName
+                  }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setStoreData(data);
+                    console.log("Store data:", data);
+                } else {
+                    console.error("Error fetching store data:", response.status, await response.text());
+                }
+            } catch (error) {
+                console.error("ErrorHandle fetching store data:", error);
+            } finally {
+                setLoading(false); // Set loading to false after fetching, regardless of success or failure
+            }
+        }
+    };
+    fetchStoreData(); // Call the async function inside the effect
+    }, [storeName]);
 
+    useEffect(() => {
+      const fetchEstimateData = async () => {
+        try {
+          const response = await fetch("http://localhost:3001/api/estimate", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "api-version":'2025-01',
+              "access-token":accessToken,
+              "store-name":storeName
+            },
+          });
+  
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+  
+          const data = await response.json();
+          setExpense(data); 
+        } catch (error) {
+          console.error("Failed to fetch expenses:", error);
+        }
+      };
+  
+      fetchEstimateData();
+    }, []);
+
+      const handleDownload = async () => {
+          const fileName = "Estimate";
+          try {
+              // PDF content generate karna
+              const htmlContent = generateInvoiceHtml();
+              // Create a new PDF document
+              const pdf = new jsPDF({
+                  orientation: "portrait",
+                  unit: "mm",
+                  format: "a4",
+              });
+              // Add the HTML content as text
+              pdf.html(htmlContent, {
+                  callback: (doc) => {
+                      doc.save(`${fileName}.pdf`);
+                  },
+                  x: 2,
+                  y: 2,
+                  html2canvas: {
+                      scale: 0.2 ,
+                      allowTaint: true,
+                      useCORS: true,
+                  },
+                  width: 210,
+                  windowWidth: 1500,
+              });
+          } catch (error) {
+              console.error("PDF generation failed:", error);
+          }
+      };
+      // customize labels code
+      const [customLabels, setCustomLabels] = useState(null);
+      useEffect(() => {
+        const fetchCustomizeLabels = async () => {
+          try {
+            const response = await fetch('http://localhost:3001/api/customize-label', {
+              headers: {
+                "api-version": '2025-01',
+                "store-name": storeName,
+                "access-token": accessToken
+              }
+            });
+            const data = await response.json();
+            console.log("Customize Labels API Response:", data); // ✅ ADD THIS
+            setCustomLabels(data);
+          } catch (error) {
+            console.error("Failed to fetch customize labels:", error);
+          }
+        };
+
+       fetchCustomizeLabels();
+      }, []);
+  
+  // HTML content ko string ke roop me return kiya
+    const generateInvoiceHtml = () => {
+        // React component ko HTML string me convert kiya
+        return ReactDOMServer.renderToString(
+            <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center", }}>
+               { <EstimateInvoice
+                  estimate={selectedEstimate}
+                  customLabels={customLabels}
+                  storeData={storeData}
+                  logo={logo}
+                />
+              }
+            </div>
+         );
+      };
+        const [isPopupOpen, setIsPopupOpen] = useState(false);
+        const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+        const [activeButtonIndex, setActiveButtonIndex] = useState(null);
+        const buttonRefs = useRef([]);
+        const [downloadOrder, setDownloadOrder] = useState(null);
+        const popupRef = useRef(null);
+        const [selectedEstimate, setSelectedEstimate] = useState(null);
+
+        const handleButtonClick = ({ estimate, index }) => {
+            const buttonRef = buttonRefs.current[index];
+            console.log("estimate Invoice", estimate);
+            setSelectedEstimate(estimate);
+            if (buttonRef) {
+                setDownloadOrder(estimate);
+                const rect = buttonRef.getBoundingClientRect();
+                setPopupPosition({
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + window.scrollX
+                });
+                setActiveButtonIndex(index);
+            }
+            setIsPopupOpen((prev) => !prev);
+        };
+    
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (
+                    popupRef.current &&
+                    !popupRef.current.contains(event.target) &&
+                    !buttonRefs.current.some(ref => ref && ref.contains(event.target))
+                ) {
+                    setIsPopupOpen(false);
+                }
+            };
+    
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, []);
+    
+        const logo = (<div>
+          <input type="file" accept="image/*" id="logoInput" style={{ display: "none" }} />
+          {storeData?.logo_image ? (
+              <img
+                  src={`http://localhost:3001/${storeData?.logo_image}`}
+                  alt="Logo"
+                  id="logoImage"
+                  style={{ cursor: 'pointer', width: "250px", height: "125px" }}
+              />
+          ) : null}
+      </div>);
+      
   return (
     <div
       style={{
@@ -3257,8 +3420,10 @@ export const Estimates = () => {
                             <div style={{ position: "relative", display: "inline-block" }}>
                               <img
                                 src={ic_download}
+                                ref={el => buttonRefs.current[index] = el}
                                 style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }}
                                 alt="Swap"
+                                onClick={() => handleButtonClick({ estimate: estimate, index: index })}
                                 onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
                                 onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
                               />
@@ -3279,10 +3444,30 @@ export const Estimates = () => {
                                 transition: "opacity 0.2s",
                                 zIndex: 1000
                               }}>
-                                Download Expense
+                                Download Estimate
                               </div>
                             </div>
-
+                            {isPopupOpen && activeButtonIndex !== null && (
+                          <div  
+                            ref={popupRef}
+                            style={{
+                                position: 'absolute',
+                                top: `${popupPosition.top}px`,
+                                left: `${popupPosition.left}px`,
+                                background: 'white',
+                                border: '1px solid #ccc',
+                                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                                borderRadius: '4px',
+                                zIndex: 1000
+                            }}>
+                              <ul style={{ listStyleType: 'none', margin: 0, padding: '10px' }}>
+                                <li  style={{ padding: '5px 10px', cursor: 'pointer' }}
+                                    onClick={handleDownload}>
+                                    Download Estimate
+                                </li>
+                              </ul>
+                            </div>
+                          )}
                             {/* mail */}
                             <div style={{ position: "relative", display: "inline-block" }}>
                               <img
@@ -3332,7 +3517,7 @@ export const Estimates = () => {
             <p>@2024 Virtue. All Rights Reserved.</p>
           </div>
           
-           <EstimateInvoice />
+          
         </div>
       )}
     </div>

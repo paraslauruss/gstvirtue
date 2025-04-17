@@ -59,11 +59,6 @@ export default function GSTR1({ onClick, position }) {
                     <Text variant="headingLg">GSTR-1</Text>
 
                 </div>
-                <div
-                    style={{ cursor: 'pointer', color: 'white', backgroundColor: '#74A535', justifyContent: 'center', padding: '10px 20px', display: 'flex', flexDirection: 'row', gap: '10px', borderRadius: '5px' }}
-                    onClick={() => setCreateTemplate(true)}>
-                    <Text>Create Report Template</Text>
-                </div>
             </div>
             <div style={{ marginTop: '20px' }}>
                 <Card>

@@ -156,6 +156,11 @@ router.post('/', async (req, res) => {
         total: req.body.total,
         totalShippingCharge: req.body.totalShippingCharge, 
         paymentTerms: req.body.paymentTerms,
+        rate: req.body.rate,
+        selectedProduct: req.body.selectedProduct,
+        cgstAmount: req.body.cgstAmount,
+        sgstAmount: req.body.sgstAmount,
+        paymentDate : req.body.paymentDate,
     });
 
     try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useCallback } from "react";
+import React, { useState, useEffect,useCallback,useRef } from "react";
 import groupimage from "../../assets/images/Group@2x.png";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -11,12 +11,17 @@ import ic_print from '../../assets/images/ic_print.png';
 import ic_download from '../../assets/images/ic_download.png'
 import ic_warning from '../../assets/images/ic_warning.jpg';
 import BillInvoice from "./Invoices/BillInvoice";
+import { jsPDF } from "jspdf";
+import ReactDOMServer from "react-dom/server";
+
 
 
 export const Bills = () => {
 
   const session = useLoaderData(); 
-  
+  const storeName = session?.storeName;
+  const accessToken = session?.accessToken;
+
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [formData, setFormData] = useState({
     billPrefix:"",
@@ -34,6 +39,11 @@ export const Bills = () => {
     memo: "",
     totalTax: 0, // ADD totalTax
     total: 0,
+    rate: 0,
+    qty: 1,
+    cgstAmount: 0,
+    sgstAmount: 0,
+    cessAmount: 0,
   });
   
   // bill save
@@ -58,10 +68,16 @@ export const Bills = () => {
         else {
             console.log("Creating new Bill.");
         }
-
-        //Log URL
-          console.log("Saving Bill to", apiURL, "with method", method);
-
+        const updatedFormData = {
+          ...formData,
+          selectedProduct: selectedProduct ? {
+            id: selectedProduct.id,
+            title: selectedProduct.title,
+            hsn: selectedProduct.hsn,
+            gst: selectedProduct.gst,
+            cess: selectedProduct.cess
+          } : null
+        };
         const headers = {
             'Content-Type': 'application/json',
             'api-version': '2025-01',
@@ -73,7 +89,10 @@ export const Bills = () => {
             method: method,
             headers: headers,
             body: JSON.stringify({ 
-              ...formData, 
+              ...updatedFormData, 
+              rate:rate,
+              cgstAmount: cgstAmount,
+              sgstAmount: sgstAmount,
               totalShippingCharge: shippingCharge ,
               productId: selectedProduct.id 
           }),
@@ -122,8 +141,8 @@ export const Bills = () => {
                  headers: {
                     'Content-Type': 'application/json',
                     'api-version': '2025-01',
-                    'store-name': session.storeName,
-                    'access-token': session.accessToken,
+                    'store-name': storeName,
+                    'access-token': accessToken,
                 }
             });
         if (response.ok) {
@@ -323,9 +342,9 @@ const handleSaveChange = (e) => {
             method: 'GET',
             headers: {
               "Content-Type": "application/json",
-              "store-name": session.storeName,
+              "store-name": storeName,
               "api-version": "2025-01",
-              "access-token": session.accessToken
+              "access-token": accessToken
             },
           });
   
@@ -792,6 +811,184 @@ function formatDate(dateString) {
     const formattedDate = isNaN(date.getTime()) ? new Date().toLocaleDateString('en-GB', options) : date.toLocaleDateString('en-GB', options);;
     return formattedDate;
   }   
+
+  const [storeData, setStoreData] = useState(null);
+    useEffect(() => {
+      const fetchStoreData = async () => {
+          if (storeName) { 
+              setLoading(true); 
+              try {
+                  const response = await fetch(`http://localhost:3001/api/settings/${storeName}`,{
+                    headers:{
+                        "api-version":'2025-01',
+                        "access-token":accessToken,
+                        "store-name":storeName
+                    }
+                  });
+                  if (response.ok) {
+                      const data = await response.json();
+                      setStoreData(data);
+                      console.log("Store data:", data);
+                  } else {
+                      console.error("Error fetching store data:", response.status, await response.text());
+                  }
+              } catch (error) {
+                  console.error("ErrorHandle fetching store data:", error);
+              } finally {
+                  setLoading(false); // Set loading to false after fetching, regardless of success or failure
+              }
+          }
+      };
+      fetchStoreData(); // Call the async function inside the effect
+      }, [storeName]);
+  
+      useEffect(() => {
+        const fetchBillData = async () => {
+          try {
+            const response = await fetch("http://localhost:3001/api/bills ", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "api-version":'2025-01',
+                "access-token":accessToken,
+                "store-name":storeName
+              },
+            });
+    
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            setExpense(data); 
+          } catch (error) {
+            console.error("Failed to fetch bill:", error);
+          }
+        };
+    
+        fetchBillData();
+      }, []);
+  
+        const handleDownload = async () => {
+            const fileName = "Bill";
+            try {
+                // PDF content generate karna
+                const htmlContent = generateInvoiceHtml();
+                // Create a new PDF document
+                const pdf = new jsPDF({
+                    orientation: "portrait",
+                    unit: "mm",
+                    format: "a4",
+                });
+                // Add the HTML content as text
+                pdf.html(htmlContent, {
+                    callback: (doc) => {
+                        doc.save(`${fileName}.pdf`);
+                    },
+                    x: 2,
+                    y: 2,
+                    html2canvas: {
+                        scale: 0.2 ,
+                        allowTaint: true,
+                        useCORS: true,
+                    },
+                    width: 210,
+                    windowWidth: 1500,
+                });
+            } catch (error) {
+                console.error("PDF generation failed:", error);
+            }
+        };
+        // customize labels code
+        const [customLabels, setCustomLabels] = useState(null);
+        useEffect(() => {
+          const fetchCustomizeLabels = async () => {
+            try {
+              const response = await fetch('http://localhost:3001/api/customize-label', {
+                headers: {
+                  "api-version": '2025-01',
+                  "store-name": storeName,
+                  "access-token": accessToken
+                }
+              });
+              const data = await response.json();
+              console.log("Customize Labels API Response:", data); // ✅ ADD THIS
+              setCustomLabels(data);
+            } catch (error) {
+              console.error("Failed to fetch customize labels:", error);
+            }
+          };
+  
+         fetchCustomizeLabels();
+        }, []);
+    
+    // HTML content ko string ke roop me return kiya
+      const generateInvoiceHtml = () => {
+          // React component ko HTML string me convert kiya
+          return ReactDOMServer.renderToString(
+              <div style={{ width: "270mm", padding: "1mm", lineHeight: "1.0", textAlign: "center", }}>
+                 { <BillInvoice 
+                    bill={selectedBill}
+                    customLabels={customLabels}
+                    storeData={storeData}
+                    logo={logo}
+                 />
+                }
+              </div>
+           );
+        };
+          const [isPopupOpen, setIsPopupOpen] = useState(false);
+          const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+          const [activeButtonIndex, setActiveButtonIndex] = useState(null);
+          const buttonRefs = useRef([]);
+          const [downloadOrder, setDownloadOrder] = useState(null);
+          const popupRef = useRef(null);
+          const [selectedBill, setSelectedBill] = useState(null);
+  
+          const handleButtonClick = ({ bill, index }) => {
+              const buttonRef = buttonRefs.current[index];
+              console.log("Bill Invoice", bill);
+              setSelectedBill(bill);
+              if (buttonRef) {
+                  setDownloadOrder(bill);
+                  const rect = buttonRef.getBoundingClientRect();
+                  setPopupPosition({
+                      top: rect.bottom + window.scrollY,
+                      left: rect.left + window.scrollX
+                  });
+                  setActiveButtonIndex(index);
+              }
+              setIsPopupOpen((prev) => !prev);
+          };
+      
+          useEffect(() => {
+              const handleClickOutside = (event) => {
+                  if (
+                      popupRef.current &&
+                      !popupRef.current.contains(event.target) &&
+                      !buttonRefs.current.some(ref => ref && ref.contains(event.target))
+                  ) {
+                      setIsPopupOpen(false);
+                  }
+              };
+      
+              document.addEventListener('mousedown', handleClickOutside);
+              return () => {
+                  document.removeEventListener('mousedown', handleClickOutside);
+              };
+          }, []);
+      
+          const logo = (<div>
+            <input type="file" accept="image/*" id="logoInput" style={{ display: "none" }} />
+            {storeData?.logo_image ? (
+                <img
+                    src={`http://localhost:3001/${storeData?.logo_image}`}
+                    alt="Logo"
+                    id="logoImage"
+                    style={{ cursor: 'pointer', width: "250px", height: "125px" }}
+                />
+            ) : null}
+        </div>);
     
   return (
    
@@ -2205,6 +2402,8 @@ function formatDate(dateString) {
                                 src={ic_download} 
                                 style={{ height: "16px", marginLeft: "15px", cursor: "pointer" }} 
                                 alt="Swap"
+                                ref={el => buttonRefs.current[index] = el}
+                                onClick={() => handleButtonClick({ bill: bill, index: index })}
                                 onMouseEnter={(e) => e.currentTarget.nextSibling.style.visibility = "visible"}
                                 onMouseLeave={(e) => e.currentTarget.nextSibling.style.visibility = "hidden"}
                               />
@@ -2225,9 +2424,30 @@ function formatDate(dateString) {
                                 transition: "opacity 0.2s",
                                 zIndex: 1000
                             }}>
-                              Download Expense
+                              Download Bill
                             </div>
                         </div>
+                        {isPopupOpen && activeButtonIndex !== null && (
+                          <div  
+                            ref={popupRef}
+                            style={{
+                                position: 'absolute',
+                                top: `${popupPosition.top}px`,
+                                left: `${popupPosition.left}px`,
+                                background: 'white',
+                                border: '1px solid #ccc',
+                                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                                borderRadius: '4px',
+                                zIndex: 1000
+                            }}>
+                              <ul style={{ listStyleType: 'none', margin: 0, padding: '10px' }}>
+                                <li  style={{ padding: '5px 10px', cursor: 'pointer' }}
+                                    onClick={handleDownload}>
+                                    Download Bill
+                                </li>
+                              </ul>
+                            </div>
+                          )}
                     </td>
                   </tr>
                 ))
@@ -2247,7 +2467,7 @@ function formatDate(dateString) {
             <p>@2024 Virtue. All Rights Reserved.</p>
           </div>
 
-          <BillInvoice />
+          {/* <BillInvoice /> */}
           </div>
         )}
       </div>

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Estimate = require('../models/Estimate'); // Import the Estimate model
-
+const Estimate = require('../models/Estimate'); 
 // POST /estimates (Create)
 router.post('/', async (req, res) => {
     try {
@@ -9,22 +8,33 @@ router.post('/', async (req, res) => {
         Estimatenum,
         estDate,
         ExpiryDate,
+        supplyDate,
+        Estimateprefix,
         Customer,
         totalTax,
         total,
         Status,
-        items,
+        TransportModel,
+        selectedProduct,
+        rate,
+        cgstAmount, sgstAmount
       } = req.body;
 
       const newEstimate = new Estimate({
         Estimatenum: Estimatenum,
         estDate: estDate,
+        Estimateprefix: Estimateprefix,
+        supplyDate: supplyDate,
         ExpiryDate: ExpiryDate,
         Customer: Customer,
         totalTax: totalTax,
         total: total,
         Status: Status,
-        items,
+        TransportModel: TransportModel,
+        selectedProduct,
+        rate,
+        cgstAmount, 
+        sgstAmount
       });
   
       await newEstimate.save(); // Save the estimate to MongoDB

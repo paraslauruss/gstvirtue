@@ -777,7 +777,6 @@ export function OnlineOrders() {
                                 {/* FULFILLEMENT */}
                                 <div style={{ display: 'flow', width: '16%', marginLeft: '16px' }}>
                                     <select
-
                                         style={{
                                             width: '100%',
                                             height: '33px',

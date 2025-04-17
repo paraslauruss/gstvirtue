@@ -236,7 +236,7 @@ export default function ExpenseInvoice( {expense, logo,signtuare,storeData,custo
               &nbsp;
               <strong>
                 <span id="template_store_email">
-                    {storeData?.store_information?.store_email}
+                    {storeData?.store_email}
                 </span>
               </strong>
             </td>
@@ -251,7 +251,7 @@ export default function ExpenseInvoice( {expense, logo,signtuare,storeData,custo
                 />
                 &nbsp;
                 <strong id="template_store_domain">
-                   {storeData?.store_information?.shop_domain}
+                   {storeData?.shop_domain}
                 </strong>
               </span>  
             </td>
@@ -274,7 +274,7 @@ export default function ExpenseInvoice( {expense, logo,signtuare,storeData,custo
                 <span id="template_contact_person"></span>
                 <span></span>
                 <span id="template_shop_phone">
-                   {storeData?.store_information?.store_phone}
+                   {storeData?.store_phone}
                 </span>
               </strong> 
               &nbsp;
