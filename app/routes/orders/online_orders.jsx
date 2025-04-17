@@ -48,7 +48,7 @@ import { ebgaramondBoldBase64 } from "../templates/invoice/font/ebgaramond_bold"
 
 export const loader = async ({ request }) => {
     const { admin, session } = await authenticate.admin(request);
-    
+
     return {
         accessToken: session.accessToken,
         storeName: session.shop
@@ -305,6 +305,8 @@ export function OnlineOrders() {
                 console.error("Missing storeName or accessToken");
                 return;
             }
+            console.log("Store Name", session.storeName);
+            console.log("Access Token", session.accessToken);
             try {
                 const response = await fetch("http://localhost:3001/api/orders", {
                     method: "GET",
@@ -983,10 +985,13 @@ export function OnlineOrders() {
                                         <div key={orderId} style={{
                                             borderRadius: '4px', fontSize: '14px', padding: '10px 20px', color: '#000000', backgroundColor: '#ffffff', flexDirection: 'row', display: 'flex'
                                         }}>
-                                            <div style={{ width: '12.5%' }}>
-                                                <a href={`https://${shopUrl}/admin/orders/${orderId.split('/').pop()}`} target="_blank" rel="noopener noreferrer">
-                                                    {orderData.name || orderData.order_number}
-                                                </a>
+                                            <div style={{ width: '12.5%', display: 'flex' }}>
+
+                                                <a style={{ color: "#007ace", textDecoration: "none" }} href={`https://${shopUrl}/admin/orders/${orderId.split('/').pop()}`} target="_blank">#{orderData.name || orderData.order_number}</a>
+                                                <div style={{ marginLeft: '10px' }}></div>
+                                                {orderData?.billing_address?.company ?
+                                                    (<span style={{ display: 'inline-flex', alignItems: "center", padding: '0 4px 1px 4px', borderRadius: '5px', lineHeight: '16px', backgroundColor: '#9fdfff', fontWeight: 'bold', fontSize: '12px', }} title="B2B">B2B</span>)
+                                                    : (<span style={{ display: 'inline-flex', alignItems: "center", padding: "0 4px 1px 4px", borderRadius: "5px", lineHeight: "16px", backgroundColor: "#cbbddd", fontWeight: "bold", fontSize: "12px", }} title="B2C">B2C</span>)}
                                             </div>
                                             <div style={{ width: '12.5%' }}>
                                                 <Text>{(index + 1).toString().padStart(3, '0')}</Text>

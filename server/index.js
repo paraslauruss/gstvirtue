@@ -29,13 +29,15 @@ const refundedOrderRoutes = require('./routes/RefundOrders');
 const OrderReportRoute = require('./routes/OrderReport');
 const creditReport = require('./routes/reportTemplate');
 const onlineReport = require('./routes/onlineReport');
+const gstr1Route = require('./routes/gstr1');
+const hsnSummarySalesRoute = require('./routes/hsn_summary_sales');
 
 const app = express();
 app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  // origin: "https://ecommerce-donated-clothes-costumes.trycloudflare.com",  // Aapke frontend ka URL
+  origin: "https://kick-fourth-college-birmingham.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
 }));
@@ -66,9 +68,11 @@ app.use('/api/customize-label', customizeLabelRoutes);
 app.use('/api/email-formate', emailFormateRoutes);
 app.use('/api/collection', collectionRoutes);
 app.use('/api/smart-collection', smartCollectionRoutes);
-app.use('/api',OrderReportRoute);
+app.use('/api', OrderReportRoute);
 app.use('/api/templates', creditReport);
 app.use('/api/online', onlineReport);
+app.use('/api/gstr1', gstr1Route);
+app.use('/api/hsnSummarySales', hsnSummarySalesRoute);
 
 // Connect to MongoDB
 require('dotenv').config(); // This will load the variables from the .env file
