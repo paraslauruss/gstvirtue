@@ -37,7 +37,7 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  origin: "https://kick-fourth-college-birmingham.trycloudflare.com",  // Aapke frontend ka URL
+  // origin: "https://kick-fourth-college-birmingham.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
 }));
