@@ -34,13 +34,14 @@ const hsnSummarySalesRoute = require('./routes/hsn_summary_sales');
 const documentSummaryRoute = require('./routes/document_summary_gst1');
 const supplySummaryRoute = require('./routes/supply_summary');
 const hsnSummaryPurchaseRoute = require('./routes/hsn_summary_purchase');
+const itcSummaryRoute = require('./routes/eligible_itc');
 
 const app = express();
 app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  origin: "https://morris-mode-industries-designers.trycloudflare.com",  // Aapke frontend ka URL
+  origin: "https://crown-using-covers-ha.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
 }));
@@ -79,6 +80,7 @@ app.use('/api/hsnSummarySales', hsnSummarySalesRoute);
 app.use('/api/document-summary', documentSummaryRoute);
 app.use('/api/supply-summary', supplySummaryRoute);
 app.use('/api/hsn-summary-purchase', hsnSummaryPurchaseRoute);
+app.use('/api/itc-summary', itcSummaryRoute);
 
 // Connect to MongoDB
 require('dotenv').config(); // This will load the variables from the .env file
