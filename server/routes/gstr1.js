@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const gstrReport = require('../models/gstrReport');
 
 const router = express.Router();
 
@@ -19,6 +20,19 @@ router.get('/', async (req, res) => {
         });
     }
 
+    // 🔍 Step 1: Check if report already exists
+    const existingReport = await gstrReport.findOne({
+        storeName,
+        type: orderType,
+        month: monthQuery,
+        year: yearQuery,
+    });
+
+    if (existingReport) {
+        return res.json(existingReport.reportData);
+    }
+
+    // 🔁 Step 2: If not found, fetch and process orders
     const url = `http://localhost:3001/api/orders`;
 
     const response = await fetch(url, {
@@ -33,16 +47,13 @@ router.get('/', async (req, res) => {
 
     const responseData = await response.json();
     if (!responseData || responseData.length === 0) {
-        console.warn("No orders found from Shopify or invalid data.");
         return res.status(404).json({ message: "No orders found for the given date range" });
     }
 
-    const targetMonth = monthQuery ? monthQuery.toLowerCase() : null;
     const monthMap = {
         january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
         july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
     };
-    const monthIndex = monthMap[targetMonth];
 
     const gstStateCodes = {
         AP: "37", AR: "12", AS: "18", BR: "10", CG: "22", DL: "07", GJ: "24",
@@ -51,7 +62,6 @@ router.get('/', async (req, res) => {
         RJ: "08", SK: "11", TN: "33", TS: "36", TR: "16", UP: "09", UK: "05", WB: "19",
     };
 
-    // Filter orders by type and month
     const filteredOrders = responseData.filter(order => {
         const isB2B = !!order.billing_address?.company;
         const createdAt = new Date(order.date);
@@ -86,7 +96,6 @@ router.get('/', async (req, res) => {
             const gstPercent = parseFloat(item.gst) || 0;
             const totalTax = gstPercent + cess;
 
-            // Calculate amounts
             const taxable = (price / (1 + totalTax / 100)) * quantity;
             const igstAmount = (price - (price / (1 + totalTax / 100))) * quantity;
             const cgstRate = gstPercent / 2;
@@ -94,10 +103,9 @@ router.get('/', async (req, res) => {
             const sgstAmount = (cgstRate / 100) * taxable;
             const cessAmount = (cess / 100) * taxable;
 
-            // KEY: include province for B2B, exclude for B2C (to allow multiple same-gst entries in B2C)
             const key = isB2B
                 ? `${province}-${gstCode}-${gst}`
-                : `${gst}`; // unique key per line for B2C
+                : `${gst}`;
 
             if (!gstTotalsMap[key]) {
                 gstTotalsMap[key] = {
@@ -131,6 +139,17 @@ router.get('/', async (req, res) => {
         sgst_amount: entry.sgst_amount.toFixed(2),
         cess_amount: entry.cess_amount.toFixed(2)
     }));
+
+    // ✅ Step 3: Save to MongoDB
+    const newReport = new gstrReport({
+        storeName,
+        type: orderType,
+        month: monthQuery.toLowerCase(),
+        year: yearQuery,
+        reportData: gstMappedOrders
+    });
+
+    await newReport.save();
 
     res.json(gstMappedOrders);
 });

@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const HSNSavedReport = require('../models/hsnSavedReport');
 
 const router = express.Router();
 
@@ -9,6 +10,11 @@ router.get('/', async (req, res) => {
     const accessToken = req.headers["access-token"];
     const monthQuery = req.query.month;
     const yearQuery = req.query.year ? parseInt(req.query.year) : null;
+
+    const cacheKey = `${monthQuery}-${yearQuery}`;
+    if (HSNSavedReport[cacheKey]) {
+        return res.json(HSNSavedReport[cacheKey]);
+    }
 
     if (!apiVersion || !storeName || !accessToken) {
         console.error("Missing Headers:", { apiVersion, storeName, accessToken });
@@ -131,7 +137,35 @@ router.get('/', async (req, res) => {
         };
     });
 
+    HSNSavedReport[cacheKey] = hsnMappedOrders;
     res.json(hsnMappedOrders);
 });
+
+router.post('/', async (req, res) => {
+    try {
+      const { rawMonth, year } = req.body;
+  
+      // Check if this month-year combo already exists
+      const exists = await HSNSavedReport.findOne({ rawMonth, year });
+  
+      if (!exists) {
+        const saved = await HSNSavedReport.create(req.body);
+        return res.status(201).json(saved);
+      }
+  
+      res.status(200).json({ message: 'Already saved' });
+    } catch (error) {
+      res.status(500).json({ error: 'Server error while saving report' });
+    }
+  });
+
+  router.get('/hsn', async (req, res) => {
+    try {
+      const reports = await HSNSavedReport.find();
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ error: 'Server error while fetching reports' });
+    }
+  });
 
 module.exports = router;

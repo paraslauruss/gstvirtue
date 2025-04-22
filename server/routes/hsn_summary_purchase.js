@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const HSNSummary = require("../models/HsnPurchaseSummary");
 
 const router = express.Router();
 
@@ -10,6 +11,11 @@ router.get('/', async (req, res) => {
     const monthQuery = req.query.month;
     const yearQuery = req.query.year ? parseInt(req.query.year) : null;
 
+    const cacheKey = `${monthQuery}-${yearQuery}`;
+        if (HSNSummary[cacheKey]) {
+            return res.json(HSNSummary[cacheKey]);
+        }
+   
     if (!apiVersion || !storeName || !accessToken) {
         return res.status(400).json({
             message: "Missing required headers",
@@ -37,16 +43,18 @@ router.get('/', async (req, res) => {
         }
 
         // Optionally filter by month and year
+        const targetMonth = monthQuery ? monthQuery.toLowerCase() : null;
         const monthMap = {
             january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
             july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
         };
         const monthIndex = monthQuery ? monthMap[monthQuery.toLowerCase()] : null;
-
+      
         const filtered = data.filter(entry => {
-            const date = new Date(entry.date || entry.invoice_date || entry.created_at);
+            const date = new Date(entry.billDate);
             const matchMonth = monthIndex !== null ? date.getMonth() === monthIndex : true;
             const matchYear = yearQuery ? date.getFullYear() === yearQuery : true;
+            
             return matchMonth && matchYear;
         });
 
@@ -98,6 +106,7 @@ router.get('/', async (req, res) => {
             "CESS (Rs.)": hsn.cess.toFixed(2),
         }));
 
+        HSNSummary[cacheKey] = result;
         return res.json({ hsn_summary: result });
 
     } catch (err) {
@@ -105,5 +114,34 @@ router.get('/', async (req, res) => {
         return res.status(500).json({ message: "Internal server error", error: err.message });
     }
 });
+
+
+router.post("/", async (req, res) => {
+    try {
+        const { rawMonth, year } = req.body;
+    
+        // Check if this month-year combo already exists
+        const exists = await HSNSummary.findOne({ rawMonth, year });
+    
+        if (!exists) {
+        const saved = await HSNSummary.create(req.body);
+        return res.status(201).json(saved);
+        }
+    
+        res.status(200).json({ message: 'Already saved' });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error while saving report' });
+    }
+});
+  
+router.get("/saved", async (req, res) => {
+    try {
+        const reports = await HSNSummary.find();
+        res.json(reports);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error while fetching reports' });
+    }
+});
+
 
 module.exports = router;

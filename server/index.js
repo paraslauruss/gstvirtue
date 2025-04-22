@@ -41,7 +41,7 @@ app.use(bodyParser.json());
 const port = 3001;
 
 app.use(cors({
-  origin: "https://crown-using-covers-ha.trycloudflare.com",  // Aapke frontend ka URL
+  // origin: "https://morris-mode-industries-designers.trycloudflare.com",  // Aapke frontend ka URL
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,store-name,api-version,access-token"
 }));

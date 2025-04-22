@@ -1,4 +1,4 @@
-const express = require('express');
+    const express = require('express');
 const path = require('path');
 
 const router = express.Router();
@@ -16,6 +16,24 @@ router.get('/', async (req, res) => {
             receivedHeaders: req.headers,
         });
     }
+    if (!monthQuery || !yearQuery || isNaN(yearQuery)) {
+        return res.status(400).json({
+            message: "Both 'month' and valid 'year' query parameters are required."
+        });
+    }
+
+    const monthMap = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+    };
+
+    const targetMonthIndex = monthMap[monthQuery.toLowerCase()];
+    if (targetMonthIndex === undefined) {
+        return res.status(400).json({
+            message: "Invalid month provided. Please use full month name like 'march'."
+        });
+    }
+
 
     const url = `http://localhost:3001/api/orders`;
 
@@ -30,24 +48,29 @@ router.get('/', async (req, res) => {
             },
         });
 
-        const orders = await response.json();
+        const responseData = await response.json();
+        const orders = Array.isArray(responseData) ? responseData : responseData.orders || [];
+
         if (!orders || orders.length === 0) {
             return res.status(404).json({ message: "No orders found" });
         }
 
-        const monthMap = {
-            january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-            july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
-        };
-
         const targetMonthIndex = monthQuery ? monthMap[monthQuery.toLowerCase()] : null;
+
+        if (targetMonthIndex === null || !yearQuery) {
+            return res.status(400).json({ message: "Month and year are required query parameters." });
+        }
 
         const filteredOrders = orders.filter(order => {
             const orderDate = new Date(order.date);
-            const matchesMonth = targetMonthIndex !== null ? orderDate.getMonth() === targetMonthIndex : true;
-            const matchesYear = yearQuery ? orderDate.getFullYear() === yearQuery : true;
+            const matchesMonth = orderDate.getMonth() === targetMonthIndex;
+            const matchesYear = orderDate.getFullYear() === yearQuery;
             return matchesMonth && matchesYear;
         });
+
+        if (filteredOrders.length === 0) {
+            return res.status(404).json({ message: "No orders found for the specified month and year." });
+        }
 
         const summaryMap = {
             taxable: { label: "Outward taxable supplies (other than zero rated, nil rated and exempted)" },
