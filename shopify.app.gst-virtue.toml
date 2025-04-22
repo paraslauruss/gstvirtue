@@ -27,3 +27,7 @@ embedded = false
 dev_store_url = "gst-virtue-paras.myshopify.com"
 automatically_update_urls_on_dev = true
 include_config_on_deploy = true
+
+[web]
+  command = "npm run start"
+  port = 8081
