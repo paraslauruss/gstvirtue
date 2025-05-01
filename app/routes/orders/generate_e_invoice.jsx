@@ -2,9 +2,6 @@ import { } from "@shopify/polaris";
 import groupImage from "../../../app/assets/images/Group 138.png";
 import ic_warning from '../../assets/images/ic_warning.jpg';
 import { useState } from "react";
-import { DateRange } from "react-date-range";
-import "react-date-range/dist/styles.css";
-import "react-date-range/dist/theme/default.css";
 import { format, subDays } from "date-fns";
 
 export function GenerateEInvoice() {
@@ -139,11 +136,11 @@ export function GenerateEInvoice() {
                 }} >
               {isSelectingCustom ? (
                 <div>
-                  <DateRange
+                  {/* <DateRange
                     ranges={selectedRange}
                     onChange={handleSelect}
                     moveRangeOnFirstSelection={false}
-                  />
+                  /> */}
                   <button
                     onClick={applyCustomRange}
                     style={{

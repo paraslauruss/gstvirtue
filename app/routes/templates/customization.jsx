@@ -2,7 +2,6 @@ import { Page } from "@shopify/polaris";
 import './customization.css'
 import { useCallback, useEffect, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
-import Slider from '@mui/material/Slider';
 import Button from '@mui/material/Button';
 import getCroppedImg from "../utils/cropImage";
 import ImageCropper from "./ImageCropper";
@@ -896,14 +895,14 @@ export const Customization = ({ onClick }) => {
                             justifyContent: 'center',
                             marginTop: '10px',
                         }}>
-                            <Slider
+                            {/* <Slider
                                 value={zoom}
                                 min={1}
                                 max={3}
                                 step={0.1}
                                 aria-labelledby="Zoom"
                                 onChange={(e, zoom) => onZoomChange(zoom)}
-                            />
+                            /> */}
                             <div style={{ display: 'flex', gap: '10px', padding: '10px', justifyContent: 'end' }}>
                                 <div style={{ cursor: 'pointer', color: 'white', backgroundColor: '#74A535', padding: '5px 10px', borderRadius: '5px' }} onClick={onCropImage}>
                                     Crop Image

@@ -238,7 +238,7 @@ export default function EstimateInvoice({logo,estimate,storeData,customLabels,si
                  </span>
               </td>
 
-              <td align='right' style={{borderRight: "solid 1px #444444",borderRight: "solid 1px #444444",borderRight: "solid 1px #444444"}}>
+              <td align='right' style={{borderRight: "solid 1px #444444"}}>
                  &nbsp;
                  <img
                     src="https://gst.webplanex.biz/images/phone-icon.png"

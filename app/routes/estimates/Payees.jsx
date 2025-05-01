@@ -361,7 +361,7 @@ export const Payees = () => {
       </button>
     </div>
   
-    <div style={{ padding: "20px", backgroundColor: "rgb(249, 249, 249)", borderRadius: "5px", border: '1px solid rgba(241, 241, 244, 1)', borderRadius:'5px',
+    <div style={{ padding: "20px", backgroundColor: "rgb(249, 249, 249)", borderRadius: "5px", border: '1px solid rgba(241, 241, 244, 1)',
      boxShadow: '0px 4px 4px 0px rgba(0, 0, 0, 0.03)'
      }}>
       <div

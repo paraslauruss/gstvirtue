@@ -1,7 +1,4 @@
-import { json } from "@remix-run/node";
-import fs from "fs/promises";
-import path from "path";
-import { useLoaderData } from "@remix-run/react";
+
 
 
 export default function InvoicePreview() {

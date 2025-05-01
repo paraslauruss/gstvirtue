@@ -1231,7 +1231,6 @@ export const Expenses = () => {
 
               <div
                 style={{
-                  padding: "10px",
                   width: "100%",
                   padding:'20px',
                   margin:'20px auto'

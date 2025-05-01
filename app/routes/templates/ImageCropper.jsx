@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import Slider from '@mui/material/Slider';
 import Button from '@mui/material/Button';
 import getCroppedImg from '../utils/cropImage';
 import '../../styles/cropper.css';
@@ -59,14 +58,14 @@ export default function ImageCropper({ imageSrc, onCropComplete, isOpen, onClose
                 justifyContent: 'center',
                 marginTop: '10px',
             }}>
-                <Slider
+                {/* <Slider
                     value={zoom}
                     min={1}
                     max={3}
                     step={0.1}
                     aria-labelledby="Zoom"
                     onChange={(e, zoom) => onZoomChange(zoom)}
-                />
+                /> */}
                 <Button onClick={onCropImage} variant="contained" color="primary">
                     Crop Image
                 </Button>

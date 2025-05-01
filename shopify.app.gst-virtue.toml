@@ -1,33 +1,31 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "0b46e223749df9a2c17fc183b9175f99"
-application_url = "https://crown-using-covers-ha.trycloudflare.com"
+application_url = "https://virtue-gst.vercel.app/"
 embedded = true
 name = "Gst Virtue"
 handle = "gst-virtue-2"
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+dev_store_url = "gst-virtue-paras.myshopify.com"
 
 [webhooks]
 api_version = "2025-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_customers,read_orders,read_products,write_customers,read_locations"
+scopes = "read_customers,read_locations,read_orders,read_products,write_customers"
 
 [auth]
 redirect_urls = [
-  "https://crown-using-covers-ha.trycloudflare.com/auth/callback",
-  "https://crown-using-covers-ha.trycloudflare.com/auth/shopify/callback",
-  "https://crown-using-covers-ha.trycloudflare.com/api/auth/callback"
+  "https://virtue-gst.vercel.app/auth/callback",
+  "https://virtue-gst.vercel.app/auth/shopify/callback",
+  "https://virtue-gst.vercel.app/api/auth/callback"
 ]
 
 [pos]
 embedded = false
 
-[build]
-dev_store_url = "gst-virtue-paras.myshopify.com"
-automatically_update_urls_on_dev = true
-include_config_on_deploy = true
-
-[web]
-  command = "npm run start"
-  port = 8081
+SHOPIFY_API_KEY

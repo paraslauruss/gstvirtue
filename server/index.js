@@ -86,10 +86,7 @@ app.use('/api/itc-summary', itcSummaryRoute);
 require('dotenv').config(); // This will load the variables from the .env file
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
+mongoose.connect(MONGO_URI).then(() => console.log('MongoDB connected'))
   .catch(err => console.log('Error connecting to MongoDB:', err));
 
 // EMAIL SENDING
@@ -143,5 +140,7 @@ app.post('/send-email', async (req, res) => {
   }
 });
 
-// Start the server
-app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+// module.exports = app;

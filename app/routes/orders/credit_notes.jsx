@@ -755,7 +755,6 @@ export function CreditNotes() {
                                         borderRadius: "8px",
                                         width: "500px",
                                         border:'1px solid #ccc',
-                                        borderRadius:'11px'
                                       }}>
 
                                         <div style={{

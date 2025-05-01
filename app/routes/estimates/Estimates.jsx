@@ -2532,7 +2532,6 @@ export const Estimates = () => {
                     value={selectedProduct?.hsn || ""}
                     style={{
                       width: "100%",
-                      padding: "5px",
                       borderRadius: "3px",
                       border: "1px solid #ccc",
                       padding: "5px",
@@ -2556,7 +2555,6 @@ export const Estimates = () => {
                       padding: "5px",
                       borderRadius: "3px",
                       border: "1px solid #ccc",
-                      padding: "5px",
                       textAlign: 'right'
                     }}
                     readOnly
@@ -2574,7 +2572,6 @@ export const Estimates = () => {
                       borderRadius: "3px",
                       border: "1px solid #ccc",
                       alignContent: 'center',
-                      padding: "5px",
                       textAlign: 'right'
                     }}
                     readOnly
@@ -3106,7 +3103,6 @@ export const Estimates = () => {
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '20px',
-            display: 'flex'
           }}>
             <h2 style={{
               fontSize: '20px',

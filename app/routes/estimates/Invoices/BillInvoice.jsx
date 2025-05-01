@@ -256,8 +256,6 @@ export default function BillInvoice({ expense, logo, signtuare, storeData, custo
               <td
                 style={{
                   borderRight: "solid 1px #444444",
-                  borderRight: "solid 1px #444444",
-                  borderRight: "solid 1px #444444",
                 }}
                 align="right">
                 &nbsp;
@@ -429,7 +427,6 @@ export default function BillInvoice({ expense, logo, signtuare, storeData, custo
 
                       <td width="16%"
                         style={{
-                          padding: '5px',
                           borderLeft: "solid 1px #444444",
                           borderRight: "solid 1px #444444",
                           borderTop: "0px",

@@ -2112,7 +2112,6 @@ function formatDate(dateString) {
                  justifyContent: 'space-between',
                  alignItems: 'center',
                  marginBottom: '20px',
-                 display:'flex'
             }}>
               <h2 style={{fontSize: '20px',
                    fontWeight: 'bold',}}>Bills</h2>

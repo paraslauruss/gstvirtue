@@ -2188,7 +2188,6 @@ export function CreateNewInvoice({ onClose }) {
                       height: "33px",
                       border: "1px solid #ccc",
                       borderRadius: "6px",
-                      padding: "5px",
                       backgroundColor: "#fff",
                       fontSize: "14px",
                       cursor: "pointer",

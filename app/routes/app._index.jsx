@@ -16,7 +16,6 @@ import myImage from '../assets/images/hello.png';
 import ic_support_document from '../assets/images/ic_support_document.png';
 import ic_faqs from '../assets/images/ic_faqs.png';
 import ic_get_started from '../assets/images/ic_get_started.png';
-import { sessionStorage } from "../shopify.server";
 
 export const loader = async ({ request }) => {
 

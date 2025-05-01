@@ -258,8 +258,6 @@ export default function ExpenseInvoice( {expense, logo,signtuare,storeData,custo
             <td
               style={{  
                 borderRight: "solid 1px #444444",
-                borderRight: "solid 1px #444444",
-                borderRight: "solid 1px #444444",
               }}
               align="right">
               &nbsp;
@@ -437,7 +435,6 @@ export default function ExpenseInvoice( {expense, logo,signtuare,storeData,custo
                         borderTop: "0px",
                         borderBottom: "0px",
                         lineHeight: "30px",
-                        padding:'5px',
                         textAlign:'center'
                       }}>
                           <strong>Code</strong>

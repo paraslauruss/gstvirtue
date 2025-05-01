@@ -337,19 +337,19 @@ export const Classic = ({ bgColor, textColor, fontFamily, logo, signature, formD
                         {formData?.product_items_labels?.hide_show_product_hsn && <td data-value="hsn" rowspan="2" align="center" style={{ borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000', padding: '5px', }}>
                             <strong id="template_product_hsn">{formData?.product_items_labels?.hsn}</strong>
                         </td>}
-                        <td colspan="2" align="center" style={{ borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000', borderBottom: 'solid 1px #000', padding: '5px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>
+                        <td colspan="2" align="center" style={{ borderRight: 'solid 1px #000', borderBottom: 'solid 1px #000', padding: '5px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>
                             <strong id="template_product_cgst">{formData?.product_items_labels?.cgst}</strong>
                         </td>
-                        <td colspan="2" align="center" style={{ borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000', borderBottom: 'solid 1px #000', padding: '5px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>
+                        <td colspan="2" align="center" style={{ borderRight: 'solid 1px #000', borderBottom: 'solid 1px #000', padding: '5px', display: cgst_igst === 'igst' ? 'none' : 'table-cell' }}>
                             <strong id="template_product_sgst">{formData?.product_items_labels?.sgst}</strong>
                         </td>
                         <td width="80px" colspan="2" align="center" style={{ borderRight: '1px solid rgb(0, 0, 0)', borderBottom: '1px solid rgb(0, 0, 0)', padding: '5px', display: cgst_igst === 'igst' ? 'table-cell' : 'none', }}>
                             <strong id="template_product_igst">{formData?.product_items_labels?.igst}</strong>
                         </td>
-                        <td align="center" rowspan="2" style={{ borderBottom: 'solid 1px #000', borderRight: 'solid 1px #000', padding: '5px', }}>
+                        <td align="center" rowspan="2" style={{ borderRight: 'solid 1px #000', padding: '5px', }}>
                             <strong><span id="template_product_cess">{formData?.product_items_labels?.cess}</span> <br />(%)</strong>
                         </td>
-                        <td align="center" rowspan="2" style={{ borderBottom: 'solid 1px #000', borderRight: 'solid 2px #000', padding: '5px', }}>
+                        <td align="center" rowspan="2" style={{ borderRight: 'solid 2px #000', padding: '5px', }}>
                             <strong><span id="template_product_total">{formData?.product_items_labels?.total}</span>(₹)</strong>
                         </td>
                     </tr>

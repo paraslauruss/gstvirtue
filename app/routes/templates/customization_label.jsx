@@ -1443,7 +1443,7 @@ export const CustomizationLabel = ({ onFormDataChange }) => {
                                     value={formValues.igst}
                                     onChange={handleChange}
                                     placeholder="IGST"
-                                    style={{ width: '100%', display: 'flex', width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
+                                    style={{ display: 'flex', width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', marginTop: '5px' }}
                                 />
                             )}
 
